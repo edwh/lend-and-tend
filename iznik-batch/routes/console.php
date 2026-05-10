@@ -331,6 +331,12 @@ Schedule::command('chats:process-spam')
 //     ->withoutOverlapping()
 //     ->runInBackground();
 
+// Immediate mode - sends notifications for users who want instant alerts.
+Schedule::command('mail:digest:unified --mode=immediate')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Donation-related commands. V1 equivalents on bulk3 disabled 2026-05-12.
 Schedule::command('mail:donations:thank')
     ->dailyAt('09:00')
