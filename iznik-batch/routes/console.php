@@ -282,54 +282,42 @@ Schedule::command('chats:process-spam')
 // DISABLED COMMANDS (to be enabled when ready)
 // =============================================================================
 
-// Digest and immediate mail are still handled by V1 (cron/digest.php on
-// bulk3-internal). Per MIGRATION-STATUS.md, digest emails are "Code written"
-// not "Live". Keep these scheduled commands disabled until the V1 cron is
-// retired and we cut over here, to avoid duplicate sends.
-//
-// Schedule::command('mail:digest 1')
-//     ->hourly()
-//     ->withoutOverlapping()
-//     ->runInBackground();
-//
-// Schedule::command('mail:digest 2')
-//     ->everyTwoHours()
-//     ->withoutOverlapping()
-//     ->runInBackground();
-//
-// Schedule::command('mail:digest 4')
-//     ->everyFourHours()
-//     ->withoutOverlapping()
-//     ->runInBackground();
-//
-// Schedule::command('mail:digest 8')
-//     ->cron('0 0,8,16 * * *')
-//     ->withoutOverlapping()
-//     ->runInBackground();
-//
-// Daily digests — V1 ran two parallel workers sharded by MOD(groupid, 2)
-// (cron/digest.php -i 24 -m 2 -v 0 / -v 1). Preserved as two entries so a
-// re-enable keeps the throughput.
-// Schedule::command('mail:digest 24 --mod=2 --val=0')
-//     ->dailyAt('08:00')
-//     ->withoutOverlapping()
-//     ->runInBackground();
-// Schedule::command('mail:digest 24 --mod=2 --val=1')
-//     ->dailyAt('08:00')
-//     ->withoutOverlapping()
-//     ->runInBackground();
-//
-// Unified digest - one email per user covering all their communities.
-// Schedule::command('mail:digest:unified --mode=daily')
-//     ->dailyAt('08:00')
-//     ->withoutOverlapping()
-//     ->runInBackground();
-//
-// Immediate mode - notifications for users who want instant alerts.
-// Schedule::command('mail:digest:unified --mode=immediate')
-//     ->everyMinute()
-//     ->withoutOverlapping()
-//     ->runInBackground();
+/*
+// Immediate digests (-1) handled by mail:digest:unified --mode=immediate above.
+// mail:digest -1 disabled.
+*/
+
+// Per-group digests (Phase 2) — SendDigestCommand now uses UnifiedDigestService.
+Schedule::command('mail:digest 1')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('mail:digest 2')
+    ->everyTwoHours()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('mail:digest 4')
+    ->everyFourHours()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('mail:digest 8')
+    ->cron('0 0,8,16 * * *')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('mail:digest 24')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+/* Unified daily mode (Phase 3) — disabled until per-group mode is live.
+Schedule::command('mail:digest:unified --mode=daily')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+*/
 
 // Immediate mode - sends notifications for users who want instant alerts.
 Schedule::command('mail:digest:unified --mode=immediate')
