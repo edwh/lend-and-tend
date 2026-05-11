@@ -891,6 +891,38 @@ print(json.dumps(out))
   },
 
   {
+    name: 'close_extra_prs',
+    description: 'Close any PRs opened since iterationStartTs that are not the expected PR number. Prevents rogue delegate work from polluting the repo. Returns { closed: number[], kept: number }.',
+    paramsSchema: {
+      type: 'object',
+      properties: {
+        expectedPrNumber: { type: 'number', description: 'The one PR that should stay open' },
+        iterationStartTs: { type: 'string', description: 'ISO timestamp — close PRs opened after this' },
+      },
+      required: ['expectedPrNumber', 'iterationStartTs'],
+    },
+    handler: async (params) => {
+      const expectedPrNumber = params.expectedPrNumber as number
+      const iterationStartTs = params.iterationStartTs as string
+      const listRes = await sh('gh', ['pr', 'list', '--repo', 'Freegle/Iznik', '--state', 'open', '--json', 'number,createdAt,headRefName,author'])
+      if (listRes.code !== 0) return { error: `gh pr list failed: ${listRes.stderr}`, closed: [], kept: expectedPrNumber }
+      const prs = JSON.parse(listRes.stdout) as Array<{ number: number; createdAt: string; headRefName: string; author: { login: string } }>
+      const cutoff = new Date(iterationStartTs)
+      const extras = prs.filter(pr =>
+        pr.number !== expectedPrNumber &&
+        new Date(pr.createdAt) >= cutoff &&
+        pr.author?.login === 'edwh'
+      )
+      const closed: number[] = []
+      for (const pr of extras) {
+        const closeRes = await sh('gh', ['pr', 'close', String(pr.number), '--repo', 'Freegle/Iznik', '--comment', 'Closed: opened outside scope of assigned fix task — FSM enforces one PR per implementation step'])
+        if (closeRes.code === 0) closed.push(pr.number)
+      }
+      return { closed, kept: expectedPrNumber }
+    },
+  },
+
+  {
     name: 'post_discourse_reply_draft',
     description: 'Queue a Discourse reply draft by APPENDING it to /tmp/freegle-monitor/retest-drafts.md. NEVER posts to Discourse — drafts require explicit human approval per iteration. Strict template (enforced here): body must be a single sentence; the file entry always renders the full [quote] block, the @username tag, the body, and a testable URL if provided. Params: {topic, post, username, quote, body, previewUrl?, prNumber?, prUrl?}. Use previewUrl ONLY for frontend-only fixes; backend/mixed fixes must include NO previewUrl because the user cannot retest until a deploy. The body should be exactly "Fix applied for <specific issue> (<prUrl>). Please retest." or (with preview) "Possible fix — please test: <url>". Always include the prUrl in the body so the reporter can see which PR fixed their issue.',
     paramsSchema: {
@@ -1219,6 +1251,13 @@ FORBIDDEN:
   - Starting tests asynchronously and returning before they finish — wait for test output. If tests take too long, still wait; the FSM has a 20-minute timeout and will kill you only if truly stuck.
   - Creating a new PR when asked to fix an existing one (FIX_OPEN_PR_CI). Push a commit to the PR's branch instead.
   - Using port 38081 or any port other than 8081 for the test/status API.
+  - Opening more than one PR or branch in a single session. You are fixing exactly one bug — open AT MOST ONE PR. If you encounter other bugs while reading the code, note them in the PR description but do not fix them. If you accidentally open extra PRs, close them with \`gh pr close <n> --repo Freegle/Iznik\` before emitting your output marker.
+
+PUSH VERIFICATION — Required before any push marker:
+For PR_NUMBER=, DIRECT_PUSH=, or COMMIT_PUSHED=, you MUST first verify the push landed remotely:
+  git -C /home/edward/FreegleDockerWSL log origin/<branch> -1 --format=%H
+If the SHA matches what you pushed, emit on its own line: PUSH_VERIFIED=<sha>
+If they don't match: emit DELEGATE_FAILED=push not verified: local <local_sha> != remote <remote_sha>
 
 OUTPUT MARKERS — MANDATORY, MACHINE-PARSED:
 The parent FSM greps your stdout for these exact markers. Your prose does NOT count — "Fix pushed to PR #208" is invisible to the parser. You MUST emit exactly ONE of these on its own line at the very end:
@@ -1499,6 +1538,12 @@ ${worktreeCreated ? `Your working directory is an ISOLATED git worktree at \`${w
 
 BRANCH RULES: always \`git fetch origin && git checkout -b branch-name origin/master\` for new branches. For existing PR branches: \`gh pr checkout <n> -R Freegle/Iznik\`.
 STAGING RULES: never \`git add -A\`. Always stage explicit paths.
+
+PUSH VERIFICATION — Required before any push marker:
+For PR_NUMBER=, DIRECT_PUSH=, or COMMIT_PUSHED=, you MUST first verify the push landed remotely:
+  git -C /home/edward/FreegleDockerWSL log origin/<branch> -1 --format=%H
+If the SHA matches what you pushed, emit on its own line: PUSH_VERIFIED=<sha>
+If they don't match: emit DELEGATE_FAILED=push not verified: local <local_sha> != remote <remote_sha>
 
 OUTPUT MARKERS — MANDATORY, MACHINE-PARSED (emit exactly one on its own line at the very end):
   - Opened a NEW PR:                 PR_NUMBER=<n>
@@ -2025,8 +2070,14 @@ ANALYSIS_COMPLETE is for tasks that involve NO code changes (e.g. Discourse tria
            WHERE pr_number IS NOT NULL AND state IN ('open', 'investigating', 'fix-queued')`
         ).all() as Array<{ topic: number }>).map((r: { topic: number }) => r.topic)
       )
+      // Skip topics where Edward posted this iteration (type='mine'): he's actively
+      // engaged (e.g. waiting for a retest) and the FSM should not duplicate that work.
+      const topicsWithMinePost = new Set(
+        classifications.filter(c => c.type === 'mine').map(c => Number(c.topic))
+      )
       const allPending = [...pendingBugs, ...extraBugs.map(b => ({ ...b, type: 'bug' }))]
         .filter(b => !topicsWithActivePr.has(Number(b.topic)))
+        .filter(b => !topicsWithMinePost.has(Number(b.topic)))
 
       if (allPending.length > 0) {
         // Dispatch ONE bug at a time (oldest first_seen_at). With a single self-hosted
@@ -2053,6 +2104,76 @@ ANALYSIS_COMPLETE is for tasks that involve NO code changes (e.g. Discourse tria
         return { _transition: 'FIX_SENTRY_ISSUE', reason: `${sentryIssues.length} unresolved Sentry issue(s)` }
       }
       return { _transition: 'COVERAGE_GATE', reason: 'no pending bug / sentry — advance to gate' }
+    },
+  },
+
+  {
+    name: 'check_existing_prs',
+    description: 'Search open PRs on Freegle/Iznik by keywords extracted from a bug description. Returns {existingPRs, keywords, searchedAt}. Used by DIAGNOSE_BUG to surface related open PRs before dispatching a fix.',
+    paramsSchema: {
+      type: 'object',
+      properties: {
+        bugDescription: { type: 'string', description: 'Bug symptom/summary text to extract keywords from.' },
+        extraKeywords: { type: 'array', items: { type: 'string' }, description: 'Optional extra keywords (e.g. from featureArea or codeArea).' },
+      },
+      required: ['bugDescription'],
+    },
+    handler: async (params) => {
+      const bugDescription = (params.bugDescription as string) ?? ''
+      const extraKeywords = (params.extraKeywords as string[]) ?? []
+
+      const stopWords = new Set([
+        'the', 'a', 'an', 'is', 'in', 'on', 'at', 'to', 'of', 'and', 'or',
+        'not', 'with', 'for', 'from', 'that', 'this', 'it', 'its',
+        'when', 'after', 'before', 'if', 'then', 'are', 'was', 'be',
+        'does', 'do', 'have', 'has', 'had', 'can', 'cannot', 'could', 'should',
+        'will', 'would', 'fix', 'bug', 'issue', 'error', 'problem',
+      ])
+
+      // Extract meaningful keywords from description
+      const descTokens = bugDescription
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter(t => t.length > 3 && !stopWords.has(t))
+      const descKeywords = [...new Set(descTokens)]
+        .sort((a, b) => b.length - a.length)
+        .slice(0, 4)
+
+      // Merge with any explicitly supplied extras (e.g. codeArea component name)
+      const keywords = [...new Set([...descKeywords, ...extraKeywords.map(k => k.toLowerCase())])]
+
+      try {
+        const { stdout } = await exec('gh', [
+          'pr', 'list',
+          '--repo', 'Freegle/Iznik',
+          '--state', 'open',
+          '--limit', '50',
+          '--json', 'number,title,url,state,createdAt',
+        ], { maxBuffer: 5 * 1024 * 1024 })
+
+        let allPRs: Array<{ number: number; title: string; url: string }> = []
+        try {
+          const parsed = JSON.parse(stdout.trim())
+          if (Array.isArray(parsed)) {
+            allPRs = parsed.map((p: any) => ({
+              number: p.number ?? 0,
+              title: p.title ?? '',
+              url: p.url ?? '',
+            }))
+          }
+        } catch { /* ignore JSON parse errors — return empty */ }
+
+        const lowerKeywords = keywords.map(k => k.toLowerCase())
+        const existingPRs = allPRs.filter(pr =>
+          lowerKeywords.some(kw => pr.title.toLowerCase().includes(kw))
+        )
+
+        return { existingPRs, keywords, searchedAt: new Date().toISOString() }
+      } catch (err: any) {
+        outWarn(`[check_existing_prs] gh pr list failed: ${err.message}`)
+        return { existingPRs: [], keywords, searchedAt: new Date().toISOString(), error: err.message }
+      }
     },
   },
 
@@ -2088,32 +2209,55 @@ ANALYSIS_COMPLETE is for tasks that involve NO code changes (e.g. Discourse tria
         const phaseInfo = getPhaseInfo()
         const reviewModel = modelForAdversarialReview(phaseInfo)
 
-        const prompt = `You are a code review expert. Review this PR diff for:
-1. Correctness - does the fix actually solve the problem?
-2. Unintended changes - are there any unnecessary or harmful changes?
-3. Test coverage - are there tests for the fix?
-4. Code quality - does it follow the codebase patterns?
+        const prompt = `You are an adversarial code reviewer. Your job is to find problems, not to validate the author's work.
 
-Return ONLY a JSON object with:
+Review this PR diff using the following structured rubric. Classify each finding as CRITICAL, WARNING, or INFO.
+
+CRITICAL (passed = false, must fix before merge):
+- Partial implementation: the fix addresses the symptom but not the root cause
+- Test proves nothing: test was written after the fix to confirm it doesn't crash, not to prove the bug existed first
+- Security regression: SQL injection, path traversal, nil/null dereference, auth bypass, unvalidated user input reaching a write path
+- Known regression: the diff removes or weakens an existing test that was passing
+- Incomplete diff: the PR description claims to fix X but the diff doesn't touch the relevant code path
+- Duplicate implementation: the fix reimplements logic that already exists as a helper elsewhere in the same codebase (look for similar function names or patterns in the diff context)
+
+WARNING (passed = true, should be noted in PR):
+- Other call sites with the same bug: the pattern fixed here appears to exist in adjacent files or sibling handlers — list the paths
+- Dead code: unused variables, commented-out blocks, unreachable branches left over from the fix
+- Naming/style inconsistency with the surrounding code
+- TODO/FIXME in the changed lines (unfinished work in shipped code is a bug)
+
+INFO (passed = true, note only):
+- Minor style deviation that doesn't affect correctness
+- Opportunities for simplification that are out of scope for a bug fix
+
+COVERAGE CHECK (specific to bug-fix PRs):
+- Does the test cover the exact trigger path described in the bug report?
+- Does the test FAIL before the fix and PASS after? (A test that was green before the diff is not a reproduction test.)
+- Is the failure assertion meaningful, or does it just check that the function doesn't throw?
+
+Return ONLY a JSON object with exactly these keys:
 {
   "passed": boolean,
   "blockers": [{"category": string, "description": string}],
   "warnings": [{"category": string, "description": string}],
+  "info": [{"category": string, "description": string}],
   "summary": string
 }
 
-If blockers exist, passed = false. Warnings do not block but should be noted.
+passed = false if and only if blockers is non-empty.
+Be specific: "the test on line 47 only asserts status 200, not that the bug condition is absent" is useful; "tests could be improved" is not.
 
 DIFF:
 \`\`\`
 ${diff.slice(0, 20000)}
 \`\`\`
-${diff.length > 20000 ? '\n(diff truncated for length)' : ''}`
+${diff.length > 20000 ? '\n(diff truncated — only the first 20 000 chars shown)' : ''}`
 
         const response = await (global as any).__ai_flower_adapter.query(
           reviewModel,
           [{ role: 'user', content: prompt }],
-          { max_tokens: 1000 }
+          { max_tokens: 1500 }
         )
 
         let review: any
@@ -2130,6 +2274,7 @@ ${diff.length > 20000 ? '\n(diff truncated for length)' : ''}`
         const issues = [
           ...(Array.isArray(review.blockers) ? review.blockers.map((b: any) => ({ ...b, severity: 'error' })) : []),
           ...(Array.isArray(review.warnings) ? review.warnings.map((w: any) => ({ ...w, severity: 'warning' })) : []),
+          ...(Array.isArray(review.info) ? review.info.map((i: any) => ({ ...i, severity: 'info' })) : []),
         ]
 
         return {
