@@ -279,9 +279,17 @@ workflows:
                     -d '{"labels":["CI: Failed"]}' \
                     "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/labels" 2>/dev/null || true
                   echo "Labelled PR #$PR_NUMBER as CI: Failed"
+          filters:
+            branches:
+              ignore:
+                - modtools
       - mark-ci-passed:
           requires:
             - freegle/build-and-test
+          filters:
+            branches:
+              ignore:
+                - modtools
       - freegle/build-android-modtools-debug:
           requires:
             - freegle/build-and-test
