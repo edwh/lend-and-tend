@@ -61,8 +61,10 @@ func GetJobs(c *fiber.Ctx) error {
 	placeholders := strings.Join(ids, ",")
 
 	categoryClause := "category IS NOT NULL"
+	var categoryArgs []any
 	if category != "" {
-		categoryClause = "category REGEXP '(^|;)" + category + ".*'"
+		categoryClause = "category REGEXP ?"
+		categoryArgs = []any{"(^|;)" + category + ".*"}
 	}
 
 	db := database.DBConn
@@ -86,7 +88,7 @@ func GetJobs(c *fiber.Ctx) error {
 			"WHERE jobs.id IN (%s) AND %s "+
 			"ORDER BY jobs.cpc * jobs.clickability DESC, jobs.id ASC LIMIT %d",
 		placeholders, categoryClause, JOBS_LIMIT,
-	)).Scan(&rows)
+	), categoryArgs...).Scan(&rows)
 
 	ret := make([]Job, 0, len(rows))
 	for _, r := range rows {
