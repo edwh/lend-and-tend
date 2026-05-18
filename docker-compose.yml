@@ -709,8 +709,8 @@ services:
       - DONATION_TARGET=${DONATION_TARGET:-}
       - DONATIONS_EXCLUDE=${DONATIONS_EXCLUDE:-}
       - EMBEDDING_SIDECAR_URL=http://embedding-sidecar:3200
-      - SPATIAL_SERVER_URL=http://spatial:8194
-      - ROUTING_SERVER_URL=http://routing:8196
+      - SPATIAL_KNN_URL=http://spatial-knn:8194
+      - SPATIAL_SERVER_URL=http://spatial:8196
     volumes:
       - apiv2_logs:/var/log/freegle
     healthcheck:
@@ -735,14 +735,14 @@ services:
       - "traefik.http.middlewares.retry-api.retry.attempts=3"
       - "traefik.http.middlewares.retry-api.retry.initialinterval=100ms"
 
-  spatial:
-    container_name: ${COMPOSE_PROJECT_NAME:-freegle}-spatial
+  spatial-knn:
+    container_name: ${COMPOSE_PROJECT_NAME:-freegle}-spatial-knn
     profiles:
       - frontend
     networks:
       default:
         aliases:
-          - spatial.localhost
+          - spatial-knn.localhost
     build:
       context: ./iznik-spatial-go
       network: host
@@ -768,14 +768,14 @@ services:
       retries: 3
       start_period: 120s
 
-  routing:
-    container_name: ${COMPOSE_PROJECT_NAME:-freegle}-routing
+  spatial:
+    container_name: ${COMPOSE_PROJECT_NAME:-freegle}-spatial
     profiles:
       - frontend
     networks:
       default:
         aliases:
-          - routing.localhost
+          - spatial.localhost
     build:
       context: ./iznik-routing-go
       network: host
@@ -783,9 +783,14 @@ services:
       percona:
         condition: service_healthy
         required: false
+      spatial-knn:
+        condition: service_healthy
+        required: false
     restart: "no"
     environment:
-      - ROUTING_PORT=8196
+      - SPATIAL_PORT=8196
+      - SPATIAL_INTERNAL_PORT=8194
+      - SPATIAL_KNN_URL=http://spatial-knn:8194
       - OSM_PBF_PATH=/data/england-latest.osm.pbf
       - DEPRIVATION_CSV=/data/uk_lsoa_quintile.csv
       - MYSQL_HOST=percona
@@ -804,9 +809,9 @@ services:
       start_period: 300s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.routing.rule=Host(`routing.localhost`)"
-      - "traefik.http.routers.routing.entrypoints=web"
-      - "traefik.http.services.routing.loadbalancer.server.port=8196"
+      - "traefik.http.routers.spatial.rule=Host(`spatial.localhost`)"
+      - "traefik.http.routers.spatial.entrypoints=web"
+      - "traefik.http.services.spatial.loadbalancer.server.port=8196"
 
   # V2 API with LIVE production database via tunnel
   # Start with: docker compose --profile prod-live up -d apiv2-live
@@ -859,7 +864,7 @@ services:
       - DONATIONS_EXCLUDE=${DONATIONS_EXCLUDE:-}
       - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:-}
       - CLOUDFLARE_AI_TOKEN=${CLOUDFLARE_AI_TOKEN:-}
-      - ROUTING_SERVER_URL=${ROUTING_SERVER_URL:-http://routing:8196}
+      - SPATIAL_SERVER_URL=${SPATIAL_SERVER_URL:-http://spatial:8196}
     volumes:
       - apiv2_logs:/var/log/freegle
     healthcheck:
@@ -883,18 +888,18 @@ services:
       - "traefik.http.middlewares.apiv2-live-retry.retry.initialinterval=100ms"
       - "traefik.http.services.apiv2-live.loadbalancer.server.port=8192"
 
-  # Routing server with LIVE production database via tunnel
-  # Start with: docker compose --profile prod-live up -d routing-live
+  # Spatial server with LIVE production database via tunnel
+  # Start with: docker compose --profile prod-live up -d spatial-live
   # Requires: SSH tunnel to production DB on local port ${LIVE_DB_PORT:-1234}
   # WARNING: This connects to the REAL production database!
-  routing-live:
-    container_name: ${COMPOSE_PROJECT_NAME:-freegle}-routing-live
+  spatial-live:
+    container_name: ${COMPOSE_PROJECT_NAME:-freegle}-spatial-live
     profiles:
       - prod-live
     networks:
       default:
         aliases:
-          - routing-live.localhost
+          - spatial-live.localhost
     build:
       context: ./iznik-routing-go
       network: host
@@ -906,7 +911,8 @@ services:
         required: false
     restart: "no"
     environment:
-      - ROUTING_PORT=8196
+      - SPATIAL_PORT=8196
+      - SPATIAL_INTERNAL_PORT=8194
       - OSM_PBF_PATH=/data/england-latest.osm.pbf
       - DEPRIVATION_CSV=/data/uk_lsoa_quintile.csv
       - MYSQL_HOST=db-live
@@ -925,9 +931,9 @@ services:
       start_period: 300s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.routing-live.rule=Host(`routing-live.localhost`)"
-      - "traefik.http.routers.routing-live.entrypoints=web"
-      - "traefik.http.services.routing-live.loadbalancer.server.port=8196"
+      - "traefik.http.routers.spatial-live.rule=Host(`spatial-live.localhost`)"
+      - "traefik.http.routers.spatial-live.entrypoints=web"
+      - "traefik.http.services.spatial-live.loadbalancer.server.port=8196"
 
   # Development build with local APIs - standard dev workflow
   freegle-dev-local:
@@ -1165,7 +1171,7 @@ services:
       - NUXT_SSR_LOG=false
       - NODE_ENV=development
       - NUXT_BUILD_MODE=development
-      - SPATIAL_SERVER_URL=http://routing.localhost:${PORT_TRAEFIK_HTTP:-80}
+      - SPATIAL_SERVER_URL=http://spatial.localhost:${PORT_TRAEFIK_HTTP:-80}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.modtools-dev-local.rule=Host(`modtools-dev-local.localhost`)"
@@ -1202,7 +1208,7 @@ services:
       - "0.0.0.0:${PORT_MODTOOLS_DEV_LIVE:-3006}:3000"
     extra_hosts:
       - "apiv2-live.localhost:host-gateway"
-      - "routing-live.localhost:host-gateway"
+      - "spatial-live.localhost:host-gateway"
     build:
       context: .
       dockerfile: ./iznik-nuxt3/modtools/Dockerfile
@@ -1227,7 +1233,7 @@ services:
       - NUXT_SSR_LOG=false
       - NODE_ENV=development
       - NUXT_BUILD_MODE=development
-      - SPATIAL_SERVER_URL=http://routing-live.localhost:${PORT_TRAEFIK_HTTP:-80}
+      - SPATIAL_SERVER_URL=http://spatial-live.localhost:${PORT_TRAEFIK_HTTP:-80}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.modtools-dev-live.rule=Host(`modtools-dev-live.localhost`)"
@@ -1506,7 +1512,7 @@ services:
       - LOKI_URL=http://loki:3100
       - MJML_URL=http://mjml/
       - FREEGLE_AVATAR_SERVER_URL=http://apiv2.localhost:${PORT_TRAEFIK_HTTP:-80}/api/avatar
-      - SPATIAL_SERVER_URL=http://spatial:8194
+      - SPATIAL_KNN_URL=http://spatial-knn:8194
       - FREEGLE_MAIL_ENABLED_TYPES=Welcome,ChatNotification,ChatNotificationUser2Mod,ChatNotificationMod2Mod,Digest,UnifiedDigest,DonationThank,DonationAsk,ChaseUp,AutoRepost,MessageExpiry,NotificationChaseUp,StoriesNewsletter
       # CI=true skips supervisor startup to prevent Laravel bootstrap race conditions.
       # Multiple supervisor workers bootstrapping Laravel simultaneously can corrupt services.php.
