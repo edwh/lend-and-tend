@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useLatMessagesStore } from '~/stores/latMessages'
-import { useAuthStore } from '~/stores/auth'
+import { useLatUserStore } from '~/stores/latUser'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -72,7 +72,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const messagesStore = useLatMessagesStore()
-const authStore = useAuthStore()
+const latUserStore = useLatUserStore()
 
 const messageContent = ref('')
 const sending = ref(false)
@@ -82,13 +82,13 @@ const messages = computed(() => messagesStore.thread)
 const error = computed(() => messagesStore.error)
 
 const isPaywalled = computed(() => {
-  const user = authStore.user
+  const user = latUserStore.user
   if (!user) return true
   return user.paymentStatus !== 'paid' && user.paymentStatus !== 'concession'
 })
 
 const isSentByCurrentUser = (msg: any) => {
-  return msg.senderId === authStore.latUserId
+  return msg.senderId === latUserStore.user?.id
 }
 
 const formatTime = (timestamp: string) => {

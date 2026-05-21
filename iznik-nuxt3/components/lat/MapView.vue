@@ -61,21 +61,22 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useLatMapStore, type MapPin } from '~/stores/latMap'
-import { useAuthStore } from '~/stores/auth'
+import { useLatUserStore } from '~/stores/latUser'
 import branding from '~/branding.config.ts'
 
 const mapRef = ref(null)
 const selectedPin = ref<MapPin | null>(null)
 const latMapStore = useLatMapStore()
-const authStore = useAuthStore()
+const latUserStore = useLatUserStore()
 
 const defaultCenter = computed(() => branding.map.defaultCenter)
 const defaultZoom = computed(() => branding.map.defaultZoom)
 
-const isAuthenticated = computed(() => authStore.user !== null)
+const isAuthenticated = computed(() => latUserStore.isAuthenticated)
 const hasPaymentStatus = computed(() => {
-  if (!authStore.user) return false
-  return authStore.user.paymentStatus === 'paid' || authStore.user.paymentStatus === 'concession'
+  const user = latUserStore.user
+  if (!user) return false
+  return user.paymentStatus === 'paid' || user.paymentStatus === 'concession'
 })
 
 const mapOptions = {

@@ -39,12 +39,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { useLatUserStore } from '~/stores/latUser'
 import MapView from '~/components/lat/MapView.vue'
 import branding from '~/branding.config.ts'
 
-const authStore = useAuthStore()
-const isAuthenticated = computed(() => authStore.user !== null)
+const latUserStore = useLatUserStore()
+const isAuthenticated = computed(() => latUserStore.isAuthenticated)
 
 definePageMeta({
   layout: 'default',

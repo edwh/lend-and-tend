@@ -1,100 +1,96 @@
 <template>
-  <div>
-    <LayoutCommon :key="'nuxt-' + bump">
+  <div class="lat-app">
+    <nav class="lat-nav">
+      <NuxtLink to="/lat/map" class="lat-nav-brand">
+        {{ branding.siteNameShort }}
+      </NuxtLink>
+      <div class="lat-nav-links">
+        <NuxtLink to="/lat/map">Map</NuxtLink>
+        <template v-if="isAuthenticated">
+          <NuxtLink to="/lat/messages">Messages</NuxtLink>
+          <NuxtLink v-if="isAdmin" to="/lat/admin">Admin</NuxtLink>
+          <a href="#" @click.prevent="logout">Sign out</a>
+        </template>
+        <template v-else>
+          <NuxtLink to="/lat/auth/login">Sign in</NuxtLink>
+          <NuxtLink to="/lat/auth/register" class="lat-nav-cta">Join</NuxtLink>
+        </template>
+      </div>
+    </nav>
+
+    <main class="lat-main">
       <slot />
-    </LayoutCommon>
-    <client-only>
-      <GoogleOneTap v-if="oneTap" @loggedin="googleLoggedIn" />
-      <LoginModal v-if="!loggedIn" ref="loginModal" />
-    </client-only>
+    </main>
   </div>
 </template>
-<script setup>
-import { useMiscStore } from '~/stores/misc'
-import LayoutCommon from '~/components/LayoutCommon'
-import { ref } from '#imports'
-import { useAuthStore } from '~/stores/auth'
-import { useMobileStore } from '@/stores/mobile' // APP
-const GoogleOneTap = defineAsyncComponent(() =>
-  import('~/components/GoogleOneTap')
-)
-const LoginModal = defineAsyncComponent(() => import('~/components/LoginModal'))
 
-const mobileStore = useMobileStore()
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useLatUserStore } from '~/stores/latUser'
+import branding from '~/branding.config.ts'
 
-let ready = false
-const oneTap = ref(false)
-const authStore = useAuthStore()
-const miscStore = useMiscStore()
+const latUserStore = useLatUserStore()
+const isAuthenticated = computed(() => latUserStore.isAuthenticated)
+const isAdmin = computed(() => latUserStore.user?.isAdmin ?? false)
 
-if (process.client) {
-  // Ensure we don't wrongly think we have some outstanding requests if the server happened to start some.
-  miscStore.apiCount = 0
-}
-
-useHead({
-  bodyAttrs: {
-    style: 'background-color: var(--color-gray-50)',
-  },
-})
-
-const bump = ref(0)
-const loginStateKnown = computed(() => authStore.loginStateKnown)
-const loggedIn = computed(() => authStore.user !== null)
-
-watch(
-  loginStateKnown,
-  (newVal) => {
-    if (newVal && loggedIn.value) {
-      // We now know that we have logged in.  We rendered the page originally
-      // as logged out.  So re-render the page to make it reflect that.
-      bump.value++
-    }
-  },
-  {
-    immediate: true,
-  }
-)
-
-// For this layout we don't need to be logged in.  So can just continue.  But we want to know first whether or
-// not we are logged in.  We might already know that from the server via cookies, but if not, find out.
-const jwt = authStore.auth.jwt
-const persistent = authStore.auth.persistent
-
-if (jwt || persistent) {
-  // We have some credentials, which may or may not be valid on the server.  If they are, then we can crack on and
-  // start rendering the page.  This will be quicker than waiting for GoogleOneTap to load on the client and tell us
-  // whether or not we can log in that way.
-  let user = null
-
-  try {
-    user = await authStore.fetchUser()
-  } catch (e) {
-    console.log('Error fetching user', e)
-  }
-
-  if (user) {
-    ready = true
-  }
-}
-
-if (!ready && !mobileStore.isApp) {
-  // APP
-  // We don't have a valid JWT.  See if OneTap can sign us in.
-  oneTap.value = true
-}
-
-if (!loginStateKnown.value) {
-  try {
-    await authStore.fetchUser()
-  } catch (e) {
-    // Can fail during SSR if API is not accessible - don't fail the page
-    console.log('Error in second fetchUser', e?.message)
-  }
-}
-
-function googleLoggedIn() {
-  // OneTap has logged us in.  Re-render the page as logged in.
-  bump.value++
+async function logout() {
+  await latUserStore.logout()
+  navigateTo('/lat/map')
 }
 </script>
+
+<style scoped>
+.lat-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: v-bind('branding.fonts.body');
+}
+
+.lat-nav {
+  background: v-bind('branding.colors.primary');
+  color: white;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.lat-nav-brand {
+  font-family: v-bind('branding.fonts.heading');
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: white;
+  text-decoration: none;
+}
+
+.lat-nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.lat-nav-links a {
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.lat-nav-links a:hover {
+  color: white;
+}
+
+.lat-nav-cta {
+  background: white;
+  color: v-bind('branding.colors.primary') !important;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.lat-main {
+  flex: 1;
+}
+</style>

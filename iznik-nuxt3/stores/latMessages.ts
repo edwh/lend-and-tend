@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import api from '~/api'
 
 export interface Message {
   id: number

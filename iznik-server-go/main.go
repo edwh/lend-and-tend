@@ -1,18 +1,11 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	fiberadapter "github.com/awslabs/aws-lambda-go-api-proxy/fiber"
 	"github.com/freegle/iznik-server-go/database"
-	"github.com/freegle/iznik-server-go/embedding"
 	"github.com/freegle/iznik-server-go/lendandtend/middleware"
-	"github.com/freegle/iznik-server-go/misc"
 	"github.com/freegle/iznik-server-go/router"
-	"github.com/freegle/iznik-server-go/user"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -28,8 +21,6 @@ import (
 // Package main is the main entry point for the Iznik API server.
 //
 // The API documentation is available at /swagger/ when the server is running.
-
-var fiberLambda *fiberadapter.FiberLambda
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU() * 8)
@@ -92,40 +83,7 @@ func main() {
 
 	database.InitDatabase()
 
-	// Start embedding store refresh for vector search (every 2 minutes)
-	embedding.StartRefresh(2 * time.Minute)
-
 	app.Use(database.NewPingMiddleware(database.Config{}))
-
-	// Add our middleware to check for a valid JWT. Do this after the ping middleware but before routes
-	// so that routes can access the authenticated user context.
-	app.Use(user.NewAuthMiddleware(user.Config{}))
-
-	// Add Loki logging middleware (async, doesn't block responses).
-	// Skip health check and swagger endpoints.
-	app.Use(misc.NewLokiMiddleware(misc.LokiMiddlewareConfig{
-		Skip: func(c *fiber.Ctx) bool {
-			path := c.Path()
-			return path == "/api/online" || strings.HasPrefix(path, "/swagger")
-		},
-		GetUserId: func(c *fiber.Ctx) *uint64 {
-			userIdInJWT, _, _ := user.GetJWTFromRequest(c)
-			if userIdInJWT > 0 {
-				return &userIdInJWT
-			}
-			return nil
-		},
-		GetUserRole: func(c *fiber.Ctx) *string {
-			// Get role from auth middleware (set in c.Locals by authMiddleware).
-			role := c.Locals("userRole")
-			if role != nil {
-				if roleStr, ok := role.(string); ok {
-					return &roleStr
-				}
-			}
-			return nil
-		},
-	}))
 
 	// Set up swagger routes BEFORE other API routes
 	// Handle swagger redirect - redirect exact /swagger path to /swagger/index.html
@@ -141,36 +99,23 @@ func main() {
 	// Set up all other API routes
 	router.SetupRoutes(app)
 
-	if len(os.Getenv("FUNCTIONS")) == 0 {
-		// We're running standalone.
-		//
-		// We can signal to stop using SIGINT.
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
+	// We're running standalone.
+	// We can signal to stop using SIGINT.
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 
-		serverShutdown := make(chan struct{})
+	serverShutdown := make(chan struct{})
 
-		go func() {
-			_ = <-c
-			fmt.Println("Gracefully shutting down...")
-			_ = app.Shutdown()
-			serverShutdown <- struct{}{}
-		}()
+	go func() {
+		_ = <-c
+		fmt.Println("Gracefully shutting down...")
+		_ = app.Shutdown()
+		serverShutdown <- struct{}{}
+	}()
 
-		app.Listen(":8192")
+	app.Listen(":8192")
 
-		<-serverShutdown
+	<-serverShutdown
 
-		fmt.Println("...exiting")
-	} else {
-		// We're running in a functions environment.
-		fiberLambda = fiberadapter.New(app)
-
-		lambda.Start(Handler)
-	}
-}
-
-func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// If no name is provided in the HTTP request body, throw an error
-	return fiberLambda.ProxyWithContext(ctx, req)
+	fmt.Println("...exiting")
 }
