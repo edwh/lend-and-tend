@@ -140,6 +140,10 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+definePageMeta({
+  layout: 'admin',
+})
+
 interface User {
   id: number
   email: string

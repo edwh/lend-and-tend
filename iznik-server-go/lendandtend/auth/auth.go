@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/freegle/iznik-server-go/database"
+	"github.com/freegle/iznik-server-go/lendandtend/activity"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -79,6 +80,9 @@ func Register(c *fiber.Ctx) error {
 	if err := database.DBConn.Create(&user).Error; err != nil {
 		return c.Status(500).JSON(map[string]string{"error": "failed to create user"})
 	}
+
+	// Notify nearby users about the new registration
+	go activity.NotifyNearbyUsers(database.DBConn, user)
 
 	// Create session
 	sessionID := uuid.New().String()

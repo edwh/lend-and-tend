@@ -22,6 +22,7 @@
 package router
 
 import (
+	"github.com/freegle/iznik-server-go/lendandtend/activity"
 	"github.com/freegle/iznik-server-go/lendandtend/admin"
 	"github.com/freegle/iznik-server-go/lendandtend/agreement"
 	"github.com/freegle/iznik-server-go/lendandtend/auth"
@@ -38,6 +39,7 @@ import (
 // @Description Configures /apiv2 route group with all L&T endpoints
 func SetupRoutes(app *fiber.App) {
 	// Register routes from all L&T packages
+	activity.RegisterRoutes(app)
 	auth.RegisterRoutes(app)
 	agreement.RegisterRoutes(app)
 	checkin.RegisterRoutes(app)

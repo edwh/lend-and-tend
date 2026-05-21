@@ -253,3 +253,60 @@ func GetMetrics(c *fiber.Ctx) error {
 
 	return c.JSON(metrics)
 }
+
+// AgreementDTO is a simplified agreement for admin listing
+type AgreementDTO struct {
+	ID                 uint64     `json:"id"`
+	LenderID           uint64     `json:"lenderId"`
+	LenderDisplayName  string     `json:"lenderDisplayName"`
+	TenderID           uint64     `json:"tenderId"`
+	TenderDisplayName  string     `json:"tenderDisplayName"`
+	Status             string     `json:"status"`
+	CreatedAt          time.Time  `json:"createdAt"`
+	EndDate            *time.Time `json:"endDate"`
+}
+
+// ListAgreementsResponse is the response for listing agreements
+type ListAgreementsResponse struct {
+	Agreements []AgreementDTO `json:"agreements"`
+}
+
+// ListAgreements handles GET /apiv2/lat/admin/agreements
+func ListAgreements(c *fiber.Ctx) error {
+	if err := checkAdmin(c); err != nil {
+		return err
+	}
+
+	var agreements []database.LATAgreement
+	if err := database.DBConn.Find(&agreements).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to fetch agreements",
+		})
+	}
+
+	var dtos []AgreementDTO
+	for _, agreement := range agreements {
+		// Fetch lender details
+		var lender database.LATUser
+		database.DBConn.Select("id, display_name").Where("id = ?", agreement.LenderID).First(&lender)
+
+		// Fetch tender details
+		var tender database.LATUser
+		database.DBConn.Select("id, display_name").Where("id = ?", agreement.TenderID).First(&tender)
+
+		dtos = append(dtos, AgreementDTO{
+			ID:                 agreement.ID,
+			LenderID:           agreement.LenderID,
+			LenderDisplayName:  lender.DisplayName,
+			TenderID:           agreement.TenderID,
+			TenderDisplayName:  tender.DisplayName,
+			Status:             agreement.Status,
+			CreatedAt:          agreement.CreatedAt,
+			EndDate:            agreement.EndDate,
+		})
+	}
+
+	return c.JSON(ListAgreementsResponse{
+		Agreements: dtos,
+	})
+}

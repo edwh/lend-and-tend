@@ -12,4 +12,5 @@ func RegisterRoutes(app *fiber.App) {
 	lat.Post("/admin/impersonate/:userId", StartImpersonation)
 	lat.Delete("/admin/impersonate", StopImpersonation)
 	lat.Get("/admin/metrics", GetMetrics)
+	lat.Get("/admin/agreements", ListAgreements)
 }

@@ -8,6 +8,7 @@
         <NuxtLink to="/lat/map">Map</NuxtLink>
         <template v-if="isAuthenticated">
           <NuxtLink to="/lat/messages">Messages</NuxtLink>
+          <NotificationBell />
           <NuxtLink v-if="isAdmin" to="/lat/admin">Admin</NuxtLink>
           <a href="#" @click.prevent="logout">Sign out</a>
         </template>
