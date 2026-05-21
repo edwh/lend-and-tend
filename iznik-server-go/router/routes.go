@@ -47,6 +47,8 @@ import (
 	"github.com/freegle/iznik-server-go/image"
 	"github.com/freegle/iznik-server-go/isochrone"
 	"github.com/freegle/iznik-server-go/job"
+	"github.com/freegle/iznik-server-go/lendandtend/auth"
+	"github.com/freegle/iznik-server-go/lendandtend/mapservice"
 	"github.com/freegle/iznik-server-go/location"
 	"github.com/freegle/iznik-server-go/logo"
 	"github.com/freegle/iznik-server-go/logs"
@@ -1756,4 +1758,10 @@ func SetupRoutes(app *fiber.App) {
 	// @Param body body object true "Message body with 'message' field"
 	// @Success 200 {object} amp.ReplyResponse
 	ampGroup.Post("/chat/:id/reply", amp.PostChatReply)
+
+	// Lend & Tend auth routes
+	auth.RegisterRoutes(app)
+
+	// Lend & Tend map service routes
+	mapservice.RegisterRoutes(app)
 }
