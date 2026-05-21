@@ -238,7 +238,7 @@ func TestRespondToCheckin_NotWorking(t *testing.T) {
 	db.Create(&checkin)
 
 	// Lender responds with "not_working"
-	resp, _ := makeRequest(t, app, "POST", "/apiv2/lat/checkin/"+string(rune(checkin.ID))+"/respond", map[string]interface{}{
+	resp, _ := makeRequest(t, app, "POST", "/apiv2/lat/checkin/"+fmt.Sprintf("%d", checkin.ID)+"/respond", map[string]interface{}{
 		"status":          "not_working",
 		"needsMediation": true,
 	})
@@ -280,7 +280,7 @@ func TestRespondToCheckin_TenderResponse(t *testing.T) {
 	db.Create(&checkin)
 
 	// Tender responds with "ok"
-	resp, _ := makeRequest(t, app, "POST", "/apiv2/lat/checkin/"+string(rune(checkin.ID))+"/respond", map[string]interface{}{
+	resp, _ := makeRequest(t, app, "POST", "/apiv2/lat/checkin/"+fmt.Sprintf("%d", checkin.ID)+"/respond", map[string]interface{}{
 		"status":          "ok",
 		"needsMediation": false,
 	})

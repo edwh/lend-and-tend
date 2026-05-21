@@ -209,11 +209,19 @@ func TestAgree_LenderOnly(t *testing.T) {
 }
 
 func TestAgree_BothParties(t *testing.T) {
-	// Setup with lender ID=1
-	app1, cleanup1 := setupTestApp(t, 1)
-	defer cleanup1()
+	// Create a single database and setup both apps with different user contexts
+	f, err := os.CreateTemp("", "lat_agr_test_*.db")
+	require.NoError(t, err)
+	dbPath := f.Name()
+	f.Close()
 
+	t.Setenv("DATABASE_TYPE", "sqlite")
+	t.Setenv("SQLITE_PATH", dbPath)
+	defer os.Remove(dbPath)
+
+	database.InitDatabase()
 	db := database.DBConn
+
 	lender := database.LATUser{Email: "lender@test.com", DisplayName: "Lender", PasswordHash: "hash"}
 	tender := database.LATUser{Email: "tender@test.com", DisplayName: "Tender", PasswordHash: "hash"}
 
@@ -229,17 +237,27 @@ func TestAgree_BothParties(t *testing.T) {
 	db.Create(&agreement)
 
 	// Lender agrees
+	app1 := fiber.New()
+	app1.Use(func(c *fiber.Ctx) error {
+		c.Locals("latUserId", lender.ID)
+		return c.Next()
+	})
+	RegisterRoutes(app1)
 	resp, _ := makeRequest(t, app1, "POST", "/apiv2/lat/agreement/"+fmt.Sprintf("%d", agreement.ID)+"/agree", nil)
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 
-	// Tender agrees - need new app with tender ID
-	app2, cleanup2 := setupTestApp(t, tender.ID)
-	defer cleanup2()
+	// Tender agrees
+	app2 := fiber.New()
+	app2.Use(func(c *fiber.Ctx) error {
+		c.Locals("latUserId", tender.ID)
+		return c.Next()
+	})
+	RegisterRoutes(app2)
 	resp, body := makeRequest(t, app2, "POST", "/apiv2/lat/agreement/"+fmt.Sprintf("%d", agreement.ID)+"/agree", nil)
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 
 	var result map[string]interface{}
-	err := json.Unmarshal([]byte(body), &result)
+	err = json.Unmarshal([]byte(body), &result)
 	assert.NoError(t, err)
 	assert.Equal(t, "complete", result["status"])
 

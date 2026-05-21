@@ -9,6 +9,7 @@ import (
 	fiberadapter "github.com/awslabs/aws-lambda-go-api-proxy/fiber"
 	"github.com/freegle/iznik-server-go/database"
 	"github.com/freegle/iznik-server-go/embedding"
+	"github.com/freegle/iznik-server-go/lendandtend/middleware"
 	"github.com/freegle/iznik-server-go/misc"
 	"github.com/freegle/iznik-server-go/router"
 	"github.com/freegle/iznik-server-go/user"
@@ -72,6 +73,9 @@ func main() {
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: true,
 	}))
+
+	// Add basic auth middleware (only active if BASIC_AUTH env var is set)
+	app.Use(middleware.BasicAuth())
 
 	// Use compression unless we're inside the Docker environment.
 	if !strings.Contains(os.Getenv("USER_SITE"), ".localhost") {

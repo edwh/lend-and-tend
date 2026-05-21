@@ -47,8 +47,13 @@ import (
 	"github.com/freegle/iznik-server-go/image"
 	"github.com/freegle/iznik-server-go/isochrone"
 	"github.com/freegle/iznik-server-go/job"
+	"github.com/freegle/iznik-server-go/lendandtend/admin"
+	"github.com/freegle/iznik-server-go/lendandtend/agreement"
 	"github.com/freegle/iznik-server-go/lendandtend/auth"
+	"github.com/freegle/iznik-server-go/lendandtend/checkin"
+	"github.com/freegle/iznik-server-go/lendandtend/health"
 	"github.com/freegle/iznik-server-go/lendandtend/mapservice"
+	"github.com/freegle/iznik-server-go/lendandtend/payment"
 	"github.com/freegle/iznik-server-go/location"
 	"github.com/freegle/iznik-server-go/logo"
 	"github.com/freegle/iznik-server-go/logs"
@@ -1762,6 +1767,21 @@ func SetupRoutes(app *fiber.App) {
 	// Lend & Tend auth routes
 	auth.RegisterRoutes(app)
 
+	// Lend & Tend health check routes
+	health.RegisterRoutes(app)
+
+	// Lend & Tend admin routes
+	admin.RegisterRoutes(app)
+
+	// Lend & Tend payment routes
+	payment.RegisterRoutes(app)
+
 	// Lend & Tend map service routes
 	mapservice.RegisterRoutes(app)
+
+	// Lend & Tend agreement routes
+	agreement.RegisterRoutes(app)
+
+	// Lend & Tend check-in routes
+	checkin.RegisterRoutes(app)
 }

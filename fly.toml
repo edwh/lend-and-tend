@@ -1,0 +1,37 @@
+# Fly.io configuration for Lend & Tend
+# https://fly.io/docs/reference/configuration/
+
+app = "lend-and-tend"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile.lat"
+
+[env]
+  DATABASE_TYPE = "sqlite"
+  SQLITE_PATH = "/data/lendandtend.db"
+  PORT = "8080"
+  # Basic auth credentials: set via fly secrets set BASIC_AUTH="username:password"
+  # BASIC_AUTH is NOT set here; configure via fly secrets for staging environment
+
+[mounts]
+  source = "lat_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "5s"
+    interval = "30s"
+    method = "GET"
+    timeout = "2s"
+    path = "/apiv2/lat/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
