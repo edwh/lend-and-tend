@@ -8,11 +8,13 @@
         <NuxtLink to="/lat/map">Map</NuxtLink>
         <template v-if="isAuthenticated">
           <NuxtLink to="/lat/messages">Messages</NuxtLink>
+          <NuxtLink to="/lat/profile">Profile</NuxtLink>
           <NotificationBell />
           <NuxtLink v-if="isAdmin" to="/lat/admin">Admin</NuxtLink>
           <a href="#" @click.prevent="logout">Sign out</a>
         </template>
         <template v-else>
+          <NuxtLink to="/lat/about">About</NuxtLink>
           <NuxtLink to="/lat/auth/login">Sign in</NuxtLink>
           <NuxtLink to="/lat/auth/register" class="lat-nav-cta">Join</NuxtLink>
         </template>
@@ -74,7 +76,7 @@ async function logout() {
 }
 
 .lat-nav-links a {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
   font-size: 0.95rem;
 }

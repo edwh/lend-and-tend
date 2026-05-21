@@ -91,6 +91,7 @@ interface AgreementsResponse {
 
 definePageMeta({
   layout: 'admin',
+  middleware: 'admin',
 })
 
 const loading = ref(true)

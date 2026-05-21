@@ -310,10 +310,11 @@ const submitStep2 = async () => {
   })
 
   if (success) {
-    // Redirect to map
     await router.push('/lat/map')
   }
 }
+
+definePageMeta({ layout: 'empty' })
 </script>
 
 <style scoped lang="scss">

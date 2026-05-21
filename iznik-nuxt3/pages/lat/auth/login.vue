@@ -69,6 +69,7 @@ import { branding } from '~/branding.config'
 import { useLatAuth } from '~/composables/useLatAuth'
 
 const router = useRouter()
+const route = useRoute()
 const { login, error: authError, isLoading } = useLatAuth()
 
 const error = ref<string | null>(null)
@@ -85,12 +86,14 @@ watch(authError, (newError) => {
 const submitLogin = async () => {
   error.value = null
 
+  const redirect = route.query.redirect as string | undefined
   const success = await login(form.email, form.password)
   if (success) {
-    // Redirect to map
-    await router.push('/lat/map')
+    await router.push(redirect || '/lat/map')
   }
 }
+
+definePageMeta({ layout: 'empty' })
 </script>
 
 <style scoped lang="scss">

@@ -89,6 +89,7 @@ interface FlaggedMessagesResponse {
 
 definePageMeta({
   layout: 'admin',
+  middleware: 'admin',
 })
 
 const loading = ref(true)

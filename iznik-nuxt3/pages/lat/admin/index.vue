@@ -58,6 +58,7 @@ interface Metrics {
 
 definePageMeta({
   layout: 'admin',
+  middleware: 'admin',
 })
 
 const loading = ref(true)

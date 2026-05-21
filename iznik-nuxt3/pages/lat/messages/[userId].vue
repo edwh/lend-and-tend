@@ -39,6 +39,7 @@ import { useLatMessagesStore } from '~/stores/latMessages'
 import MessageThread from '~/components/lat/MessageThread.vue'
 
 definePageMeta({
+  layout: 'default',
   middleware: 'auth',
 })
 

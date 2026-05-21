@@ -191,6 +191,8 @@ const processPayment = async () => {
     processing.value = false
   }
 }
+
+definePageMeta({ layout: 'default', middleware: 'auth' })
 </script>
 
 <style scoped lang="scss">

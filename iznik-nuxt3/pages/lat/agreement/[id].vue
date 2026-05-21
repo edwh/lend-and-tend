@@ -38,11 +38,9 @@ const agreementId = computed(() => {
 // For now, default to 'lender' - can be determined by checking agreement parties
 const userRole = ref<'lender' | 'tender'>('lender')
 
-onMounted(() => {
-  // In a real implementation, you'd determine the user's role based on
-  // whether they are the lender or tender in the agreement
-  // This could be fetched from the agreement data
-})
+onMounted(() => {})
+
+definePageMeta({ layout: 'default', middleware: 'auth' })
 </script>
 
 <style scoped>

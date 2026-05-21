@@ -8,7 +8,10 @@
         :style="{ height: '100%', width: '100%' }"
         :options="mapOptions"
       >
-        <l-tile-layer :url="branding.map.tileUrl" :attribution="branding.map.tileAttribution" />
+        <l-tile-layer
+          :url="branding.map.tileUrl"
+          :attribution="branding.map.tileAttribution"
+        />
 
         <!-- Pins for lenders and tenders -->
         <l-marker
@@ -19,7 +22,11 @@
         >
           <l-icon :icon-size="[32, 32]" :class-name="`marker-${pin.role}`">
             <span :class="`pin-icon pin-${pin.role}`">
-              {{ pin.role === 'lender' ? branding.map.lenderIcon : branding.map.tenderIcon }}
+              {{
+                pin.role === 'lender'
+                  ? branding.map.lenderIcon
+                  : branding.map.tenderIcon
+              }}
             </span>
           </l-icon>
           <l-popup v-if="selectedPin && selectedPin.id === pin.id">
@@ -60,12 +67,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useLatMapStore, type MapPin } from '~/stores/latMap'
+import { useLatMapStore } from '~/stores/latMap'
 import { useLatUserStore } from '~/stores/latUser'
 import branding from '~/branding.config.ts'
 
 const mapRef = ref(null)
-const selectedPin = ref<MapPin | null>(null)
+const selectedPin = ref(null)
 const latMapStore = useLatMapStore()
 const latUserStore = useLatUserStore()
 
@@ -90,17 +97,21 @@ onMounted(async () => {
   await latMapStore.fetchPins()
 })
 
-const onPinClick = (pin: MapPin) => {
-  selectedPin.value = selectedPin.value?.id === pin.id ? null : pin
+const emit = defineEmits(['pin-selected'])
+
+const onPinClick = (pin) => {
+  const newPin = selectedPin.value?.id === pin.id ? null : pin
+  selectedPin.value = newPin
+  emit('pin-selected', newPin)
 }
 
-const sendMessage = (pin: MapPin) => {
+const sendMessage = (pin) => {
   if (!isAuthenticated.value || !hasPaymentStatus.value) {
     console.log('Not authenticated or not paid')
     return
   }
   // Navigation to message/chat page would go here
-  navigateTo(`/messages?to=${pin.id}`)
+  navigateTo(`/lat/messages/${pin.id}`)
 }
 </script>
 

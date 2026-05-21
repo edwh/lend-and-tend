@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Lend & Tend Go API
+  lat-api:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-api
+    build:
+      context: .
+      dockerfile: Dockerfile.lat
+    ports:
+      - "${PORT_LAT_API:-8192}:8192"
+    environment:
+      DATABASE_TYPE: sqlite
+      SQLITE_PATH: /data/lendandtend.db
+      PORT: 8192
+      LAT_BLUR_SECRET: ${LAT_BLUR_SECRET:-dev-secret-change-in-production}
+      BASIC_AUTH: ${BASIC_AUTH:-}
+    volumes:
+      - lat-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8192/apiv2/lat/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - lat-network
+
+  # Lend & Tend Nuxt Dev Server
+  lat-nuxt:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-nuxt
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./iznik-nuxt3:/app
+    command: npm run dev
+    ports:
+      - "${PORT_LAT_NUXT:-3000}:3000"
+    environment:
+      IZNIK_API_V2: http://lat-api:8192/apiv2
+      NODE_ENV: development
+    depends_on:
+      lat-api:
+        condition: service_healthy
+    networks:
+      - lat-network
+
+volumes:
+  lat-data:
+    driver: local
+
+networks:
+  lat-network:
+    driver: bridge

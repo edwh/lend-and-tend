@@ -45,6 +45,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 dayjs.extend(relativeTime)
 
 definePageMeta({
+  layout: 'default',
   middleware: 'auth',
 })
 
