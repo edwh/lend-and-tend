@@ -70,4 +70,10 @@ export default defineNuxtPlugin((nuxtApp) => {
       import('@vue-leaflet/vue-leaflet/src/components/LRectangle')
     )
   )
+  nuxtApp.vueApp.component(
+    'l-popup',
+    defineAsyncComponent(() =>
+      import('@vue-leaflet/vue-leaflet/src/components/LPopup')
+    )
+  )
 })

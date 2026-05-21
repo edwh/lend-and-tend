@@ -67,12 +67,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useLatMapStore } from '~/stores/latMap'
+import { useLatMapStore, type MapPin } from '~/stores/latMap'
 import { useLatUserStore } from '~/stores/latUser'
-import branding from '~/branding.config.ts'
+import branding from '~/branding.config'
 
 const mapRef = ref(null)
-const selectedPin = ref(null)
+const selectedPin = ref<MapPin | null>(null)
 const latMapStore = useLatMapStore()
 const latUserStore = useLatUserStore()
 
@@ -129,7 +129,7 @@ const sendMessage = (pin) => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1000;
+  z-index: 10;
   background: white;
   padding: 20px;
   border-radius: 8px;

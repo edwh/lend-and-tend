@@ -63,7 +63,7 @@ export const branding = {
   map: {
     // Piggybacking on Freegle's tile server for now; replace with own or
     // public OSM tiles when traffic warrants it.
-    tileUrl: 'https://tiles.ilovefreegle.org/tile/{z}/{x}/{y}.png',
+    tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     tileAttribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     defaultCenter: [52.4862, -1.8904] as [number, number], // England centroid
     defaultZoom: 6,

@@ -161,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import branding from '~/branding.config.ts'
+import branding from '~/branding.config'
 
 definePageMeta({
   layout: 'default',

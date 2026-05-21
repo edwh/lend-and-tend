@@ -21,11 +21,10 @@ export default defineNuxtConfig({
       routes: [],
       crawlLinks: false,
     },
-    httpsRedirect: false,
   },
 
   experimental: {
-    emitRouteChunkError: 'reload',
+    emitRouteChunkError: 'automatic',
     asyncContext: true,
     renderJsonPayloads: false,
     payloadExtraction: false,
@@ -62,13 +61,7 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    vue: {
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => tag.startsWith('l-'),
-        },
-      },
-    },
+    vue: {},
     optimizeDeps: {
       include: [
         'leaflet',
@@ -132,29 +125,29 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'color-scheme', content: 'light' },
         {
-          hid: 'description',
+          key: 'description',
           name: 'description',
           content:
             'Lend & Tend connects garden owners who need help with gardeners who need space.',
         },
-        { hid: 'og:type', property: 'og:type', content: 'website' },
+        { key: 'og:type', property: 'og:type', content: 'website' },
         {
-          hid: 'og:title',
+          key: 'og:title',
           property: 'og:title',
           content: 'Lend & Tend — Share a garden, grow good things',
         },
         {
-          hid: 'og:site_name',
+          key: 'og:site_name',
           property: 'og:site_name',
           content: 'Lend & Tend',
         },
         {
-          hid: 'og:url',
+          key: 'og:url',
           property: 'og:url',
           content: config.SITE_URL,
         },
         {
-          hid: 'twitter:card',
+          key: 'twitter:card',
           name: 'twitter:card',
           content: 'summary_large_image',
         },

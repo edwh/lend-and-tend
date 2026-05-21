@@ -32,7 +32,7 @@ export const useLatNotificationsStore = defineStore({
 
       try {
         const config = useRuntimeConfig()
-        const response = await $fetch(`${config.public.APIv2}/lat/notifications`, {
+        const response = await $fetch<{ notifications: LATNotification[]; unreadCount: number }>(`${config.public.APIv2}/lat/notifications`, {
           method: 'GET',
         })
 

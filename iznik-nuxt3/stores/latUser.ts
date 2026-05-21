@@ -46,7 +46,7 @@ export const useLatUserStore = defineStore({
 
       try {
         const config = useRuntimeConfig()
-        const response = await $fetch(`${config.public.APIv2}/lat/user/register`, {
+        const response = await $fetch<{ sessionId: string }>(`${config.public.APIv2}/lat/user/register`, {
           method: 'POST',
           body: {
             email,
@@ -74,7 +74,7 @@ export const useLatUserStore = defineStore({
 
       try {
         const config = useRuntimeConfig()
-        const response = await $fetch(`${config.public.APIv2}/lat/user/login`, {
+        const response = await $fetch<{ sessionId: string }>(`${config.public.APIv2}/lat/user/login`, {
           method: 'POST',
           body: {
             email,
@@ -108,7 +108,7 @@ export const useLatUserStore = defineStore({
 
       try {
         const config = useRuntimeConfig()
-        const response = await $fetch(`${config.public.APIv2}/lat/user/profile`, {
+        const response = await $fetch<LATUser>(`${config.public.APIv2}/lat/user/profile`, {
           method: 'POST',
           body: data,
         })
@@ -129,7 +129,7 @@ export const useLatUserStore = defineStore({
 
       try {
         const config = useRuntimeConfig()
-        const response = await $fetch(`${config.public.APIv2}/lat/user/whoami`, {
+        const response = await $fetch<LATUser>(`${config.public.APIv2}/lat/user/whoami`, {
           method: 'GET',
         })
 

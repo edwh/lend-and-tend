@@ -130,7 +130,7 @@ const applyConcession = async () => {
     processing.value = true
     paymentMessage.value = ''
 
-    const response = await $fetch('/apiv2/lat/payment/concession', {
+    const response = await $fetch<{ status: string }>('/apiv2/lat/payment/concession', {
       method: 'POST',
       body: {
         reason: concessionReason.value,
@@ -163,12 +163,12 @@ const processPayment = async () => {
     paymentMessage.value = ''
 
     // Step 1: Create payment intent
-    const intentResponse = await $fetch('/apiv2/lat/payment/intent', {
+    const intentResponse = await $fetch<{ clientSecret: string }>('/apiv2/lat/payment/intent', {
       method: 'POST',
     })
 
     // Step 2: Confirm payment (MVP: simulated)
-    const confirmResponse = await $fetch('/apiv2/lat/payment/confirm', {
+    const confirmResponse = await $fetch<{ status: string }>('/apiv2/lat/payment/confirm', {
       method: 'POST',
       body: {
         paymentIntentId: intentResponse.clientSecret,

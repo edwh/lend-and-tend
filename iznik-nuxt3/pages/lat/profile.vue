@@ -308,7 +308,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useLatUserStore } from '~/stores/latUser'
-import branding from '~/branding.config.ts'
+import branding from '~/branding.config'
 
 definePageMeta({
   layout: 'default',

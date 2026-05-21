@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useLatUserStore } from '~/stores/latUser'
 
 export interface Message {
   id: number
@@ -31,7 +32,7 @@ export const useLatMessagesStore = defineStore({
       this.loading = true
       this.error = null
       try {
-        const response = await $fetch('/apiv2/lat/message/conversations')
+        const response = await $fetch<{ conversations: Conversation[] }>('/apiv2/lat/message/conversations')
         this.conversations = response.conversations || []
       } catch (err: any) {
         this.error = err.message || 'Failed to fetch conversations'
@@ -45,7 +46,7 @@ export const useLatMessagesStore = defineStore({
       this.error = null
       this.threadUserId = userId
       try {
-        const response = await $fetch(`/apiv2/lat/message/thread/${userId}`)
+        const response = await $fetch<{ messages: Message[] }>(`/apiv2/lat/message/thread/${userId}`)
         this.thread = response.messages || []
       } catch (err: any) {
         this.error = err.message || 'Failed to fetch thread'
@@ -56,7 +57,7 @@ export const useLatMessagesStore = defineStore({
 
     async sendMessage(recipientId: number, content: string) {
       try {
-        const response = await $fetch('/apiv2/lat/message', {
+        const response = await $fetch<{ id: number }>('/apiv2/lat/message', {
           method: 'POST',
           body: {
             recipientId,
@@ -66,10 +67,10 @@ export const useLatMessagesStore = defineStore({
 
         // Add message to thread if we're viewing that user's thread
         if (this.threadUserId === recipientId) {
-          const currentUser = useAuthStore()
+          const latUserStore = useLatUserStore()
           this.thread.push({
             id: response.id,
-            senderId: currentUser.latUserId!,
+            senderId: latUserStore.user?.id ?? 0,
             content,
             createdAt: new Date().toISOString(),
           })

@@ -9,7 +9,7 @@
         <template v-if="isAuthenticated">
           <NuxtLink to="/lat/messages">Messages</NuxtLink>
           <NuxtLink to="/lat/profile">Profile</NuxtLink>
-          <NotificationBell />
+          <LatNotificationBell />
           <NuxtLink v-if="isAdmin" to="/lat/admin">Admin</NuxtLink>
           <a href="#" @click.prevent="logout">Sign out</a>
         </template>
@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useLatUserStore } from '~/stores/latUser'
-import branding from '~/branding.config.ts'
+import branding from '~/branding.config'
 
 const latUserStore = useLatUserStore()
 const isAuthenticated = computed(() => latUserStore.isAuthenticated)

@@ -54,11 +54,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useLatUserStore } from '~/stores/latUser'
+import { type MapPin } from '~/stores/latMap'
 import MapView from '~/components/lat/MapView.vue'
-import branding from '~/branding.config.ts'
+import branding from '~/branding.config'
 
 const latUserStore = useLatUserStore()
-const selectedPin = ref(null)
+const selectedPin = ref<MapPin | null>(null)
 
 const isAuthenticated = computed(() => latUserStore.isAuthenticated)
 const hasPaymentStatus = computed(() => {

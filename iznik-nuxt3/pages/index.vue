@@ -167,7 +167,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useLatUserStore } from '~/stores/latUser'
-import branding from '~/branding.config.ts'
+import branding from '~/branding.config'
 
 const latUserStore = useLatUserStore()
 const isAuthenticated = computed(() => latUserStore.isAuthenticated)

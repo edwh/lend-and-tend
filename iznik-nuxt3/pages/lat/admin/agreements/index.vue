@@ -128,7 +128,7 @@ async function fetchAgreements() {
     for (const userId of userIds) {
       if (!userCache.has(userId)) {
         try {
-          const user = await $fetch(`/apiv2/lat/admin/users/${userId}`)
+          const user = await $fetch<{ displayName?: string }>(`/apiv2/lat/admin/users/${userId}`)
           userCache.set(userId, user.displayName || `User ${userId}`)
         } catch (e) {
           userCache.set(userId, `User ${userId}`)
