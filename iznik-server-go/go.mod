@@ -1,8 +1,6 @@
 module iznik-server-go
 
-go 1.23.0
-
-toolchain go1.23.12
+go 1.25.0
 
 require (
 	github.com/aws/aws-lambda-go v1.47.0
@@ -21,7 +19,7 @@ require (
 	github.com/stripe/stripe-go/v82 v82.5.1
 	github.com/tidwall/geodesic v0.3.5
 	github.com/valyala/fasthttp v1.55.0
-	golang.org/x/text v0.22.0
+	golang.org/x/text v0.37.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.31.0
 	mvdan.cc/xurls/v2 v2.5.0
@@ -70,10 +68,11 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/ziutek/mymysql v1.5.4 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/image v0.0.0-20211028202545-6944b10bf410 // indirect
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
