@@ -1,671 +1,532 @@
 <template>
-  <div class="landing-page">
-    <!-- Navigation -->
-    <nav class="landing-nav">
-      <div class="nav-container">
-        <NuxtLink to="/" class="nav-brand">
-          {{ branding.siteNameShort }}
-        </NuxtLink>
-        <div class="nav-links">
-          <template v-if="isAuthenticated">
-            <NuxtLink to="/lat/map" class="nav-link">Map</NuxtLink>
-            <NuxtLink to="/lat/messages" class="nav-link">Messages</NuxtLink>
-            <a href="#" class="nav-link" @click.prevent="logout">Sign out</a>
-          </template>
-          <template v-else>
-            <NuxtLink to="/lat/about" class="nav-link">About</NuxtLink>
-            <NuxtLink to="/lat/auth/login" class="nav-link">Sign in</NuxtLink>
-            <NuxtLink to="/lat/auth/register" class="nav-link nav-cta"
-              >Join</NuxtLink
-            >
-          </template>
-        </div>
-      </div>
-    </nav>
+  <div v-if="!me" class="landing-page">
+    <LazyBreakpointFettler hydrate-on-idle />
 
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-content">
-        <h1 class="hero-title">{{ branding.tagline }}</h1>
-        <p class="hero-subtitle">{{ branding.subTagline }}</p>
-        <div class="hero-ctas">
-          <NuxtLink to="/lat/map" class="btn btn-primary btn-lg">
-            Find a garden
-          </NuxtLink>
-          <NuxtLink to="/lat/auth/register" class="btn btn-secondary btn-lg">
-            Share your garden
-          </NuxtLink>
-        </div>
-      </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works">
-      <div class="container">
-        <h2 class="section-title">How it works</h2>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-icon">1</div>
-            <h3>{{ branding.roles.both.label }}</h3>
-            <p>Sign up and set your location to get started</p>
-          </div>
-          <div class="step">
-            <div class="step-icon">2</div>
-            <h3>Find your match</h3>
-            <p>Browse the map to find lenders or tenders near you</p>
-          </div>
-          <div class="step">
-            <div class="step-icon">3</div>
-            <h3>Grow together</h3>
-            <p>Agree terms and start your gardening journey</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- For Lenders & Tenders -->
-    <section class="roles-section">
-      <div class="container">
-        <h2 class="section-title">Whether you're a lender or a tender</h2>
-        <div class="roles-grid">
-          <!-- Lender Card -->
-          <div class="role-card">
-            <div class="role-header lender">
-              <span class="role-icon">{{ branding.roles.lender.icon }}</span>
-              <h3>{{ branding.roles.lender.label }}</h3>
+    <!-- Main Layout (all breakpoints) -->
+    <div class="main-layout">
+      <!-- Hero: Full viewport photo mosaic with CTA overlay -->
+      <div class="hero-viewport">
+        <FreeglerPhotoGrid />
+        <div class="hero-overlay">
+          <div class="hero-glass-card">
+            <h1 class="hero-slogan">
+              <span class="slogan-line1">Share the love.</span>
+              <span class="slogan-line2">Love the share.</span>
+            </h1>
+            <p class="hero-subtitle">Give and get stuff locally for free.</p>
+            <div class="action-buttons">
+              <NuxtLink
+                to="/give"
+                class="action-btn action-btn--give"
+                @click="clicked('give')"
+              >
+                <v-icon icon="gift" class="action-btn__icon" />
+                <span>Give</span>
+              </NuxtLink>
+              <NuxtLink
+                to="/find"
+                class="action-btn action-btn--find"
+                @click="clicked('ask')"
+              >
+                <v-icon icon="search" class="action-btn__icon" />
+                <span>Find</span>
+              </NuxtLink>
             </div>
-            <p class="role-description">
-              {{ branding.roles.lender.description }}
+            <p class="browse-label">
+              <v-icon icon="map-marker-alt" class="browse-icon" />
+              Just browsing? See what's near you.
             </p>
-            <ul class="role-benefits">
-              <li>Share your garden space responsibly</li>
-              <li>Connect with experienced gardeners</li>
-              <li>Earn income while helping others</li>
-            </ul>
-            <NuxtLink to="/lat/auth/register" class="btn btn-outline-lender">
-              Become a Lender
-            </NuxtLink>
-          </div>
-
-          <!-- Tender Card -->
-          <div class="role-card">
-            <div class="role-header tender">
-              <span class="role-icon">{{ branding.roles.tender.icon }}</span>
-              <h3>{{ branding.roles.tender.label }}</h3>
-            </div>
-            <p class="role-description">
-              {{ branding.roles.tender.description }}
-            </p>
-            <ul class="role-benefits">
-              <li>Garden without owning land</li>
-              <li>Learn from experienced gardeners</li>
-              <li>Grow your own food and flowers</li>
-            </ul>
-            <NuxtLink to="/lat/auth/register" class="btn btn-outline-tender">
-              Become a Tender
-            </NuxtLink>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Safety Section -->
-    <section class="safety-section">
-      <div class="container">
-        <h2 class="section-title">Your safety matters</h2>
-        <div class="safety-grid">
-          <div
-            v-for="(advice, idx) in branding.content.groundRules.safetyAdvice"
-            :key="idx"
-            class="safety-item"
-          >
-            <div class="safety-icon">✓</div>
-            <p>{{ advice }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="landing-footer">
-      <div class="footer-container">
-        <div class="footer-content">
-          <div class="footer-col">
-            <h4>{{ branding.siteName }}</h4>
-            <p>{{ branding.description }}</p>
-          </div>
-          <div class="footer-col">
-            <h4>Company</h4>
-            <ul>
-              <li><NuxtLink to="/lat/about">About</NuxtLink></li>
-              <li>
-                <a :href="`mailto:${branding.email}`">{{ branding.email }}</a>
-              </li>
-              <li>
-                <a :href="branding.social.instagramUrl" target="_blank">{{
-                  branding.social.instagram
-                }}</a>
-              </li>
-            </ul>
-          </div>
-          <div class="footer-col">
-            <h4>Legal</h4>
-            <p>
-              {{ branding.companyName }}<br />Company number:
-              {{ branding.companyNumber }}
+            <PlaceAutocomplete
+              class="browse-input"
+              input-id="placeautocomplete-mobile"
+              labeltext=""
+              labeltext-sr="Enter your location"
+              @selected="explorePlace($event)"
+            />
+            <p class="photo-credit">
+              Photos of real freeglers by
+              <ExternalLink href="https://www.alexbamford.com/"
+                >Alex Bamford</ExternalLink
+              >
             </p>
           </div>
         </div>
-        <div class="footer-bottom">
-          <p>&copy; 2024 {{ branding.companyName }}. All rights reserved.</p>
-        </div>
       </div>
-    </footer>
+
+      <!-- Sample Offers -->
+      <div class="sample-section sample-stack">
+        <div class="loading-grid-ssr">
+          <div v-for="i in 8" :key="i" class="loading-card-ssr">
+            <div class="loading-shimmer-ssr"></div>
+          </div>
+        </div>
+        <LazyMobileVisualiseList hydrate-on-visible class="sample-grid" />
+      </div>
+
+      <!-- App Download -->
+      <div v-if="!isApp" class="app-section">
+        <a
+          href="https://play.google.com/store/apps/details?id=org.ilovefreegle.direct"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ProxyImage
+            alt="Get it on Google Play"
+            class="app-badge"
+            src="/en-play-badge.png"
+            loading="lazy"
+            :width="201"
+            :height="60"
+            sizes="100px"
+          />
+        </a>
+        <a
+          href="https://itunes.apple.com/gb/app/freegle/id970045029?ls=1&amp;mt=8"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ProxyImage
+            alt="Download on the App Store"
+            class="app-badge"
+            src="/app-store-black-sm.png"
+            loading="lazy"
+            :width="203"
+            :height="60"
+            sizes="100px"
+          />
+        </a>
+      </div>
+
+      <!-- Footer -->
+      <LazyMainFooter hydrate-on-visible class="thefooter" />
+    </div>
   </div>
 </template>
+<script setup>
+import { buildHead } from '~/composables/useBuildHead'
+import { useMiscStore } from '~/stores/misc'
+import { useAuthStore } from '~/stores/auth'
+import { useMobileStore } from '@/stores/mobile'
+import { useMessageStore } from '~/stores/message'
+import { useGroupStore } from '~/stores/group'
+import FreeglerPhotoGrid from '~/components/FreeglerPhotoGrid.vue'
+import ProxyImage from '~/components/ProxyImage.vue'
+import {
+  computed,
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  useHead,
+  useRuntimeConfig,
+  useRoute,
+  useRouter,
+} from '#imports'
+import Api from '~/api'
 
-<script setup lang="ts">
-import { computed } from 'vue'
-import { useLatUserStore } from '~/stores/latUser'
-import branding from '~/branding.config'
+import PlaceAutocomplete from '~/components/PlaceAutocomplete.vue'
+import ExternalLink from '~/components/ExternalLink.vue'
 
-const latUserStore = useLatUserStore()
-const isAuthenticated = computed(() => latUserStore.isAuthenticated)
+// Setup
+const runtimeConfig = useRuntimeConfig()
+const api = Api(runtimeConfig)
+const route = useRoute()
+const router = useRouter()
+const miscStore = useMiscStore()
+const mobileStore = useMobileStore()
+const messageStore = useMessageStore()
+const groupStore = useGroupStore()
+const userWatch = ref(null)
+const type = ref('landing')
 
-definePageMeta({
-  layout: 'empty',
-})
+// Head configuration
+const head = buildHead(
+  route,
+  runtimeConfig,
+  "Don't throw it away, give it away!",
+  "Freegle - like online dating for stuff. Got stuff you don't need? Looking for something? We'll match you with someone local. All completely free.",
+  null,
+  {
+    class: 'landing',
+  }
+)
 
-useHead({
-  title: `${branding.tagline} | ${branding.siteName}`,
-  meta: [
-    {
-      name: 'description',
-      content: branding.description,
-    },
-  ],
-})
+useHead(head)
 
-async function logout() {
-  await latUserStore.logout()
-  navigateTo('/')
+await groupStore.fetch()
+
+try {
+  const list = await messageStore.fetchInBounds(
+    49.45,
+    -9,
+    61,
+    2,
+    null,
+    50,
+    true
+  )
+  const offers = list.filter((item) => item.type === 'Offer')
+
+  const preloadPromises = []
+  for (const offer of offers.slice(0, 12)) {
+    preloadPromises.push(messageStore.fetch(offer.id))
+  }
+  await Promise.all(preloadPromises)
+} catch (e) {
+  console.log('SSR: Failed to prefetch messages', e)
 }
+
+// Computed properties
+const me = computed(() => {
+  // Access the user store to get the current user
+  const authStore = useAuthStore()
+  return authStore?.user
+})
+
+const isApp = ref(mobileStore.isApp) // APP
+
+// Methods
+function goHome() {
+  let nextroute = '/browse'
+
+  // Logged in homepage - on client side we want to load the last page, for logged in users.
+  try {
+    const lastRoute = miscStore.get('lasthomepage')
+
+    if (lastRoute === 'news') {
+      nextroute = '/chitchat'
+    } else if (lastRoute === 'myposts') {
+      nextroute = '/myposts'
+    }
+
+    if (route.path !== nextroute) {
+      nextTick(() => {
+        router.push(nextroute)
+      })
+    }
+  } catch (e) {
+    console.log('Exception', e)
+  }
+}
+
+async function clicked(button) {
+  await api.bandit.chosen({
+    uid: 'landing',
+    variant: type.value,
+  })
+
+  await api.bandit.chosen({
+    uid: 'landing-button',
+    variant: type.value + '-' + button,
+  })
+}
+
+async function explorePlace(place) {
+  await api.bandit.chosen({
+    uid: 'landing',
+    variant: type.value,
+  })
+
+  await api.bandit.chosen({
+    uid: 'landing-button',
+    variant: type.value + '-place',
+  })
+
+  router.push('/explore/place/' + JSON.stringify(place))
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  if (process.client) {
+    if (me.value) {
+      goHome()
+    }
+  }
+})
+
+onBeforeUnmount(() => {
+  if (userWatch.value) {
+    userWatch.value()
+  }
+})
 </script>
+<style scoped lang="scss">
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/mixins/_breakpoints';
+@import 'assets/css/_color-vars.scss';
 
-<style scoped>
 .landing-page {
-  background-color: v-bind('branding.colors.background');
-  color: v-bind('branding.colors.text');
-  font-family: v-bind('branding.fonts.body');
+  min-height: 100vh;
 }
 
-/* Navigation */
-.landing-nav {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+.main-layout {
+  padding: 0;
+  background: $color-white;
+  min-height: 100vh;
 }
 
-.nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+/* Hero viewport: photos fill the screen, CTA overlaid in center */
+.hero-viewport {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 60px);
+  min-height: calc(100dvh - 60px);
+}
+
+/* Overlay positions the glass card in the center */
+.hero-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  height: 64px;
+  justify-content: center;
+  z-index: 2;
+  padding: 60px 1rem 1rem;
 }
 
-.nav-brand {
-  font-family: v-bind('branding.fonts.heading');
-  font-weight: 700;
-  font-size: 1.5rem;
-  color: v-bind('branding.colors.primary');
-  text-decoration: none;
-}
-
-.nav-links {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-}
-
-.nav-link {
-  color: v-bind('branding.colors.text');
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.2s;
-}
-
-.nav-link:hover {
-  color: v-bind('branding.colors.primary');
-}
-
-.nav-cta {
-  background: v-bind('branding.colors.primary');
-  color: white !important;
-  padding: 8px 20px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.nav-cta:hover {
-  background: v-bind('branding.colors.primaryDark');
-  color: white !important;
-}
-
-/* Hero Section */
-.hero {
-  background: linear-gradient(
-    135deg,
-    v-bind('branding.colors.primary'),
-    v-bind('branding.colors.primaryDark')
-  );
-  color: white;
-  padding: 120px 20px;
+/* Frosted glass card: only blurs the area behind the text */
+.hero-glass-card {
   text-align: center;
+  max-width: 480px;
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-xl, 1.25rem);
+  box-shadow: var(--shadow-lg);
+
+  @include media-breakpoint-up(md) {
+    padding: 1.5rem 2rem;
+  }
 }
 
-.hero-content {
-  max-width: 800px;
-  margin: 0 auto;
+.hero-slogan {
+  font-size: clamp(1.5rem, 6vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.02em;
 }
 
-.hero-title {
-  font-family: v-bind('branding.fonts.heading');
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  line-height: 1.2;
+.slogan-line1 {
+  display: block;
+  color: $color-header;
+}
+
+.slogan-line2 {
+  display: block;
+  color: $color-success;
 }
 
 .hero-subtitle {
-  font-size: 1.5rem;
-  margin: 0 0 40px 0;
-  opacity: 0.95;
-  font-weight: 300;
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  color: $color-gray--darker;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
 }
 
-.hero-ctas {
+/* Action Buttons */
+.action-buttons {
   display: flex;
-  gap: 16px;
+  gap: 0.75rem;
   justify-content: center;
-  flex-wrap: wrap;
 }
 
-.btn {
-  padding: 14px 28px;
-  border-radius: 4px;
-  text-decoration: none;
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.3rem, 1vw, 0.5rem);
+  padding: clamp(0.6rem, 2vw, 0.85rem) clamp(1.25rem, 5vw, 2.5rem);
+  font-size: clamp(0.95rem, 2.5vw, 1.15rem);
   font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.1s, box-shadow var(--transition-fast),
+    background var(--transition-fast);
+  min-width: clamp(90px, 22vw, 150px);
+  border-radius: var(--radius-md, 0.375rem);
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.action-btn--give {
+  background: $color-success;
+  color: white;
+  box-shadow: 0 2px 8px rgba($color-success, 0.3);
+
+  &:hover {
+    background: darken($color-success, 5%);
+    color: white;
+    text-decoration: none;
+  }
+}
+
+.action-btn--find {
+  background: $color-secondary;
+  color: white;
+  box-shadow: 0 2px 8px rgba($color-secondary, 0.3);
+
+  &:hover {
+    background: darken($color-secondary, 5%);
+    color: white;
+    text-decoration: none;
+  }
+}
+
+.action-btn__icon {
   font-size: 1rem;
-  transition: all 0.2s;
-  display: inline-block;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-lg {
-  padding: 16px 32px;
-  font-size: 1.05rem;
-}
-
-.btn-primary {
-  background: white;
-  color: v-bind('branding.colors.primary');
-}
-
-.btn-primary:hover {
-  background: #f0f0f0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: white;
-  border: 2px solid white;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-/* Container */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-/* Section Title */
-.section-title {
-  font-family: v-bind('branding.fonts.heading');
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin: 0 0 48px 0;
-  color: v-bind('branding.colors.text');
-}
-
-/* How It Works */
-.how-it-works {
-  padding: 80px 20px;
-  background-color: v-bind('branding.colors.surface');
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 40px;
-}
-
-.step {
-  text-align: center;
-}
-
-.step-icon {
-  width: 60px;
-  height: 60px;
-  background: v-bind('branding.colors.primary');
-  color: white;
-  border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0 auto 20px;
-}
-
-.step h3 {
-  font-size: 1.3rem;
-  margin: 0 0 12px 0;
-  color: v-bind('branding.colors.text');
-}
-
-.step p {
-  margin: 0;
-  color: v-bind('branding.colors.textMuted');
-  font-size: 1rem;
-}
-
-/* Roles Section */
-.roles-section {
-  padding: 80px 20px;
-  background: white;
-}
-
-.roles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 40px;
-}
-
-.role-card {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 40px 24px;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.2s;
-}
-
-.role-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transform: translateY(-4px);
-}
-
-.role-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid;
-}
-
-.role-header.lender {
-  border-bottom-color: v-bind('branding.colors.lenderBg');
-}
-
-.role-header.tender {
-  border-bottom-color: v-bind('branding.colors.tenderBg');
-}
-
-.role-icon {
-  font-size: 2rem;
-}
-
-.role-header h3 {
-  margin: 0;
-  font-size: 1.3rem;
-  color: v-bind('branding.colors.text');
-}
-
-.role-description {
-  color: v-bind('branding.colors.textMuted');
-  margin: 0 0 16px 0;
-  font-size: 0.95rem;
-}
-
-.role-benefits {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 24px 0;
-  flex-grow: 1;
-}
-
-.role-benefits li {
-  padding: 8px 0;
-  color: v-bind('branding.colors.textMuted');
-  font-size: 0.95rem;
   position: relative;
-  padding-left: 24px;
+  top: -1px;
 }
 
-.role-benefits li:before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: v-bind('branding.colors.primary');
-  font-weight: bold;
-}
-
-.btn-outline-lender {
-  background: v-bind('branding.colors.lenderBg');
-  color: v-bind('branding.colors.lenderText');
-}
-
-.btn-outline-lender:hover {
-  background: #d4ecc0;
-}
-
-.btn-outline-tender {
-  background: v-bind('branding.colors.tenderBg');
-  color: v-bind('branding.colors.tenderText');
-}
-
-.btn-outline-tender:hover {
-  background: #dcc5e7;
-}
-
-/* Safety Section */
-.safety-section {
-  padding: 80px 20px;
-  background: v-bind('branding.colors.surface');
-}
-
-.safety-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 32px;
-}
-
-.safety-item {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.safety-icon {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  background: v-bind('branding.colors.success');
-  color: white;
-  border-radius: 50%;
+.browse-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-gray-600);
+  margin: 0.75rem 0 0.4rem 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  margin-top: 2px;
+  gap: 0.3rem;
 }
 
-.safety-item p {
-  margin: 0;
-  color: v-bind('branding.colors.textMuted');
-  line-height: 1.5;
-}
-
-/* Footer */
-.landing-footer {
-  background: v-bind('branding.colors.text');
-  color: white;
-  padding: 60px 20px 20px;
-}
-
-.footer-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.footer-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 40px;
-  margin-bottom: 40px;
-}
-
-.footer-col h4 {
-  margin: 0 0 12px 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.footer-col p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.footer-col ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.footer-col li {
-  margin-bottom: 8px;
-}
-
-.footer-col a {
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.footer-col a:hover {
-  color: white;
-}
-
-.footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding-top: 20px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+.browse-icon {
+  color: $color-success;
   font-size: 0.85rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.2rem;
+.browse-input {
+  :deep(label) {
+    display: none !important;
   }
 
-  .hero-subtitle {
-    font-size: 1.1rem;
+  :deep(.autocomplete-wrap) {
+    border: 1px solid $color-gray--light !important;
+    border-radius: var(--radius-md, 0.5rem);
   }
 
-  .hero-ctas {
-    flex-direction: column;
+  :deep(.autocomplete-wrap-focus) {
+    border-color: $color-success !important;
+    box-shadow: 0 0 0 2px rgba($color-success, 0.15);
   }
 
-  .hero-ctas .btn {
-    width: 100%;
+  :deep(.form-control) {
+    border: none !important;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.9);
+    text-align: center;
+
+    &::placeholder {
+      color: $color-gray--normal;
+      text-align: center;
+    }
+
+    &:focus {
+      background: $color-white;
+      box-shadow: none;
+    }
   }
 
-  .section-title {
-    font-size: 2rem;
+  :deep(.input-group-text),
+  :deep(.btn),
+  :deep(.autocomplete-clear) {
+    display: none !important;
   }
 
-  .nav-links {
-    gap: 12px;
-  }
-
-  .nav-link {
-    font-size: 0.85rem;
-  }
-
-  .roles-section,
-  .how-it-works,
-  .safety-section {
-    padding: 60px 20px;
+  @include media-breakpoint-up(md) {
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
-@media (max-width: 480px) {
-  .hero {
-    padding: 60px 20px;
-  }
+.photo-credit {
+  font-size: 0.65rem;
+  color: $color-gray--normal;
+  margin: 0.75rem 0 0;
+}
 
-  .hero-title {
-    font-size: 1.8rem;
-  }
+/* Sample Offers Section */
+.sample-section {
+  padding: 1rem 0.5rem;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 400px;
+}
 
-  .hero-subtitle {
-    font-size: 1rem;
-  }
+.sample-stack {
+  display: grid;
 
-  .section-title {
-    font-size: 1.5rem;
+  > * {
+    grid-area: 1 / 1;
   }
+}
 
-  .nav-container {
-    height: 56px;
-  }
+.loading-grid-ssr {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  padding: 0 0.5rem;
+  max-height: 320px;
+  overflow: hidden;
 
-  .nav-brand {
-    font-size: 1.2rem;
+  @include media-breakpoint-up(lg) {
+    grid-template-columns: repeat(3, 1fr);
+    max-height: 640px;
   }
+}
 
-  .nav-links {
-    gap: 8px;
-    font-size: 0.8rem;
-  }
+.loading-card-ssr {
+  aspect-ratio: 0.87;
+  overflow: hidden;
+  background: $color-gray--lighter;
+}
 
-  .nav-cta {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-  }
+.loading-shimmer-ssr {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    $color-gray--lighter 0%,
+    var(--color-gray-50) 50%,
+    $color-gray--lighter 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-ssr 1.5s infinite;
+}
 
-  .footer-content {
-    gap: 24px;
+@keyframes shimmer-ssr {
+  0% {
+    background-position: 200% 0;
   }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* App Download Section */
+.app-section {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin: 0 1rem;
+  background: $color-gray--lighter;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 60px;
+}
+
+.app-badge {
+  height: 32px;
+  width: auto;
+  aspect-ratio: 201 / 60;
 }
 </style>

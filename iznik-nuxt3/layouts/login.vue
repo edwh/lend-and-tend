@@ -1,45 +1,105 @@
 <template>
-  <div class="lat-auth-layout">
-    <div class="lat-auth-card">
-      <NuxtLink to="/lat/map" class="lat-auth-brand">
-        {{ branding.siteName }}
-      </NuxtLink>
+  <div>
+    <LayoutCommon :key="'nuxt-' + bump">
       <slot />
-    </div>
+    </LayoutCommon>
+    <client-only>
+      <GoogleOneTap
+        v-if="oneTap"
+        @loggedin="googleLoggedIn"
+        @complete="googleLoaded"
+      />
+      <LoginModal
+        v-if="!loggedIn"
+        ref="loginModal"
+        :key="'login-' + bumpLogin"
+      />
+    </client-only>
   </div>
 </template>
+<script setup>
+import { useAuthStore } from '~/stores/auth'
+import LayoutCommon from '~/components/LayoutCommon'
+import { useMobileStore } from '@/stores/mobile' // APP
+import { useMiscStore } from '~/stores/misc'
+import { ref, computed, watch } from '#imports'
+const GoogleOneTap = defineAsyncComponent(() =>
+  import('~/components/GoogleOneTap')
+)
+const LoginModal = defineAsyncComponent(() => import('~/components/LoginModal'))
 
-<script setup lang="ts">
-import branding from '~/branding.config'
+const mobileStore = useMobileStore()
+const ready = ref(mobileStore.isApp) // APP
+const oneTap = ref(false)
+const bump = ref(0)
+const bumpLogin = ref(0)
+const loginModal = ref(null)
+const authStore = useAuthStore()
+const miscStore = useMiscStore()
+
+const loggedIn = computed(() => authStore.user !== null)
+const me = computed(() => authStore.user)
+
+if (process.client) {
+  // Ensure we don't wrongly think we have some outstanding requests if the server happened to start some.
+  miscStore.apiCount = 0
+}
+
+useHead({
+  bodyAttrs: {
+    style: 'background-color: var(--color-gray-50)',
+  },
+})
+
+watch(
+  me,
+  (newVal) => {
+    if (newVal) {
+      // We've logged in.
+      ready.value = true
+    } else {
+      authStore.forceLogin = true
+    }
+  },
+  { immediate: true }
+)
+
+function googleLoggedIn() {
+  // OneTap has logged us in. Re-render the page as logged in.
+  bump.value++
+}
+
+function googleLoaded() {
+  if (loginModal.value && loginModal.value.showModal) {
+    // The login modal is already showing — don't re-render it or we'll
+    // destroy any form state the user (or test automation) has entered.
+    console.log('Login modal already showing - not re-rendering')
+  } else {
+    // We need to force the login modal to rerender
+    bumpLogin.value++
+  }
+}
+
+const jwt = authStore.auth.jwt
+const persistent = authStore.auth.persistent
+
+if (jwt || persistent) {
+  // We have some credentials, which may or may not be valid on the server.
+  let user = null
+
+  try {
+    user = await authStore.fetchUser()
+  } catch (e) {
+    console.log('Error fetching user', e)
+  }
+
+  if (user) {
+    ready.value = true
+  }
+}
+
+if (!ready.value && !mobileStore.isApp) {
+  // We don't have a valid JWT. See if OneTap can sign us in.
+  oneTap.value = true
+}
 </script>
-
-<style scoped>
-.lat-auth-layout {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: v-bind('branding.colors.surface');
-  padding: 24px;
-}
-
-.lat-auth-card {
-  background: white;
-  border-radius: 8px;
-  padding: 40px;
-  width: 100%;
-  max-width: 440px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-}
-
-.lat-auth-brand {
-  display: block;
-  font-family: v-bind('branding.fonts.heading');
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: v-bind('branding.colors.primary');
-  text-decoration: none;
-  margin-bottom: 32px;
-  text-align: center;
-}
-</style>

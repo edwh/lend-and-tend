@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useLatUserStore } from '~/stores/latUser'
+import { useAuthStore } from '~/stores/auth'
 
 export interface Message {
   id: number
@@ -67,10 +67,10 @@ export const useLatMessagesStore = defineStore({
 
         // Add message to thread if we're viewing that user's thread
         if (this.threadUserId === recipientId) {
-          const latUserStore = useLatUserStore()
+          const authStore = useAuthStore()
           this.thread.push({
             id: response.id,
-            senderId: latUserStore.user?.id ?? 0,
+            senderId: authStore.user?.id ?? 0,
             content,
             createdAt: new Date().toISOString(),
           })

@@ -1,5 +1,67 @@
 **See also: [codingstandards.md](codingstandards.md)** for coding rules. **Use the `ralph` skill** for any non-trivial development task. For automated execution: `./ralph.sh -t "task description"`
 
+## Lend & Tend Architecture (READ THIS FIRST)
+
+This repo is a **fork of Freegle**. Lend & Tend is a garden-sharing platform built as a **Nuxt 3 layer** on top of the Freegle codebase — the same pattern as `modtools`.
+
+### The golden rule: `iznik-nuxt3/` is upstream Freegle — never touch it
+
+`iznik-nuxt3/` must remain **identical to the upstream Freegle Nuxt3 repo**. It has a full set of stores, components, composables, API classes, and pages. The `lat/` layer extends all of that via Nuxt's layer system.
+
+**Never modify files directly inside `iznik-nuxt3/` (outside of `lat/` and `modtools/`).**
+
+### All L&T work goes in `iznik-nuxt3/lat/`
+
+The `lat/` layer extends the parent (`../`) using Nuxt's `extends` config. This means:
+- Every store, composable, component, and page in the parent is **already available** in `lat/`
+- Only **add a file in `lat/` if you need to override or extend the upstream version**, or if it is purely new L&T functionality with no upstream equivalent
+- **Before writing any new code in `lat/`, check upstream first:**
+  - `iznik-nuxt3/stores/` — auth, chat, notification, message, group, user, tryst, etc.
+  - `iznik-nuxt3/composables/` — useMe, useChat, useMap, useNavbar, etc.
+  - `iznik-nuxt3/components/` — all Freegle UI components
+  - `iznik-nuxt3/pages/` — chats, profile, settings, find, give, etc.
+
+### What belongs in `lat/` vs upstream
+
+| Situation | Action |
+|---|---|
+| Freegle already has a store/composable for it | Import and use it directly — no new file in `lat/` |
+| Freegle page exists but needs L&T changes | Override by adding the same path in `lat/pages/` |
+| Freegle component exists but needs L&T skin | Override by adding same path in `lat/components/` |
+| Purely new L&T concept (e.g. garden map filtering by world group) | Add in `lat/` |
+| New Nuxt layout for L&T | Add/override in `lat/layouts/` |
+
+### The modtools-lat pattern
+
+There will also be a `modtools-lat/` layer that extends `modtools/` in the same way. The same rules apply: `modtools/` is upstream, all changes go in `modtools-lat/`.
+
+### Backend — never change
+
+**NEVER:**
+- Modify `iznik-server-go/` or `iznik-batch/` (except the one L&T migration)
+- Add new Go endpoints or a new Go server
+- Add new database tables or columns without explicit user approval
+- Create new API concepts — use what Freegle already has
+
+**Freegle concept → L&T concept mapping:**
+- Garden listing = Freegle `message` (type=Offer for lender, type=Wanted for tender)
+- Post a garden = `POST /apiv2/message` with the L&T world groupid
+- Find gardens = `GET /apiv2/messages` filtered by world groupid
+- Auth = existing `/apiv2/session`, `/apiv2/user` — use Freegle's `useAuthStore`
+- Chat = existing `/apiv2/chat` — use Freegle's `stores/chat.js`
+- User location = `users.lat` / `users.lng`
+- User profile = existing Freegle profile API (`PATCH /apiv2/user`)
+- Admin/roles = `users.systemrole`
+- Block = `chat_roster`
+- Word filter = `concern_keywords`
+- Notifications = `users_notifications` — use Freegle's `stores/notification.js`
+- Agreements = `promises` — use Freegle's `stores/tryst.js`
+
+**The only schema addition:** One Laravel migration auto-creates a world-spanning Freegle group (`nameshort=lendandtend-world`) used to filter L&T listings.
+
+**LAT Nuxt dev server:** port 4002. API at `IZNIK_API_V2` (default `http://localhost:4001/apiv2`).
+**LAT Playwright tests:** `LAT_BASE_URL=http://localhost:4002 npx playwright test tests/e2e/lat/` from `iznik-nuxt3/`.
+
 ## Critical Rules
 
 - **NEVER merge PRs.** Only humans merge PRs. Stop at "PR is ready for merge".

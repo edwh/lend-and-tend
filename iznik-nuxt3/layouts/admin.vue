@@ -26,22 +26,22 @@
       <!-- Sidebar Navigation -->
       <div class="admin-sidebar">
         <nav class="sidebar-nav">
-          <NuxtLink to="/lat/admin" class="nav-item" :class="{ active: isActive('/lat/admin') }">
+          <NuxtLink to="/admin" class="nav-item" :class="{ active: isActive('/admin') }">
             <span class="nav-icon">📊</span>
             <span class="nav-label">Dashboard</span>
           </NuxtLink>
 
-          <NuxtLink to="/lat/admin/users" class="nav-item" :class="{ active: isActive('/lat/admin/users') }">
+          <NuxtLink to="/admin/users" class="nav-item" :class="{ active: isActive('/admin/users') }">
             <span class="nav-icon">👤</span>
             <span class="nav-label">Users</span>
           </NuxtLink>
 
-          <NuxtLink to="/lat/admin/messages" class="nav-item" :class="{ active: isActive('/lat/admin/messages') }">
+          <NuxtLink to="/admin/messages" class="nav-item" :class="{ active: isActive('/admin/messages') }">
             <span class="nav-icon">💬</span>
             <span class="nav-label">Flagged Messages</span>
           </NuxtLink>
 
-          <NuxtLink to="/lat/admin/agreements" class="nav-item" :class="{ active: isActive('/lat/admin/agreements') }">
+          <NuxtLink to="/admin/agreements" class="nav-item" :class="{ active: isActive('/admin/agreements') }">
             <span class="nav-icon">📋</span>
             <span class="nav-label">Agreements</span>
           </NuxtLink>
@@ -59,12 +59,12 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useLatUserStore } from '@/stores/latUser'
+import { useAuthStore } from '@/stores/auth'
 import branding from '@/branding.config'
 
 const route = useRoute()
 const router = useRouter()
-const latUserStore = useLatUserStore()
+const authStore = useAuthStore()
 
 const currentImpersonationUser = computed(() => {
   // Check if we're impersonating someone by looking for special header or cookie
@@ -78,10 +78,10 @@ function isActive(path) {
 
 async function stopImpersonation() {
   try {
-    await $fetch('/apiv2/lat/admin/impersonate', { method: 'DELETE' })
+    await $fetch('/apiv2/admin/impersonate', { method: 'DELETE' })
     // Refresh user data
-    await latUserStore.fetchWhoAmI()
-    router.push('/lat/admin')
+    await authStore.fetchUser()
+    router.push('/admin')
   } catch (e) {
     console.error('Failed to stop impersonation', e)
   }
@@ -89,7 +89,7 @@ async function stopImpersonation() {
 
 async function logout() {
   try {
-    await latUserStore.logout()
+    await authStore.logout()
     router.push('/')
   } catch (e) {
     console.error('Failed to logout', e)

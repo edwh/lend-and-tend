@@ -1,11 +1,11 @@
-import { useLatUserStore } from '~/stores/latUser'
+import { useAuthStore } from '~/stores/auth'
 
 export default defineNuxtRouteMiddleware(() => {
-  const latUserStore = useLatUserStore()
-  if (!latUserStore.isAuthenticated) {
-    return navigateTo('/lat/auth/login')
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return navigateTo('/login')
   }
-  if (!latUserStore.user?.isAdmin) {
-    return navigateTo('/lat/map')
+  if (!authStore.isAdmin) {
+    return navigateTo('/map')
   }
 })

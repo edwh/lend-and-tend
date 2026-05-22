@@ -1,0 +1,16 @@
+/* Lend & Tend global styles */
+
+/* Bootstrap base — provides reset, utilities (mb-3, w-100, etc.) and form classes */
+@import 'bootstrap/scss/bootstrap';
+
+/* Page-level resets for L&T */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
