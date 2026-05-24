@@ -1,0 +1,40 @@
+# Fly.io config for the L&T Laravel batch worker.
+# Runs the artisan scheduler loop (`schedule:run` every 60s) so cron-style
+# tasks fire. Also responsible for running database migrations on first boot
+# (when RUN_MIGRATIONS=true is set as a secret/env var).
+#
+# Internal-only: no public service. Background worker.
+app = "lat-batch"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "docker/Dockerfile"
+
+[env]
+  APP_NAME = "Lend and Tend Batch"
+  APP_ENV = "production"
+  APP_DEBUG = "false"
+  LOG_CHANNEL = "stderr"
+  LAT_BATCH_ONLY = "true"
+  DB_CONNECTION = "mysql"
+  DB_HOST = "lat-mysql.internal"
+  DB_PORT = "3306"
+  DB_DATABASE = "iznik"
+  DB_USERNAME = "iznik"
+  MAIL_MAILER = "smtp"
+  MAIL_FROM_ADDRESS = "noreply@lendandtend.com"
+  MAIL_FROM_NAME = "Lend and Tend"
+  FREEGLE_USER_SITE = "https://lat-frontend.fly.dev"
+  FREEGLE_SITE_NAME = "Lend & Tend"
+
+# No `[[services]]` block — pure worker, no listener.
+
+# Always keep the worker alive — scheduler must run.
+[scale]
+  min_machines_running = 1
+  memory_mb = 512
+  cpu_kind = "shared"
+  cpus = 1
+
+[deploy]
+  strategy = "immediate"

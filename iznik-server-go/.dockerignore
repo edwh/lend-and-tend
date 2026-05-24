@@ -21,7 +21,6 @@ test/
 *.o
 *.so
 server
-knn-server
 
 # CircleCI
 .circleci

@@ -76,3 +76,6 @@ monitor.db
 
 # Local SQLite cache
 lat.db
+scraped/
+README.old.md
+.env.bak.*

@@ -22,8 +22,10 @@ RUN go mod tidy
 # Build knn-server
 RUN cd knn-server && go build -o /app/knn-server .
 
-# Generate swagger docs
-RUN chmod +x generate-swagger.sh && ./generate-swagger.sh
+# Swagger doc generation requires the swag CLI which isn't installed in the
+# builder. Create an empty docs dir so the stage-1 COPY succeeds; the swagger
+# UI is a dev convenience and not needed to serve the production API.
+RUN mkdir -p /app/docs
 
 # Build the main API server
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/server main.go

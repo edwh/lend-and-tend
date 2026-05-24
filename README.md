@@ -1,174 +1,201 @@
-[![Coverage Status](https://coveralls.io/repos/github/Freegle/Iznik/badge.svg?branch=master)](https://coveralls.io/github/Freegle/Iznik?branch=master)
+# Lend & Tend
 
-# Freegle Platform
+**Connect gardeners with growing space.** Lend & Tend is a platform for garden sharing — people with gardens they can't manage ("Lenders") connect with people who want to garden but lack space ("Tenders"). Both post listings on a map, message securely on-platform, sign a Garden Sharing Agreement that captures access times and restrictions, and only then is the Lender's full address shared.
 
-This is the monorepo for Iznik, the platform for [Freegle](https://www.ilovefreegle.org), an online reuse network.
+Built as a Nuxt 3 layer on [Freegle](https://github.com/freegle), the online reuse network. The same Freegle Go API and Laravel batch services power both platforms. The codebase reuses Freegle's stores, composables, and components; L&T-specific code lives in the `iznik-nuxt3/lat/` layer.
 
-| Directory | What it is |
-|-----------|-----------|
-| `iznik-nuxt3/` | Nuxt 3 frontend — user site (ilovefreegle.org) and moderator tools (modtools.org) |
-| `iznik-server-go/` | Go API (v2) — the primary API |
-| `iznik-server/` | Legacy PHP API (v1) — being retired |
-| `iznik-batch/` | Laravel batch processing — digests, notifications, scheduled tasks |
-| `status-nuxt/` | Development status dashboard and test runner |
-| `freegle-mobile/` | Capacitor mobile app (Android/iOS) |
+## Architecture
 
-<details>
-<summary>Installation</summary>
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Lend & Tend Stack                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Frontend Layer           API Layer        Workers     │
+│  ──────────────           ─────────        ───────     │
+│                                                         │
+│  iznik-nuxt3/lat/    <─→  iznik-server-go  ←─ iznik-batch
+│  (Nuxt 3, port 4002)      (Go, port 4001)     (Laravel scheduler)
+│   ├─ pages/                                    ├─ migrations/
+│   ├─ components/                              ├─ commands/
+│   ├─ stores/                                  └─ jobs/
+│   └─ layouts/
+│
+│          ↓ (all use)
+│
+│       MySQL/Percona (port 3306)
+│       ├─ users (auth, profiles, location blur)
+│       ├─ messages (garden listings)
+│       ├─ chat_* (messaging and blocking)
+│       ├─ promises (garden sharing agreements)
+│       └─ notifications
+│
+└─────────────────────────────────────────────────────────┘
+```
 
-## Installation
+The three services share a single MySQL database. Freegle concepts (message, chat, promise/agreement, notification) are reused; only the Nuxt frontend is L&T-specific.
+
+## Quick Start
+
+### Installation
 
 ```bash
-git clone https://github.com/Freegle/Iznik
+git clone https://github.com/edwh/lend-and-tend.git
+cd lend-and-tend
+cp .env.lat.example .env
+docker compose -f docker-compose.lat.yml up
 ```
 
-On Windows, Docker Desktop works but is unusably slow. We use WSL2 instead:
+Docker will build and start all services. Initial startup takes 2–3 minutes as migrations run and services boot.
 
-1. Install a WSL2 distribution (Ubuntu recommended). For a dedicated install: `wsl --install --name freegle`
-2. Clone this repository from your IDE **using a WSL2 path** (e.g., `\\wsl$\Ubuntu\home\edward\FreegleDockerWSL`).
-3. [Install Docker](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
-4. Open a WSL2 terminal in the repository directory.
-5. Start Docker: `sudo service docker start`
+### Access
 
-### Windows hosts file
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Site | http://localhost:4002 | See `.env` for `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` |
+| API | http://localhost:4001/apiv2 | Used by frontend (no login needed) |
+| Email catcher | http://localhost:4025 | View sent emails (dev only) |
 
-Add these to your hosts file:
+## Project Layout
 
 ```
-127.0.0.1 freegle.localhost
-127.0.0.1 freegle-dev.localhost
-127.0.0.1 freegle-prod.localhost
-127.0.0.1 modtools-dev.localhost
-127.0.0.1 modtools-prod.localhost
-127.0.0.1 phpmyadmin.localhost
-127.0.0.1 mailpit.localhost
-127.0.0.1 tusd.localhost
-127.0.0.1 status.localhost
-127.0.0.1 apiv1.localhost
-127.0.0.1 apiv2.localhost
-127.0.0.1 delivery.localhost
+iznik-nuxt3/
+├─ lat/                          # Lend & Tend Nuxt 3 layer (all UI code)
+│  ├─ pages/                     # Routes: create listing, map, profile, etc.
+│  ├─ components/                # UI components: MapPane, ChatFooter, etc.
+│  ├─ stores/                    # L&T-specific state (extends Freegle stores)
+│  ├─ composables/               # Helper functions
+│  ├─ layouts/                   # Page layouts
+│  └─ nuxt.config.ts             # Nuxt config (sets extends: ../)
+│
+├─ (all other files)             # Upstream Freegle (never modify outside lat/)
+│  ├─ stores/                    # Auth, chat, messages, notifications, etc.
+│  ├─ composables/               # useMe, useChat, useMap, etc.
+│  ├─ components/                # UI toolkit
+│  └─ pages/                     # Chats, profile, find, give, etc.
+│
+iznik-server-go/                 # Go API (Freegle v2)
+│  └─ (no L&T changes)
+│
+iznik-batch/                     # Laravel batch processing
+│  ├─ database/migrations/       # Schema source of truth
+│  ├─ app/Console/Commands/Lat/  # L&T-specific scheduled jobs
+│  └─ routes/console.php         # Job registration
 ```
 
-## Configuration
-
-Copy `.env.example` to `.env` and modify as needed. The basic system works without configuration, but some features require API keys (Google OAuth, Mapbox, etc.) — see `.env.example` for the full list.
-
-After configuration changes, rebuild:
-
-```bash
-docker-compose build --no-cache
-```
-</details>
-
-<details>
-<summary>Running</summary>
-
-## Running
-
-```bash
-docker-compose up -d
-```
-
-File syncing to Docker containers happens automatically via the host-scripts container.
-
-Monitor startup progress at [http://status.localhost:8081](http://status.localhost:8081).
-
-The system builds in stages:
-1. **Infrastructure** (databases, queues, reverse proxy) — ~2-3 minutes
-2. **Development tools** (PhpMyAdmin, Mailpit) — ~1 minute
-3. **Freegle components** (websites, APIs) — ~10-15 minutes
-
-### Main applications
-
-| Service | URL | Login |
-|---------|-----|-------|
-| Freegle Dev | https://freegle-dev.localhost | `test@test.com` / `freegle` |
-| Freegle Prod | https://freegle-prod.localhost | `test@test.com` / `freegle` |
-| ModTools Dev | https://modtools-dev.localhost | `testmod@test.com` / `freegle` |
-| ModTools Prod | https://modtools-prod.localhost | `testmod@test.com` / `freegle` |
-
-Dev containers reload on first view (normal Nuxt dev mode behaviour). Prod containers run production builds.
-
-### Development tools
-
-| Tool | URL |
-|------|-----|
-| Status Monitor | http://status.localhost:8081 |
-| PhpMyAdmin | https://phpmyadmin.localhost |
-| Mailpit | https://mailpit.localhost |
-| Traefik Dashboard | http://localhost:8080 |
-| API v1 (PHP) | https://apiv1.localhost |
-| API v2 (Go) | https://apiv2.localhost:8192 |
-
-### Lightweight setup (limited resources)
-
-Run just the frontend against live production APIs:
-
-```bash
-docker compose --profile dev-live up -d freegle-dev-live
-```
-
-Access at [http://localhost:3004](http://localhost:3004). Changes to `iznik-nuxt3/` files sync automatically.
-
-> **Warning**: Actions in this container affect real Freegle data.
-
-### Container management
-
-```bash
-docker logs freegle-freegle-dev       # View logs
-docker exec -it freegle-percona mysql -u root -piznik  # Database access
-docker restart freegle-status         # Restart a service
-```
-
-### Rebuild from scratch
-
-```bash
-docker compose down
-docker system prune -a
-docker compose up -d
-```
-</details>
-
-<details>
-<summary>Testing</summary>
+**Key rule:** `iznik-nuxt3/` is upstream Freegle and must not be modified (except in `lat/` and `modtools/` layers). All L&T code goes in `iznik-nuxt3/lat/`.
 
 ## Testing
 
-Tests run from the status page at [http://status.localhost:8081](http://status.localhost:8081):
-
-- **Go tests** for iznik-server-go (v2 API)
-- **PHPUnit tests** for iznik-server (v1 API)
-- **Laravel tests** for iznik-batch (batch processing)
-- **Vitest** unit tests for iznik-nuxt3 (frontend stores and components)
-- **Playwright** end-to-end tests for the user-facing site
-
-### Test data
-
-The system contains one test group, FreeglePlayground, centred around Edinburgh. The recognised postcode is EH3 6SS.
-</details>
-
-<details>
-<summary>CI/CD</summary>
-
-## CI/CD
-
-CircleCI runs the full test suite on every push to master. On success, master is auto-merged to the `production` branch, which triggers Netlify deployments for both ilovefreegle.org and modtools.org.
-
-Mobile app builds (Android/iOS) run on the `production` branch via Fastlane, with weekly promotion from beta to production.
-</details>
-
-<details>
-<summary>Worktrees</summary>
-
-## Worktrees
-
-Multiple isolated development environments can run in parallel using git worktrees. Each worktree gets its own Docker Compose stack on unique ports.
+### Run All L&T Tests
 
 ```bash
-./freegle worktree create feature-x    # Create isolated environment
-./freegle status                       # See all worktrees and URLs
-./freegle worktree remove feature-x    # Cleanup
+cd iznik-nuxt3
+LAT_BASE_URL=http://localhost:4002 npx playwright test tests/e2e/lat/ --config=playwright.lat.config.js
 ```
 
-See [WORKTREE-GUIDE.md](WORKTREE-GUIDE.md) for details.
-</details>
+### Key Test Files
+
+Run a representative subset to verify basic functionality:
+
+```bash
+cd iznik-nuxt3
+LAT_BASE_URL=http://localhost:4002 npx playwright test \
+  tests/e2e/lat/test-lat-listing-roundtrip.spec.js \
+  tests/e2e/lat/test-lat-chat.spec.js \
+  tests/e2e/lat/test-lat-map.spec.js \
+  --config=playwright.lat.config.js
+```
+
+- **Listing roundtrip**: Create a listing, edit it, delete it
+- **Chat**: Login, open chat, send/receive messages (slow—relies on 60s batch polling)
+- **Map**: Browse listings on the map, filter by world group
+
+See `iznik-nuxt3/tests/e2e/lat/` for full test suite. Tests automatically start the dev server.
+
+## The Layer Pattern
+
+L&T extends Freegle via Nuxt's `extends` config in `nuxt.config.ts`. This means:
+
+- Every Freegle store, composable, component, and page is **already available** in L&T.
+- **Only add a file in `lat/` if you override an upstream file or add purely new L&T code.**
+- Before writing anything, check upstream first:
+  - **Stores**: `iznik-nuxt3/stores/` (auth, chat, message, group, user, tryst/promise, notification)
+  - **Composables**: `iznik-nuxt3/composables/` (useMe, useChat, useMap, useNavbar, etc.)
+  - **Components**: `iznik-nuxt3/components/` (all UI building blocks)
+  - **Pages**: `iznik-nuxt3/pages/` (chats, profile, settings, find, give)
+
+### Import Pitfall: `~/components/X` Bypasses Layer Overrides
+
+Nuxt's template auto-import (`<MyComponent />`) **does** resolve `lat/components/X.vue` over upstream—that's the layer system working. But **dynamic imports bypass it**:
+
+```javascript
+// WRONG: always pulls upstream, even if lat/components/ProfileModal.vue exists
+import('~/components/ProfileModal')
+
+// RIGHT: dynamic import uses relative path to get lat override
+import('./ProfileModal.vue')
+
+// RIGHT: remove dynamic import, use bare tag — Nuxt auto-imports from lat
+<ProfileModal />
+```
+
+Audit check: `grep -rn "import('~/components" lat/` and cross-check filenames against `ls lat/components/`. Any match is a bug.
+
+## Freegle Concept → L&T Concept Mapping
+
+| L&T Concept | Freegle Concept | API |
+|---|---|---|
+| Garden listing | Message (Offer or Wanted) | `POST/GET/PATCH /apiv2/message` |
+| Post garden | Create message | `POST /apiv2/message` with `world_groupid` |
+| Find gardens | List messages | `GET /apiv2/messages` filtered by `world_groupid` |
+| Authentication | Session/User | `/apiv2/session`, `/apiv2/user`, `useAuthStore` |
+| In-app messaging | Chat | `/apiv2/chat`, `stores/chat.js` |
+| User location | User lat/lng | `users.lat`, `users.lng` |
+| User profile | User object | `PATCH /apiv2/user` |
+| Blocking | Chat roster | `chat_roster` table |
+| Garden agreement | Promise/Tryst | `promises` table, `stores/tryst.js` |
+| Notifications | User notifications | `users_notifications`, `stores/notification.js` |
+
+The Go API and batch layer are **unchanged Freegle**. The only database addition is a world-spanning group used to filter L&T listings.
+
+## Deployment
+
+Lend & Tend deploys to [Fly.io](https://fly.io) as four linked services. See [DEPLOY-FLY.md](DEPLOY-FLY.md) for credentials and runbooks.
+
+- **lat-mysql**: Percona database (private network only)
+- **lat-api**: Go API (`:8192`)
+- **lat-frontend**: Nuxt SSR (`:3000`)
+- **lat-batch**: Laravel scheduler + email worker
+
+Database migrations run automatically on the first `lat-batch` boot when `RUN_MIGRATIONS=true`.
+
+## Known Gaps / Ship Blockers
+
+See [plans/active/lat-adversarial-review.md](plans/active/lat-adversarial-review.md) for current blockers and to-do items. High-level:
+
+- Email sending is stubbed (mails go to Mailpit in dev, but production sender is not configured)
+- Agreement confirmation flow not yet implemented (signatures stored but no PDF/confirmation email)
+- No automated test coverage for batch commands (jobs run manually only)
+- Location blur logic for production addresses pending backend changes
+
+## Backend Rules
+
+**Do not modify:**
+- `iznik-server-go/` or `iznik-batch/` (except the one L&T migration)
+- Add new Go endpoints or servers (reuse Freegle's)
+- Add tables or columns without explicit approval
+- Create new API concepts (all available in Freegle's schema)
+
+L&T is a **pure frontend layer** built on Freegle's immutable backend.
+
+## License
+
+GNU General Public License v2. See `iznik-nuxt3/LICENSE` for full terms. Built on [Freegle](https://github.com/freegle/iznik) — credit and thanks to the Freegle community.
+
+## Further Reading
+
+- [CLAUDE.md](CLAUDE.md) — development rules, container reference, batch commands
+- [DEPLOY-FLY.md](DEPLOY-FLY.md) — production deployment
+- [plans/active/lat-adversarial-review.md](plans/active/lat-adversarial-review.md) — current blockers
+- [iznik-nuxt3/lat/nuxt.config.ts](iznik-nuxt3/lat/nuxt.config.ts) — layer configuration

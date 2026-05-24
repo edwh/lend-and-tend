@@ -1,0 +1,38 @@
+# Fly.io config for the Lend & Tend Percona MySQL database.
+# Private-only — reachable on the Fly private network as `lat-mysql.internal:3306`.
+# Not exposed publicly.
+app = "lat-mysql"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  MYSQL_DATABASE = "iznik"
+
+# Internal-only service. No `[[services.ports]]` block — MySQL is reachable
+# from other Fly apps in the same org via `lat-mysql.internal:3306`.
+# auto_stop_machines = "suspend" freezes RAM (incl. InnoDB buffer pool) to
+# disk when idle, then thaws on the first inbound packet — sub-second resume.
+[[services]]
+  protocol = "tcp"
+  internal_port = 3306
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "5s"
+
+[mounts]
+  source = "lat_mysql_data"
+  destination = "/var/lib/mysql"
+
+[deploy]
+  strategy = "immediate"
+
+[scale]
+  memory_mb = 2048
+  cpu_kind = "shared"
+  cpus = 1
