@@ -19,27 +19,44 @@
         <l-marker
           v-for="item in visibleClusters"
           :key="item.properties.cluster_id ?? `pin-${item.properties.id}`"
-          :lat-lng="[item.geometry.coordinates[1], item.geometry.coordinates[0]]"
-          :icon="item.properties.cluster ? clusterIcon(item.properties.point_count) : pinIcon(typeToRole(item.properties.type))"
-          @click="item.properties.cluster ? expandCluster(item) : onPinClick(item.properties)"
+          :lat-lng="[
+            item.geometry.coordinates[1],
+            item.geometry.coordinates[0],
+          ]"
+          :icon="
+            item.properties.cluster
+              ? clusterIcon(item.properties.point_count)
+              : pinIcon(
+                  typeToRole(item.properties.type),
+                  isActiveGarden(item.properties)
+                )
+          "
+          @click="
+            item.properties.cluster
+              ? expandCluster(item)
+              : onPinClick(item.properties)
+          "
         >
-          <l-popup v-if="!item.properties.cluster && selectedPin && selectedPin.id === item.properties.id">
+          <l-popup v-if="!item.properties.cluster">
             <div class="pin-popup">
               <div class="popup-header">
-                <h3>{{ item.properties.subject || item.properties.displayName }}</h3>
-                <span :class="`role-badge role-${typeToRole(item.properties.type)}`">
+                <h3>
+                  {{
+                    item.properties.subject?.replace(/^(?:Offer|Wanted): /, '')
+                  }}
+                </h3>
+                <span
+                  :class="`role-badge role-${typeToRole(item.properties.type)}`"
+                >
                   {{ item.properties.type === 'Offer' ? 'Lend' : 'Tend' }}
                 </span>
               </div>
-              <p v-if="item.properties.displayName" class="popup-about" style="font-size:0.8rem; color:#888; margin-bottom:4px">by {{ item.properties.displayName }}</p>
-              <p v-if="item.properties.about" class="popup-about">{{ item.properties.about }}</p>
-              <button
+              <NuxtLink
+                :to="`/garden/${item.properties.id}`"
                 class="btn btn-primary btn-sm mt-2"
-                :disabled="!isAuthenticated"
-                @click="sendMessage(item.properties)"
               >
-                Message gardener
-              </button>
+                View listing
+              </NuxtLink>
             </div>
           </l-popup>
         </l-marker>
@@ -48,7 +65,9 @@
       <div v-if="latMapStore.loading" class="map-loading">
         <div class="spinner"></div>
       </div>
-      <div v-if="latMapStore.error" class="map-error">{{ latMapStore.error }}</div>
+      <div v-if="latMapStore.error" class="map-error">
+        {{ latMapStore.error }}
+      </div>
     </div>
   </ClientOnly>
 </template>
@@ -57,13 +76,12 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import L from 'leaflet'
 import Supercluster from 'supercluster'
-import { useLatMapStore, type MapPin } from '~/stores/latMap'
+import { useLatMapStore } from '~/stores/latMap'
 import { useAuthStore } from '~/stores/auth'
 import branding from '~/branding.config'
 
 const mapRef = ref<any>(null)
 let leafletMap: any = null
-const selectedPin = ref<MapPin | null>(null)
 const latMapStore = useLatMapStore()
 const authStore = useAuthStore()
 const visibleClusters = ref<any[]>([])
@@ -71,15 +89,15 @@ const mapReady = ref(false)
 
 const defaultCenter = computed(() => branding.map.defaultCenter)
 const defaultZoom = computed(() => branding.map.defaultZoom)
-const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const mapOptions = { dragging: true, touchZoom: true, scrollWheelZoom: true }
 
-// ── Supercluster setup ────────────────────────────────────────────────────────
+const props = withDefaults(defineProps<{ pins?: any[] }>(), { pins: undefined })
+
 const sc = new Supercluster({ radius: 60, maxZoom: 16 })
 let scLoaded = false
 
-function loadCluster(pins: MapPin[]) {
+function loadCluster(pins: any[]) {
   const features = pins.map((p) => ({
     type: 'Feature' as const,
     geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
@@ -100,9 +118,15 @@ function computeClusters() {
   )
 }
 
-function onMapReady(map: any) {
+async function onMapReady(map: any) {
   leafletMap = map
   mapReady.value = true
+  if (latMapStore.allPins.length === 0) {
+    await latMapStore.fetchAll()
+  }
+  if (authStore.user?.id) {
+    latMapStore.fetchOwnPending(authStore.user.id)
+  }
   if (scLoaded) computeClusters()
 }
 
@@ -113,15 +137,34 @@ function onMapMove() {
 function expandCluster(cluster: any) {
   if (!leafletMap) return
   const zoom = sc.getClusterExpansionZoom(cluster.properties.cluster_id)
-  leafletMap.flyTo([cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]], zoom)
+  leafletMap.flyTo(
+    [cluster.geometry.coordinates[1], cluster.geometry.coordinates[0]],
+    zoom
+  )
 }
 
-watch(() => latMapStore.pins, (pins) => {
-  if (pins.length) loadCluster(pins)
-}, { immediate: true })
+// Use externally-filtered pins if provided, otherwise fall back to allPins
+const activePins = computed(() => props.pins ?? latMapStore.allPins)
 
-onMounted(async () => {
-  await latMapStore.fetchPins()
+watch(
+  activePins,
+  (pins) => {
+    loadCluster(pins)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => latMapStore.searchCenter,
+  (center) => {
+    if (center && leafletMap) {
+      leafletMap.flyTo([center.lat, center.lng], center.zoom ?? 13)
+    }
+  }
+)
+
+onMounted(() => {
+  /* bounds fetched in onMapReady */
 })
 
 // Map Freegle message type to display role for icons/colours
@@ -129,24 +172,52 @@ function typeToRole(type: string): string {
   return type === 'Offer' ? 'lender' : 'tender'
 }
 
+// Check if a garden has an active agreement
+function isActiveGarden(pin: any): boolean {
+  return pin.promises && pin.promises.length > 0 && pin.promises[0].Acceptedat
+}
+
 // ── Garden SVG pin icons ──────────────────────────────────────────────────────
-function gardenPinSvg(role: string): string {
-  const colors: Record<string, { fill: string; stroke: string }> = {
-    lender: { fill: branding.map.lenderPinColor, stroke: branding.map.lenderPinStroke },
-    tender: { fill: branding.map.tenderPinColor, stroke: branding.map.tenderPinStroke },
-    both:   { fill: branding.map.bothPinColor,   stroke: branding.map.lenderPinStroke },
+function gardenPinSvg(role: string, isActive: boolean = false): string {
+  let colors: Record<string, { fill: string; stroke: string }> = {
+    lender: {
+      fill: branding.map.lenderPinColor,
+      stroke: branding.map.lenderPinStroke,
+    },
+    tender: {
+      fill: branding.map.tenderPinColor,
+      stroke: branding.map.tenderPinStroke,
+    },
+    both: {
+      fill: branding.map.bothPinColor,
+      stroke: branding.map.lenderPinStroke,
+    },
   }
+
+  // Lighten colors for active gardens
+  if (isActive) {
+    colors = {
+      lender: { fill: '#d4c5d9', stroke: '#9d8fa5' },
+      tender: { fill: '#c8d8f0', stroke: '#8fa5c8' },
+      both: { fill: '#d0d0d0', stroke: '#9d9d9d' },
+    }
+  }
+
   const { fill, stroke } = colors[role] || colors.both
 
-  // Lender (lilac): house/garden gate = they have a garden to share
-  // Tender (green): sprouting seedling = they want to grow
+  // Lender (lilac): seedling = they have a garden to grow on
+  // Tender (green): person digging = they do the work
   // Both: two leaves
   const icons: Record<string, string> = {
-    lender: `<path d="M12 6.5L7.5 11H9v5h6v-5h1.5L12 6.5z" fill="white"/>
-             <rect x="10.5" y="13" width="3" height="3" fill="${stroke}" rx="0.5"/>`,
-    tender: `<line x1="12" y1="16" x2="12" y2="10" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-             <path d="M12 13 C12 13 10 11 10 9.5 C10 8.5 11 8 12 9 C13 8 14 8.5 14 9.5 C14 11 12 13 12 13z" fill="white"/>`,
-    both:   `<line x1="11" y1="16" x2="11" y2="11.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+    lender: `<line x1="12" y1="16" x2="12" y2="10" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+             <path d="M12 11 C10 11 9 9 9.5 7.5 C10 7 11 8 12 10" fill="white"/>
+             <path d="M12 12 C14 12 15 10 14.5 8.5 C14 8 13 9 12 11" fill="white"/>`,
+    tender: `<circle cx="9" cy="7.5" r="1.3" fill="white"/>
+             <path d="M9 9 L10.5 12 L13 13.5" stroke="white" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+             <line x1="11" y1="11" x2="16.5" y2="13" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+             <path d="M15.5 12.4 L17.2 15.2 L14.6 14.2 Z" fill="white"/>
+             <line x1="12.8" y1="13.5" x2="12.8" y2="16.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/>`,
+    both: `<line x1="11" y1="16" x2="11" y2="11.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
              <path d="M11 14 C11 14 9.5 12.5 9.5 11 C9.5 10.2 10.2 9.8 11 10.5 C11.8 9.8 12.5 10.2 12.5 11 C12.5 12.5 11 14 11 14z" fill="white"/>
              <line x1="13" y1="16" x2="13" y2="11" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
              <path d="M13 13.5 C13 13.5 11.8 12 11.8 10.5 C11.8 9.7 12.5 9.3 13 10 C13.5 9.3 14.2 9.7 14.2 10.5 C14.2 12 13 13.5 13 13.5z" fill="white"/>`,
@@ -159,9 +230,9 @@ function gardenPinSvg(role: string): string {
   </svg>`
 }
 
-function pinIcon(role: string) {
+function pinIcon(role: string, isActive: boolean = false) {
   if (typeof window === 'undefined') return undefined
-  const svg = gardenPinSvg(role)
+  const svg = gardenPinSvg(role, isActive)
   return L.icon({
     iconUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
     iconSize: [26, 36],
@@ -177,16 +248,22 @@ function clusterIcon(count: number) {
   const stroke = branding.colors.primaryDark
   const fontSize = size < 40 ? 13 : 15
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
-    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
-    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 6}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
-    <text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" fill="white"
+    <circle cx="${size / 2}" cy="${size / 2}" r="${
+    size / 2 - 2
+  }" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+    <circle cx="${size / 2}" cy="${size / 2}" r="${
+    size / 2 - 6
+  }" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+    <text x="${size / 2}" y="${
+    size / 2 + fontSize / 3
+  }" text-anchor="middle" fill="white"
           font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="bold">${count}</text>
   </svg>`
   return L.icon({
     iconUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
     iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
   })
 }
 
@@ -194,31 +271,7 @@ function clusterIcon(count: number) {
 const emit = defineEmits(['pin-selected'])
 
 function onPinClick(pin: any) {
-  const newPin = selectedPin.value?.id === pin.id ? null : pin
-  selectedPin.value = newPin
-  emit('pin-selected', newPin)
-}
-
-async function sendMessage(pin: any) {
-  if (!isAuthenticated.value) return
-  const config = useRuntimeConfig()
-  const auth = useAuthStore()
-  try {
-    const resp = await fetch(`${config.public.APIv2}/chat/rooms`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...auth.authHeaders(),
-      },
-      body: JSON.stringify({ userid: pin.ownerUserId }),
-    })
-    if (resp.ok) {
-      const data = await resp.json()
-      navigateTo(`/messages/${data.id}`)
-    }
-  } catch {
-    // fall through — no-op on error
-  }
+  navigateTo(`/garden/${pin.id}`)
 }
 </script>
 
@@ -239,7 +292,7 @@ async function sendMessage(pin: any) {
   background: white;
   padding: 16px 24px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .spinner {
@@ -252,7 +305,11 @@ async function sendMessage(pin: any) {
   margin: 0 auto;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .map-error {
   position: absolute;
@@ -296,9 +353,18 @@ async function sendMessage(pin: any) {
   flex-shrink: 0;
 }
 
-.role-lender { background: var(--lat-color-lender-bg); color: var(--lat-color-lender-text); }
-.role-tender { background: var(--lat-color-tender-bg); color: var(--lat-color-tender-text); }
-.role-both   { background: var(--lat-color-both-bg); color: var(--lat-color-both-text); }
+.role-lender {
+  background: var(--lat-color-lender-bg);
+  color: var(--lat-color-lender-text);
+}
+.role-tender {
+  background: var(--lat-color-tender-bg);
+  color: var(--lat-color-tender-text);
+}
+.role-both {
+  background: var(--lat-color-both-bg);
+  color: var(--lat-color-both-text);
+}
 
 .popup-about {
   margin: 0 0 8px 0;

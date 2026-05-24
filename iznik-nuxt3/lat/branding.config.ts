@@ -24,40 +24,43 @@ export const branding = {
   homepage: 'https://www.lendandtend.com',
 
   // ── Colour palette ────────────────────────────────────────────────────────
-  // Placeholder values derived from the PDF; will be replaced with exact hex
-  // codes once the style tile arrives.
+  // Exact values from Wilder Gardens Style Tile PDF
   colors: {
-    primary: '#6B9E3C',       // lime-green (Lend & Tend green)
-    primaryDark: '#4A7A26',
-    primaryLight: '#8CC63F',
-    secondary: '#C9A0DC',     // mauve-purple
-    secondaryDark: '#9B6FB0',
-    secondaryLight: '#DEC3EC',
-    accent: '#C8D44E',        // yellow-green
-    accentDark: '#A8B330',
-    background: '#FFFFFF',
-    surface: '#F9FAF5',       // very light green-tinted white
-    text: '#1A2210',
-    textMuted: '#5C6B4A',
-    error: '#D32F2F',
-    warning: '#F57C00',
-    success: '#388E3C',
-    info: '#1976D2',
+    primary: '#329732',       // Brand green — primary CTA, nav, buttons
+    primaryDark: '#4F6642',   // Forest green — headings, dark text on green
+    primaryLight: '#8CC63F',  // Light green variant
+    secondary: '#B868CA',     // Purple/lilac — tender role, secondary accent
+    secondaryDark: '#903B18', // Dark terracotta — secondary dark
+    secondaryLight: '#f3e8f7',// Light purple background tint
+    accent: '#CBCB00',        // Yellow-lime — highlights, badges
+    accentDark: '#CC3F00',    // Burnt orange — accent dark / warnings
+    background: '#FFFFFF',    // White background
+    surface: '#EDE5D6',       // Warm cream — page backgrounds, cards
+    text: '#333322',          // Near-black — body text
+    textDark: '#1F1F1F',      // Very dark — strong emphasis
+    textMuted: '#5A3B1F',     // Dark brown — muted/secondary text
+    error: '#CC3F00',         // Burnt orange — errors, alerts
+    warning: '#CC3F00',       // Burnt orange
+    success: '#329732',       // Brand green
+    info: '#B868CA',          // Purple
 
-    // Role-specific pill colours  (lender = lilac, tender = green, both = mixed)
-    lenderBg: '#EDE0F5',
-    lenderText: '#7B3FA0',
-    tenderBg: '#E8F5E0',
-    tenderText: '#2E6B10',
-    bothBg: '#EEE0F5',
-    bothText: '#5A2F80',
+    // Role-specific pill colours — match the map pins: lender = lilac
+    // (offers garden), tender = green (does the growing).
+    lenderBg: '#f3e8f7',      // Light purple background
+    lenderText: '#B868CA',    // Purple text
+    tenderBg: '#e8f5e9',      // Light green background
+    tenderText: '#4F6642',    // Forest green text
+    bothBg: '#eef5e9',        // Light green/cream mix
+    bothText: '#4F6642',      // Forest green
   },
 
   // ── Typography ────────────────────────────────────────────────────────────
-  // Replace font names once the style tile confirms them.
+  // Use whatever Freegle's upstream typography.scss sets (Source Sans Pro
+  // body, system fallbacks). `inherit` keeps existing `var(--lat-font-*)`
+  // call-sites working without forcing a different family.
   fonts: {
-    heading: '"Playfair Display", Georgia, serif',
-    body: '"Inter", "Helvetica Neue", Arial, sans-serif',
+    heading: 'inherit',
+    body: 'inherit',
     mono: '"JetBrains Mono", "Fira Code", monospace',
   },
 
@@ -72,11 +75,11 @@ export const branding = {
     // Blur radius in metres applied to user pin coordinates before display.
     pinBlurMetres: 400,
     // Pin colours for SVG map icons
-    lenderPinColor: '#9B6FB0',   // lilac — lender (has a garden)
-    lenderPinStroke: '#6B3F80',
-    tenderPinColor: '#6B9E3C',   // green — tender (wants to grow)
-    tenderPinStroke: '#4A7A26',
-    bothPinColor: '#C8A0D8',     // light lavender — both roles
+    lenderPinColor: '#BB68CA',   // purple — lender (has a garden)
+    lenderPinStroke: '#7a3a8a',  // dark purple
+    tenderPinColor: '#329732',   // brand green — tender (wants to grow)
+    tenderPinStroke: '#4F6642',  // forest green
+    bothPinColor: '#8B5BA8',     // blended purple-green — both roles
   },
 
   // ── Joining fee ───────────────────────────────────────────────────────────

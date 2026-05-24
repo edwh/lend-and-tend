@@ -1,44 +1,215 @@
-version: '3.8'
-
 services:
-  # Lend & Tend Go API
-  lat-api:
-    container_name: ${COMPOSE_PROJECT_NAME:-lat}-api
-    build:
-      context: .
-      dockerfile: Dockerfile.lat
+  # Mailpit — dev SMTP catcher. Web UI on port 4025, SMTP on 1025 (internal).
+  lat-mailpit:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-mailpit
+    image: axllent/mailpit:latest
+    restart: unless-stopped
     ports:
-      - "${PORT_LAT_API:-8192}:8192"
-    environment:
-      DATABASE_TYPE: sqlite
-      SQLITE_PATH: /data/lendandtend.db
-      PORT: 8192
-      LAT_BLUR_SECRET: ${LAT_BLUR_SECRET:-dev-secret-change-in-production}
-      BASIC_AUTH: ${BASIC_AUTH:-}
-    volumes:
-      - lat-data:/data
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8192/apiv2/lat/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - "${PORT_LAT_MAILPIT:-4025}:8025"
     networks:
       - lat-network
 
-  # Lend & Tend Nuxt Dev Server
+  # Lend & Tend MySQL Database
+  lat-percona:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-percona
+    image: percona:8.0.43-34
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: lat
+      MYSQL_DATABASE: lat
+      MYSQL_USER: lat
+      MYSQL_PASSWORD: lat
+    volumes:
+      - lat-db:/var/lib/mysql
+      - ./conf/lat-percona-my.cnf:/etc/my.cnf.d/lat-custom.cnf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -P 3306 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 60s
+    networks:
+      - lat-network
+
+  # Runs Laravel migrations on startup then exits.
+  # Schema source of truth: iznik-batch/database/migrations/
+  batch:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-batch
+    build:
+      context: ./iznik-batch
+      dockerfile: docker/Dockerfile
+    restart: "no"
+    command: ["true"]
+    environment:
+      APP_NAME: "Lend and Tend Batch"
+      APP_KEY: base64:JXsa9TVxy8PQIrAgimIh0+4v8U7rSYhd3/+an8WYYQc=
+      APP_ENV: local
+      APP_DEBUG: "true"
+      LOG_CHANNEL: stderr
+      RUN_MIGRATIONS: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: lat-percona
+      DB_PORT: 3306
+      DB_DATABASE: lat
+      DB_USERNAME: root
+      DB_PASSWORD: lat
+    depends_on:
+      lat-percona:
+        condition: service_healthy
+    networks:
+      - lat-network
+
+  # Persistent batch worker — runs the Laravel scheduler every 60 s.
+  # Only essential system background jobs are enabled (LAT_BATCH_ONLY=true):
+  #   - chats:process-incoming  (makes messages visible to recipients)
+  # Additional jobs can be enabled in iznik-batch/routes/console.php later.
+  batch-worker:
+    container_name: ${COMPOSE_PROJECT_NAME:-lend-and-tend}-batch-worker
+    build:
+      context: ./iznik-batch
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    # Override CMD: skip supervisor, run just the scheduler loop.
+    command:
+      - /bin/bash
+      - -c
+      - |
+        while true; do
+          php /var/www/html/artisan schedule:run --verbose --no-interaction \
+            >> /var/www/html/storage/logs/scheduler.log 2>&1
+          sleep 60
+        done
+    environment:
+      APP_NAME: "Lend and Tend Batch Worker"
+      APP_KEY: base64:JXsa9TVxy8PQIrAgimIh0+4v8U7rSYhd3/+an8WYYQc=
+      APP_ENV: local
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      RUN_MIGRATIONS: "false"
+      LAT_BATCH_ONLY: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: lat-percona
+      DB_PORT: 3306
+      DB_DATABASE: lat
+      DB_USERNAME: root
+      DB_PASSWORD: lat
+      MAIL_MAILER: smtp
+      MAIL_HOST: lat-mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM_ADDRESS: "noreply@lendandtend.com"
+      MAIL_FROM_NAME: "Lend and Tend"
+      FREEGLE_USER_SITE: "http://localhost:4002"
+      FREEGLE_SITE_NAME: "Lend & Tend"
+    depends_on:
+      lat-percona:
+        condition: service_healthy
+      batch:
+        condition: service_completed_successfully
+      lat-mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/laravel-ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 120s
+    networks:
+      - lat-network
+
+  # Standard Freegle V2 API pointed at the L&T database.
+  lat-api:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-api
+    build:
+      context: ./iznik-server-go
+    ports:
+      - "${PORT_LAT_API:-4001}:8192"
+    environment:
+      MYSQL_HOST: lat-percona
+      MYSQL_PORT: 3306
+      MYSQL_DBNAME: lat
+      MYSQL_USER: root
+      MYSQL_PASSWORD: lat
+      MYSQL_PROTOCOL: tcp
+      USER_SITE: .localhost
+      JWT_SECRET: dev-lat-secret
+      IMAGE_DOMAIN: localhost
+      GROUP_DOMAIN: localhost
+      PASSWORD_SALT: lat-dev-salt
+    depends_on:
+      lat-percona:
+        condition: service_healthy
+      batch:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8192/apiv2/online || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - lat-network
+
+  # Lend & Tend Nuxt Dev Server — built from iznik-nuxt3 (same Dockerfile as
+  # the main Freegle dev container) so npm install runs at build time, not
+  # startup.  CMD is overridden to run the lat/ layer instead of the root app.
+  # extra_hosts mirrors the Freegle pattern: lat-api.localhost resolves to the
+  # host-gateway inside the container, and to 127.0.0.1 in the browser
+  # (RFC 6761 .localhost = loopback), so IZNIK_API_V2 works for both SSR and
+  # client-side calls without Traefik.
   lat-nuxt:
     container_name: ${COMPOSE_PROJECT_NAME:-lat}-nuxt
-    image: node:20-alpine
-    working_dir: /app
+    build:
+      context: ./iznik-nuxt3
+      dockerfile: lat/Dockerfile
+      network: host
     volumes:
-      - ./iznik-nuxt3:/app
-    command: npm run dev
+      - ./iznik-nuxt3/lat/components:/app/lat/components:rw
+      - ./iznik-nuxt3/lat/pages:/app/lat/pages:rw
+      - ./iznik-nuxt3/lat/stores:/app/lat/stores:rw
+      - ./iznik-nuxt3/lat/layouts:/app/lat/layouts:rw
+      - ./iznik-nuxt3/lat/plugins:/app/lat/plugins:rw
+      - ./iznik-nuxt3/lat/assets:/app/lat/assets:rw
+      - ./iznik-nuxt3/lat/nuxt.config.ts:/app/lat/nuxt.config.ts:rw
+      - ./iznik-nuxt3/lat/branding.config.ts:/app/lat/branding.config.ts:rw
     ports:
-      - "${PORT_LAT_NUXT:-3000}:3000"
+      - "${PORT_LAT_NUXT:-4002}:4002"
+    extra_hosts:
+      - "lat-api.localhost:host-gateway"
     environment:
-      IZNIK_API_V2: http://lat-api:8192/apiv2
+      IZNIK_API_V2: http://lat-api.localhost:${PORT_LAT_API:-4001}/apiv2
+      LAT_WORLD_GROUPID: "1000000"
       NODE_ENV: development
+      NUXT_DEV_MODE: "true"
+      SMTP_HOST: lat-mailpit
+      SMTP_PORT: "1025"
+      CONTACT_EMAIL: "hello@lendandtend.com"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_SUCCESS_URL: "${STRIPE_SUCCESS_URL:-http://localhost:4002/join/success}"
+      STRIPE_CANCEL_URL: "${STRIPE_CANCEL_URL:-http://localhost:4002/join}"
+    depends_on:
+      lat-api:
+        condition: service_healthy
+    networks:
+      - lat-network
+
+  # Lend & Tend Admin (modtools-lat) — stripped-down moderator interface
+  # for managing users, listings, and concession requests.
+  lat-admin:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-admin
+    build:
+      context: ./iznik-nuxt3
+      dockerfile: modtools-lat/Dockerfile
+      network: host
+    ports:
+      - "${PORT_LAT_ADMIN:-4003}:4003"
+    extra_hosts:
+      - "lat-api.localhost:host-gateway"
+    environment:
+      IZNIK_API_V2: http://lat-api.localhost:${PORT_LAT_API:-4001}/apiv2
+      LAT_WORLD_GROUPID: "1000000"
+      NODE_ENV: development
+      NUXT_DEV_MODE: "true"
     depends_on:
       lat-api:
         condition: service_healthy
@@ -46,7 +217,7 @@ services:
       - lat-network
 
 volumes:
-  lat-data:
+  lat-db:
     driver: local
 
 networks:

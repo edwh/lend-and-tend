@@ -1,0 +1,54 @@
+# Fly.io deployment config for Lend & Tend frontend (Nuxt 3)
+app = "lat-frontend"
+primary_region = "lhr"
+
+[build]
+dockerfile = "Dockerfile.fly"
+
+[env]
+IZNIK_API_V2 = "https://lat-api.fly.dev/apiv2"
+LAT_WORLD_GROUPID = "0"
+LAT_ALLOW_FAKE_PAYMENT = "false"
+LAT_USE_FREEGLE_GEOCODER = "false"
+LAT_MODERATION_ENABLED = "false"
+NODE_ENV = "production"
+
+[[services]]
+protocol = "tcp"
+internal_port = 3000
+processes = ["app"]
+
+  [[services.ports]]
+  port = 80
+  handlers = ["http"]
+  force_https = true
+
+  [[services.ports]]
+  port = 443
+  handlers = ["tls", "http"]
+
+  [[services.tcp_checks]]
+  interval = "10s"
+  timeout = "5s"
+
+[deploy]
+max_concurrency = 20
+strategy = "rolling"
+
+[[mounts]]
+source = "tmp"
+destination = "/app/.output/tmp"
+
+[auto_stop_machines]
+enabled = true
+stop_signal = "SIGTERM"
+
+[auto_start_machines]
+enabled = true
+
+[scale]
+min_machines_running = 0
+memory_mb = 512
+cpu_kind = "performance"
+cpus = 1
+processes = ["app"]

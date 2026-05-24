@@ -17,8 +17,9 @@
         <nav class="footer-links">
           <NuxtLink to="/map">Map</NuxtLink>
           <NuxtLink to="/about">About</NuxtLink>
-          <NuxtLink to="/register">Join</NuxtLink>
-          <NuxtLink to="/login">Sign in</NuxtLink>
+          <NuxtLink to="/help">Help & FAQ</NuxtLink>
+          <NuxtLink to="/terms">Terms</NuxtLink>
+          <NuxtLink to="/privacy">Privacy</NuxtLink>
         </nav>
       </div>
 
@@ -37,6 +38,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
+import { useNavbar } from '~/composables/useNavbar'
+const { requestLogin } = useNavbar()
 </script>
 
 <style scoped>
@@ -122,14 +125,22 @@ import branding from '~/branding.config'
   gap: 10px;
 }
 
-.footer-links a {
+.footer-links a,
+.footer-link-btn {
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-size: 0.9rem;
   transition: color 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
 }
 
-.footer-links a:hover {
+.footer-links a:hover,
+.footer-link-btn:hover {
   color: #fff;
 }
 

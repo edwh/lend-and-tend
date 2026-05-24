@@ -21,6 +21,9 @@
       />
     </div>
 
+    <!-- Slot for content after title (e.g. address picker in edit form) -->
+    <slot name="after-title" />
+
     <!-- Description field -->
     <div class="field">
       <label for="about">
@@ -217,7 +220,7 @@
 <script setup>
 import PhotoUploader from '~/components/PhotoUploader.vue'
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Object,
     required: true,
@@ -241,22 +244,6 @@ function updateField(field, value) {
     [field]: value,
   })
 }
-
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-  },
-  type: {
-    type: String,
-    enum: ['Offer', 'Wanted'],
-    required: true,
-  },
-  attachments: {
-    type: Array,
-    required: true,
-  },
-})
 </script>
 
 <style scoped>
@@ -300,7 +287,13 @@ label {
 
 .checkbox-label input {
   margin: 0;
-  width: auto;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border-radius: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .honesty-field {

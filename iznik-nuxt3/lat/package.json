@@ -9,5 +9,12 @@
     "preview": "nuxt preview",
     "clean": "nuxi cleanup",
     "lint": "eslint --fix --ext .js,.jsx,.ts,.vue ."
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16",
+    "stripe": "^17.7.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.17"
   }
 }

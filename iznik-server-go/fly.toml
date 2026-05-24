@@ -1,0 +1,50 @@
+# Fly.io deployment config for Lend & Tend Go API server
+app = "lat-api"
+primary_region = "lhr"
+
+[build]
+dockerfile = "Dockerfile.fly"
+
+[[services]]
+protocol = "tcp"
+internal_port = 8192
+processes = ["app"]
+
+  [[services.ports]]
+  port = 80
+  handlers = ["http"]
+  force_https = true
+
+  [[services.ports]]
+  port = 443
+  handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+  interval = "10s"
+  timeout = "5s"
+  grace_period = "5s"
+  path = "/api/version"
+
+[deploy]
+max_concurrency = 25
+strategy = "rolling"
+
+[env]
+USER_SITE = "lendandtend.fly.dev"
+MYSQL_PROTOCOL = "tcp"
+MYSQL_PORT = "3306"
+SENTRY_ENVIRONMENT = "production"
+
+[auto_stop_machines]
+enabled = true
+stop_signal = "SIGTERM"
+
+[auto_start_machines]
+enabled = true
+
+[scale]
+min_machines_running = 0
+memory_mb = 512
+cpu_kind = "performance"
+cpus = 1
+processes = ["app"]

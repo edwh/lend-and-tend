@@ -5,19 +5,19 @@
       <div class="testimonials">
         <blockquote class="testimonial">
           <p>"What with the allotment list being never-ending, it's 2 miles away from where I live anyway. I love having somewhere to grow at the end of my road."</p>
-          <footer>Dan, Garden Tender &mdash; Streatham</footer>
+          <footer>Dan, Garden Tender</footer>
         </blockquote>
         <blockquote class="testimonial">
           <p>"I have a garden and never have the time or money to make it come in to fruition…what a great idea."</p>
-          <footer>Sophie, Garden Owner &mdash; Clapton</footer>
+          <footer>Sophie, Garden Owner</footer>
         </blockquote>
         <blockquote class="testimonial">
           <p>"My grandad loves this idea, an avid gardener but he's now in a wheelchair. Now he can enjoy his garden again whilst someone else helps."</p>
-          <footer>Richie, Garden Tender &amp; Grandson of Garden Owner &mdash; Canning Town</footer>
+          <footer>Richie, Garden Tender &amp; Grandson of Garden Owner</footer>
         </blockquote>
         <blockquote class="testimonial">
           <p>"This is a win win situation! I have a garden that needs doing and there is someone nearby that wants to do it? Be my guest!"</p>
-          <footer>Sunni, Garden Owner &mdash; Fulham</footer>
+          <footer>Sunni, Garden Owner</footer>
         </blockquote>
       </div>
     </div>

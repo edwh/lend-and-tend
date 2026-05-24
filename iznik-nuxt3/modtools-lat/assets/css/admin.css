@@ -1,0 +1,196 @@
+/* Lend & Tend Admin — minimal CSS using CSS variables from the LAT layer */
+:root {
+  --lat-color-primary: #6b9e3c;
+  --lat-color-primary-dark: #527a2d;
+  --lat-color-text: #1a2e0d;
+  --lat-color-text-muted: #6b7c61;
+  --lat-color-surface: #f4f7f0;
+  --lat-font-body: 'Inter', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--lat-font-body);
+  background: var(--lat-color-surface);
+  color: var(--lat-color-text);
+}
+
+a { color: var(--lat-color-primary); }
+a:hover { color: var(--lat-color-primary-dark); }
+
+.admin-page {
+  padding: 24px 16px 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Navbar */
+.admin-navbar {
+  background: #1a2e0d;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.admin-navbar__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.admin-navbar__title {
+  color: #e8f5e9;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.admin-nav-link {
+  color: #c8e6c9;
+  text-decoration: none;
+  font-size: 0.88rem;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.admin-nav-link:hover,
+.admin-nav-link.router-link-active { background: rgba(255,255,255,0.15); color: #fff; }
+
+.admin-nav-link--logout { color: #ef9a9a; margin-left: auto; }
+
+/* Cards */
+.admin-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.admin-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+  color: var(--lat-color-text);
+}
+
+/* Stat grid */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-box {
+  background: white;
+  border-radius: 10px;
+  padding: 20px 16px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+  text-align: center;
+}
+
+.stat-box__num { font-size: 2rem; font-weight: 700; color: var(--lat-color-primary); }
+.stat-box__label { font-size: 0.8rem; color: var(--lat-color-text-muted); margin-top: 4px; }
+
+/* Table */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  color: var(--lat-color-text-muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td { background: #fafafa; }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-paid { background: #e8f5e9; color: #2e7d32; }
+.badge-concession { background: #fff3e0; color: #e65100; }
+.badge-unpaid { background: #f5f5f5; color: #757575; }
+.badge-offer { background: #e8f5e9; color: #2d5a27; }
+.badge-wanted { background: #e3f2fd; color: #1565c0; }
+
+/* Forms */
+.search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  font-family: inherit;
+}
+.search-input:focus { outline: none; border-color: var(--lat-color-primary); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary { background: var(--lat-color-primary); color: white; }
+.btn-primary:hover { background: var(--lat-color-primary-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+.btn-danger { background: #c62828; color: white; }
+.btn-danger:hover { background: #b71c1c; }
+.btn-success { background: #2e7d32; color: white; }
+.btn-success:hover { background: #1b5e20; }
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: var(--lat-color-text);
+}
+
+.text-muted { color: var(--lat-color-text-muted); }
+.mt-3 { margin-top: 12px; }
+.mb-3 { margin-bottom: 12px; }

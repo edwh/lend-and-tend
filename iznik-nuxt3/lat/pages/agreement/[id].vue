@@ -1,11 +1,7 @@
 <template>
   <div class="agreement-page">
-    <div class="breadcrumb">
-      <NuxtLink to="/">Home</NuxtLink>
-      <span> / </span>
-      <NuxtLink :to="`/garden/${messageId}`">Garden</NuxtLink>
-      <span> / </span>
-      <span>Agreement</span>
+    <div class="page-nav">
+      <button class="btn-back" @click="goBack">← Back to chat</button>
     </div>
 
     <div class="page-header">
@@ -21,12 +17,20 @@
       v-else
       :message-id="messageId"
       :other-user-id="otherUserId"
+      @go-back="goBack"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useChatStore } from '~/stores/chat'
+import { useAuthStore } from '~/stores/auth'
+import { onMounted } from 'vue'
+
 const route = useRoute()
+const router = useRouter()
+const chatStore = useChatStore()
+const authStore = useAuthStore()
 
 const messageId = computed(() => {
   const id = route.params.id
@@ -38,7 +42,28 @@ const otherUserId = computed(() => {
   return uid ? parseInt(uid as string, 10) : null
 })
 
-definePageMeta({ layout: 'default' })
+async function goBack() {
+  if (otherUserId.value) {
+    try {
+      const chatId = await chatStore.openChat({ userid: otherUserId.value })
+      if (chatId) {
+        await navigateTo(`/chats/${chatId}`)
+        return
+      }
+    } catch { /* fall through */ }
+  }
+  router.back()
+}
+
+onMounted(() => {
+  if (!authStore.user) {
+    navigateTo('/join')
+  }
+})
+
+definePageMeta({
+  layout: 'default'
+})
 </script>
 
 <style scoped>
@@ -48,18 +73,22 @@ definePageMeta({ layout: 'default' })
   padding: 2rem 1rem;
 }
 
-.breadcrumb {
-  margin-bottom: 2rem;
-  color: #666;
-  font-size: 0.9rem;
+.page-nav {
+  margin-bottom: 1rem;
 }
 
-.breadcrumb a {
+.btn-back {
+  background: none;
+  border: none;
   color: var(--lat-color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
   text-decoration: none;
 }
 
-.breadcrumb a:hover {
+.btn-back:hover {
   text-decoration: underline;
 }
 

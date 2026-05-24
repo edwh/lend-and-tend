@@ -53,6 +53,8 @@ module.exports = {
         'pages/**/*.vue',
         'modtools/layouts/*.vue',
         'modtools/pages/**/*.vue',
+        'lat/layouts/*.vue',
+        'lat/pages/**/*.vue',
       ],
       rules: {
         // Not sure why we have two copies of this, one above and one here, but this one makes [id] work.
@@ -84,8 +86,10 @@ module.exports = {
     useRoute: 'readonly',
     useRouter: 'readonly',
     ref: 'readonly',
+    reactive: 'readonly',
     computed: 'readonly',
     watch: 'readonly',
+    useFetch: 'readonly',
     onMounted: 'readonly',
     onBeforeUnmount: 'readonly',
     usePinia: 'readonly',
@@ -93,5 +97,6 @@ module.exports = {
     navigateTo: 'readonly',
     sendRedirect: 'readonly',
     setResponseStatus: 'readonly',
+    $fetch: 'readonly',
   },
 }

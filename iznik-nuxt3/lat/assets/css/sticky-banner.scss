@@ -1,0 +1,10 @@
+/* L&T has no sticky banner — provide zero-height fallback so upstream LayoutCommon.vue compiles */
+$sticky-banner-height-mobile: 0px;
+$mobile-tall: 600px;
+$sticky-banner-height-mobile-tall: 0px;
+
+$sticky-banner-height-desktop: 0px;
+$desktop-tall: 950px;
+$sticky-banner-height-desktop-tall: 0px;
+
+$ads-cta: 0px;

@@ -331,6 +331,10 @@ return [
 
     'geocoder' => env('FREEGLE_GEOCODER_URL', ''),
 
+    'lat' => [
+        'world_groupid' => (int) env('LAT_WORLD_GROUPID', 1000000),
+    ],
+
     'whatjobs' => [
         'feed1' => env('WHATJOBS_FEED1', ''),
         'feed2' => env('WHATJOBS_FEED2', ''),

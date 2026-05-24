@@ -14,7 +14,7 @@
             <li>Learn or share gardening skills</li>
             <li>Be part of a kind, supported Patch-Matching process</li>
           </ul>
-          <NuxtLink to="/register" class="role-cta tender-cta">Find a garden →</NuxtLink>
+          <button class="role-cta tender-cta" @click="requestLogin()">Find a garden →</button>
         </div>
       </div>
       <div class="role-card role-lender">
@@ -29,7 +29,7 @@
             <li>Enjoy the potential for extra help in the garden</li>
             <li>Benefit from our supported, thoughtful Patch-Matching process</li>
           </ul>
-          <NuxtLink to="/register" class="role-cta lender-cta">Share my garden →</NuxtLink>
+          <button class="role-cta lender-cta" @click="requestLogin()">Share my garden →</button>
         </div>
       </div>
     </div>
@@ -38,6 +38,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
+import { useNavbar } from '~/composables/useNavbar'
+const { requestLogin } = useNavbar()
 </script>
 
 <style scoped>
@@ -160,6 +162,10 @@ import branding from '~/branding.config'
   text-align: center;
   display: block;
   transition: filter 0.2s;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .role-cta:hover { filter: brightness(0.9); }

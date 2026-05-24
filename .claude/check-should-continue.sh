@@ -39,6 +39,9 @@ CONTINUE_PATTERNS=(
   # Summarising remaining work
   'remaining (work|tasks|items|steps)'
   'left to do'
+  'still pending'
+  'still (open|outstanding|todo|to-do|to do)'
+  '(still|yet) to (be )?(done|fixed|addressed|implemented|completed)'
   'here.*(what|the).*(remaining|left|next|outstanding)'
   'summary of (remaining|what|outstanding)'
   '(### )?Summary$'

@@ -25,15 +25,9 @@
             @click="showInfo"
             @dismiss="showNotices = false"
           >
-            This member has some poor ratings. That might not be their fault,
-            but please make very clear arrangements. If you have a good
-            experience with them, give them a thumbs up.
-            <UserRatings
-              v-if="chat.otheruid"
-              :id="chat.otheruid"
-              :key="'otheruser-' + chat.otheruid"
-              class="mt-2"
-            />
+            This member has a lot of thumbs down ratings. That might not be
+            their fault, but please make very clear arrangements. If you have a
+            good experience with them, give them a thumbs up.
           </ChatNotice>
           <ChatNotice
             v-else-if="expectedreplies && !otheruser?.spammer"
@@ -66,7 +60,7 @@
             dismissible
             @dismiss="showNotices = false"
           >
-            You previously gave this member a thumbs down rating.
+            You previously gave this member a thumbs down.
           </ChatNotice>
         </div>
       </template>
@@ -151,13 +145,16 @@
           class="action-buttons"
         >
           <button
-            v-if="ouroffers && ouroffers.length > 0"
-            v-b-tooltip="'Agree to share your garden with this person'"
+            v-b-tooltip="
+              existingAgreement ? 'View agreement' : 'Sign an agreement'
+            "
             class="action-chip"
             @click="goToAgreement"
           >
             <v-icon icon="handshake" class="action-icon" />
-            <span>Promise</span>
+            <span>{{
+              existingAgreement ? 'Agreement' : 'Sign agreement'
+            }}</span>
           </button>
           <button
             v-b-tooltip="'Send your address'"
@@ -165,27 +162,7 @@
             @click="addressBook"
           >
             <v-icon icon="address-book" class="action-icon" />
-            <span>Address</span>
-          </button>
-          <button
-            v-if="hasUserSentMessage && !tooSoonToNudge"
-            v-b-tooltip="'Waiting for a reply? Send a nudge.'"
-            class="action-chip"
-            @click="nudge"
-          >
-            <v-icon icon="bell" class="action-icon" />
-            <span>Nudge</span>
-          </button>
-          <button
-            v-if="hasUserSentMessage && tooSoonToNudge"
-            v-b-tooltip="
-              'You need to wait a day since the last message before nudging.'
-            "
-            class="action-chip disabled"
-            @click="nudgeTooSoon"
-          >
-            <v-icon icon="bell" class="action-icon" />
-            <span>Nudge</span>
+            <span>Send address</span>
           </button>
         </div>
         <div class="send-area">
@@ -212,14 +189,8 @@
       </div>
       <div class="d-flex d-lg-none justify-content-between align-middle">
         <div
-          v-if="
-            chat &&
-            chat.chattype === 'User2User' &&
-            otheruser &&
-            ouroffers &&
-            ouroffers.length > 0
-          "
-          class="me-2"
+          v-if="chat && chat.chattype === 'User2User' && otheruser"
+          class="ms-1 me-2"
           @click="goToAgreement"
         >
           <v-icon
@@ -228,10 +199,13 @@
             class="fa-mob"
             :class="{ shrink: shrink }"
           />
-          <div class="mobtext text--smallest">Promise</div>
+          <div class="mobtext text--smallest">
+            {{ existingAgreement ? 'Agreement' : 'Sign agreement' }}
+          </div>
         </div>
         <div
           v-if="chat && chat.chattype === 'User2User' && otheruser"
+          disabled
           class="me-2"
           @click="addressBook"
         >
@@ -241,7 +215,7 @@
             class="fa-mob"
             :class="{ shrink: shrink }"
           />
-          <div class="mobtext text--smallest">Address</div>
+          <div class="mobtext text--smallest">Send address</div>
         </div>
         <div
           v-if="chat && chat.chattype === 'User2Mod' && mod"
@@ -255,44 +229,6 @@
             :class="{ shrink: shrink }"
           />
           <div class="mobtext text--smallest">Spammer</div>
-        </div>
-        <div
-          v-if="
-            chat &&
-            chat.chattype === 'User2User' &&
-            otheruser &&
-            hasUserSentMessage &&
-            !tooSoonToNudge
-          "
-          class="me-2"
-          @click="nudge"
-        >
-          <v-icon
-            scale="2"
-            icon="bell"
-            class="fa-mob"
-            :class="{ shrink: shrink }"
-          />
-          <div class="mobtext text--smallest">Nudge</div>
-        </div>
-        <div
-          v-if="
-            chat &&
-            chat.chattype === 'User2User' &&
-            otheruser &&
-            hasUserSentMessage &&
-            tooSoonToNudge
-          "
-          class="me-2"
-          @click="nudgeTooSoon"
-        >
-          <v-icon
-            scale="2"
-            icon="bell"
-            class="fa-mob"
-            :class="{ shrink: shrink }"
-          />
-          <div class="mobtext text--smallest">Nudge</div>
         </div>
         <div class="" @click="photoAdd">
           <v-icon
@@ -315,16 +251,25 @@
         />
       </div>
     </div>
+    <PromiseModal
+      v-if="showPromise"
+      :messages="ouroffers"
+      :selected-message="likelymsg ? likelymsg : 0"
+      :users="otheruser ? [otheruser] : []"
+      :selected-user="otheruser ? otheruser.id : null"
+      :maybe="showPromiseMaybe"
+      @hide="fetchMessages"
+      @hidden="showPromise = false"
+    />
     <ProfileModal
       v-if="showProfileModal && otheruser"
       :id="otheruser ? otheruser.id : null"
       @hidden="showProfileModal = false"
     />
-    <AddressModal
+    <LatSendAddressModal
       v-if="showAddress"
-      :choose="true"
-      t-o-d-o
-      @chosen="sendAddress"
+      @sent="sendAddressText"
+      @sent-with-address-id="sendAddressById"
       @hidden="showAddress = false"
     />
     <ChatRSVPModal
@@ -333,16 +278,6 @@
       ref="rsvp"
       :user="otheruser"
       @hidden="RSVP = false"
-    />
-    <NudgeTooSoonWarningModal
-      v-if="showNudgeTooSoonWarningModal"
-      @confirm="doNudge"
-      @hidden="showNudgeTooSoonWarningModal = false"
-    />
-    <NudgeWarningModal
-      v-if="showNudgeWarningModal"
-      @confirm="doNudge"
-      @hidden="showNudgeWarningModal = false"
     />
     <MicroVolunteering v-if="showMicrovolunteering" />
   </div>
@@ -375,35 +310,27 @@ import { useTypewriter } from '~/composables/useTypewriter'
 import JumpingDots from '~/components/JumpingDots.vue'
 import ChatNotice from '~/components/ChatNotice.vue'
 
-/* Define props */
+// Define props
 const props = defineProps({
   id: { type: Number, required: true },
 })
 
-/* Define emits */
+// Define emits
 const emit = defineEmits(['typing', 'scrollbottom'])
 
-/* Don't use dynamic imports because it stops us being able to scroll to the bottom after render. */
+// Don't use dynamic imports because it stops us being able to scroll to the bottom after render.
 const OurUploader = defineAsyncComponent(() =>
   import('~/components/OurUploader')
 )
-const UserRatings = defineAsyncComponent(() =>
-  import('~/components/UserRatings')
-)
-const ProfileModal = defineAsyncComponent(() =>
-  import('~/components/ProfileModal')
-)
-const AddressModal = defineAsyncComponent(() =>
-  import('~/components/AddressModal')
+// IMPORTANT: do NOT explicit-import ProfileModal or PromiseModal —
+// `~/components/X` resolves to upstream Freegle, bypassing the lat layer
+// override. Let Nuxt auto-import resolve <ProfileModal>/<PromiseModal> in the
+// template to lat/components/{ProfileModal,PromiseModal}.vue.
+const LatSendAddressModal = defineAsyncComponent(() =>
+  import('~/components/LatSendAddressModal')
 )
 const ChatRSVPModal = defineAsyncComponent(() =>
   import('~/components/ChatRSVPModal')
-)
-const NudgeWarningModal = defineAsyncComponent(() =>
-  import('~/components/NudgeWarningModal')
-)
-const NudgeTooSoonWarningModal = defineAsyncComponent(() =>
-  import('~/components/NudgeTooSoonWarningModal')
 )
 const MicroVolunteering = defineAsyncComponent(() =>
   import('~/components/MicroVolunteering')
@@ -411,36 +338,63 @@ const MicroVolunteering = defineAsyncComponent(() =>
 
 const { me, myid } = useMe()
 
-/* Setup stores */
+// Setup stores
 const authStore = useAuthStore()
 const miscStore = useMiscStore()
 const addressStore = useAddressStore()
+const router = useRouter()
 
-/* Setup chat data */
-const {
-  chat,
-  otheruser,
-  tooSoonToNudge,
-  chatStore,
-  chatmessages,
-  milesaway,
-  milesstring,
-  mymessages,
-} = await setupChat(props.id)
+// Setup chat data
+const { chat, otheruser, chatStore, chatmessages, milesaway, milesstring } =
+  await setupChat(props.id)
 
-/* Extract writable state from store */
+// Extract writable state from store
 const { lastTyping } = storeToRefs(miscStore)
 
-/* Refs (former data properties) */
+// Refs (former data properties)
 const sending = ref(false)
 const uploading = ref(false)
 const showMicrovolunteering = ref(false)
 const showNotices = ref(true)
 const showSpammerWarning = ref(true)
+const showPromise = ref(false)
+const showPromiseMaybe = ref(false)
+
+// True when a Promised message exists in the chat (agreement already proposed/confirmed)
+const existingAgreement = computed(() =>
+  chatmessages.value.some((m) => m.type === 'Promised')
+)
+
+const goToAgreement = async () => {
+  if (!otheruser.value?.id) return
+  const config = useRuntimeConfig()
+  const groupid = config.public.LAT_WORLD_GROUPID
+
+  // Search both participants for a LAT Offer listing (the garden to agree on)
+  for (const userId of [otheruser.value.id, myid.value]) {
+    try {
+      const data = await $fetch(
+        `${config.public.APIv2}/user/${userId}/message`,
+        { params: { active: true } }
+      )
+      const msgs = Array.isArray(data) ? data : []
+      const offer = msgs.find(
+        (m) => Number(m.groupid) === Number(groupid) && m.type === 'Offer'
+      )
+      if (offer) {
+        router.push(`/agreement/${offer.id}?userId=${otheruser.value.id}`)
+        return
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
 const showProfileModal = ref(false)
 const showAddress = ref(false)
 const sendmessage = ref(null)
 const RSVP = ref(false)
+const likelymsg = ref(null)
 const ouroffers = ref([])
 const hideSuggestedAddress = ref(false)
 const caretPosition = ref({ top: 0, left: 0 })
@@ -449,7 +403,7 @@ const chatarea = ref(null)
 const rsvp = ref(null)
 const isFocused = ref(false)
 
-/* Typewriter animation for placeholder */
+// Typewriter animation for placeholder
 const {
   displayedText,
   showDots,
@@ -461,13 +415,13 @@ const {
   finalText: 'Type here.',
 })
 
-/* Computed properties */
+// Computed properties
 const shrink = computed(() => {
   return sendmessage.value?.length > 120
 })
 
 const height = computed(() => {
-  /* Bootstrap Vue Next doesn't yet have autoresizing. */
+  // Bootstrap Vue Next doesn't yet have autoresizing.
   const heightValue = Math.min(6, Math.round(sendmessage.value?.length / 60))
   return heightValue + 6 + 'rem'
 })
@@ -521,7 +475,7 @@ const enterNewLine = computed({
 const expectedreplies = computed(() => {
   const count = otheruser.value?.expectedreplies
   if (count) {
-    return count === 1 ? '1 person is' : `${count} people are`
+    return count === 1 ? '1 member is' : `${count} members are`
   }
 
   return null
@@ -555,8 +509,8 @@ const suggestedAddress = computed(() => {
   const sendLower = sendmessage.value?.toLowerCase()
 
   if (sendMessageLength >= 3 && possibleAddressesLength) {
-    /* Scan through the possible addresses, looking for the longest prefix of the address which appears as a
-       suffix of the typed message. This finds when they're typing a possibly matching address. */
+    // Scan through the possible addresses, looking for the longest prefix of the address which appears as a
+    // suffix of the typed message. This finds when they're typing a possibly matching address.
     for (let i = 0; i < possibleAddressesLength; i++) {
       const addr = possibleAddresses.value[i].singleline.toLowerCase()
 
@@ -586,12 +540,7 @@ const showSuggested = computed(() => {
   return !hideSuggestedAddress.value && suggestedAddress.value !== null
 })
 
-/* In L&T, the Nudge button should only show if the current user has sent at least one message. */
-const hasUserSentMessage = computed(() => {
-  return mymessages.value && mymessages.value.length > 0
-})
-
-/* Methods */
+// Methods
 const updateCaretPosition = () => {
   const textarea = chatarea.value.$el
   const caretCoords = getCaretCoordinates(textarea, textarea.selectionEnd)
@@ -605,7 +554,7 @@ const updateCaretPosition = () => {
 const applySuggestedAddress = async () => {
   const matchedLength = suggestedAddress.value.matchedLength
   const suggestedAddressText = suggestedAddress.value.address.singleline
-  /* No need to apply suggestion if length of match and address are equal */
+  // No need to apply suggestion if length of match and address are equal
   if (matchedLength === suggestedAddressText.length) {
     return
   }
@@ -619,7 +568,7 @@ const applySuggestedAddress = async () => {
 
   if (el) {
     setTimeout(() => {
-      /* Focus at end of text. */
+      // Focus at end of text.
       el.focus()
       el.selectionStart = sendmessage.value.length
     }, 100)
@@ -629,11 +578,11 @@ const applySuggestedAddress = async () => {
 const _updateAfterSend = async () => {
   sending.value = false
 
-  /* Fetch the messages again to pick up the new one. */
+  // Fetch the messages again to pick up the new one.
   await fetchMessages()
   emit('scrollbottom')
 
-  /* We also want to trigger an update in the chat list. */
+  // We also want to trigger an update in the chat list.
   await chatStore.fetchChat(props.id)
 }
 
@@ -649,19 +598,6 @@ const onFocus = () => {
 
 const onBlur = () => {
   isFocused.value = false
-}
-
-const doNudge = async () => {
-  await chatStore.nudge(props.id)
-  _updateAfterSend()
-}
-
-const nudge = () => {
-  showNudgeWarningModal.value = true
-}
-
-const nudgeTooSoon = () => {
-  showNudgeTooSoonWarningModal.value = true
 }
 
 const newline = () => {
@@ -684,45 +620,84 @@ const addressBook = async () => {
 }
 
 const photoAdd = () => {
-  /* Flag that we're uploading. This will trigger the render of the filepond instance and subsequently the
-     processed callback below. */
+  // Flag that we're uploading. This will trigger the render of the filepond instance and subsequently the
+  // processed callback below.
   uploading.value = true
 }
 
-const goToAgreement = async () => {
-  ouroffers.value = await fetchOurOffers()
+// eslint-disable-next-line no-unused-vars
+const promise = (date, maybe) => {
+  // Show the modal first, as eye candy.
+  showPromiseMaybe.value = !!maybe
+  showPromise.value = !maybe
 
-  // Find the garden listing most contextually relevant to this chat
-  const messageStore = useMessageStore()
-  let targetMsgId = 0
+  nextTick(async () => {
+    ouroffers.value = await fetchOurOffers()
 
-  // First pass: look for an Interested message in the chat that references one of our offers
-  for (const msg of chatmessages.value) {
-    if (msg.type === 'Interested' && msg.refmsgid) {
-      const match = ouroffers.value.find(
-        (o) => o.id === msg.refmsgid && !o.promised && (!o.outcomes || o.outcomes.length === 0)
-      )
-      if (match) {
-        targetMsgId = match.id
-        break
-      }
-      // Offer not in our cached list — fetch it
-      const refMsg = await messageStore.fetch(msg.refmsgid)
-      if (refMsg && refMsg.type === 'Offer' && refMsg.fromuser === myid.value && !refMsg.successful) {
-        targetMsgId = refMsg.id
-        break
+    // Find the last message referenced in this chat, if any. That's the most likely one you'd want to promise,
+    // so it should be the default.
+    likelymsg.value = 0
+
+    // Collect refmsgids from chat messages and ensure they're in the offers list
+    const messageStore = useMessageStore()
+    const refMsgIds = new Set()
+
+    for (const msg of chatmessages.value) {
+      if (msg.type === 'Interested' && msg.refmsgid) {
+        refMsgIds.add(msg.refmsgid)
       }
     }
-  }
 
-  // Fall back to first available offer
-  if (!targetMsgId && ouroffers.value.length > 0) {
-    targetMsgId = ouroffers.value[0].id
-  }
+    // Fetch and add any referenced messages not already in ouroffers
+    const referencedOffers = []
+    for (const refmsgid of refMsgIds) {
+      const existingIndex = ouroffers.value.findIndex((o) => o.id === refmsgid)
+      if (existingIndex !== -1) {
+        // Already in list - remove it so we can add it to the top
+        referencedOffers.push(ouroffers.value.splice(existingIndex, 1)[0])
+      } else {
+        // Not in list - fetch it
+        const refMsg = await messageStore.fetch(refmsgid)
+        if (
+          refMsg &&
+          refMsg.type === 'Offer' &&
+          refMsg.fromuser === myid.value &&
+          !refMsg.successful
+        ) {
+          referencedOffers.push(refMsg)
+        }
+      }
+    }
 
-  if (targetMsgId && otheruser.value?.id) {
-    navigateTo(`/agreement/${targetMsgId}?userId=${otheruser.value.id}`)
-  }
+    // Sort referenced messages by most recent first
+    referencedOffers.sort((a, b) => {
+      const dateA = new Date(a.arrival || 0)
+      const dateB = new Date(b.arrival || 0)
+      return dateB - dateA
+    })
+
+    // Put referenced messages at the top, deduplicate by id
+    const seen = new Set(referencedOffers.map((o) => o.id))
+    const otherOffers = ouroffers.value.filter((o) => !seen.has(o.id))
+    ouroffers.value = [...referencedOffers, ...otherOffers]
+
+    // Now find the most likely message to pre-select
+    for (const msg of chatmessages.value) {
+      if (msg.type === 'Interested' && msg.refmsgid) {
+        // Check that it's still in our list of messages
+        for (const ours of ouroffers.value) {
+          if (
+            ours.id === msg.refmsgid &&
+            !ours.promised &&
+            (!ours.outcomes || ours.outcomes.length === 0)
+          ) {
+            likelymsg.value = msg.refmsgid
+            showPromise.value = true
+          }
+        }
+      }
+    }
+  })
 }
 
 const showInfo = () => {
@@ -740,8 +715,8 @@ const send = async (callback) => {
     if (msg) {
       sending.value = true
 
-      /* If the current last message in this chat is an "interested" from the other party, then we're going to ask
-         if they expect a reply. */
+      // If the current last message in this chat is an "interested" from the other party, then we're going to ask
+      // if they expect a reply.
       const needRSVP =
         chatmessages.value.length &&
         chatmessages.value[chatmessages.value.length - 1].type ===
@@ -750,13 +725,13 @@ const send = async (callback) => {
           myid.value &&
         chat.value.chattype === 'User2User'
 
-      /* Encode up any emojis. */
+      // Encode up any emojis.
       msg = untwem(msg)
 
-      /* Send it */
+      // Send it
       await chatStore.send(props.id, msg)
 
-      /* Clear the message now it's sent. */
+      // Clear the message now it's sent.
       sendmessage.value = ''
 
       await _updateAfterSend()
@@ -764,14 +739,14 @@ const send = async (callback) => {
       if (needRSVP) {
         RSVP.value = true
       } else {
-        /* We've sent a message. This would be a good time to do some microvolunteering. */
+        // We've sent a message. This would be a good time to do some microvolunteering.
         showMicrovolunteering.value = true
       }
     }
   }
 
   if (typeof callback === 'function') {
-    /* For the send-on-enter case we are passed the native event, whereas for SpinButton we are passed a callback. */
+    // For the send-on-enter case we are passed the native event, whereas for SpinButton we are passed a callback.
     callback()
   }
 }
@@ -780,8 +755,19 @@ const fetchMessages = async () => {
   await chatStore.fetchMessages(props.id)
 }
 
-const sendAddress = async (id) => {
-  await chatStore.send(props.id, null, id)
+const sendAddressText = async (addressText) => {
+  if (!addressText) return
+  await chatStore.send(props.id, `My garden address:\n${addressText}`)
+  await _updateAfterSend()
+}
+
+// Called when LatSendAddressModal could create a real Freegle Address record
+// from the garden's PAF id — the resulting addressid renders as the proper
+// "User sent an address" map-card via Freegle's existing chat-message-address
+// component, rather than a plain text message.
+const sendAddressById = async (addressId) => {
+  if (!addressId) return
+  await chatStore.send(props.id, null, addressId)
   await _updateAfterSend()
 }
 
@@ -789,13 +775,13 @@ const typing = async () => {
   const now = new Date().getTime()
 
   if (!lastTyping.value || now - lastTyping.value > TYPING_TIME_INVERVAL) {
-    /* Let the server know that we are typing, no more frequently than every 10 seconds. */
+    // Let the server know that we are typing, no more frequently than every 10 seconds.
     await chatStore.typing(props.id)
     lastTyping.value = now
   }
 }
 
-/* Watch for changes */
+// Watch for changes
 watch(
   suggestedAddress,
   async (newVal) => {
@@ -809,8 +795,8 @@ watch(
 )
 
 watch(sendmessage, (newVal, oldVal) => {
-  /* This will result in the chat header shrinking once you start typing, to give more room, and then
-     expanding back again if you delete everything. Only emit the event when the state changes. */
+  // This will result in the chat header shrinking once you start typing, to give more room, and then
+  // expanding back again if you delete everything. Only emit the event when the state changes.
   if ((newVal && !oldVal) || (!newVal && oldVal)) {
     emit('typing', newVal?.length)
   }
@@ -820,8 +806,10 @@ watch(
   () => me.value,
   async (newVal) => {
     if (newVal?.settings?.mylocation?.id) {
-      /* We know our postcode. This will usually be the case if we've posted.
-         Fetch the addresses in that postcode - we can then spot them when people type and suggest them. */
+      // We know our postcode. This will usually be the case if we've posted.
+      //
+      // Fetch the addresses in that postcode - we can then spot them when people type and suggest
+      // them.
       await addressStore.fetchProperties(newVal?.settings?.mylocation?.id)
     }
   },
@@ -862,24 +850,18 @@ watch(
   { deep: true }
 )
 
-/* Lifecycle hooks */
-onMounted(async () => {
+// Lifecycle hooks
+onMounted(() => {
   setTimeout(() => {
     showNotices.value = false
   }, 30000)
 
-  /* Delay typewriter animation to start after the profile card collapses
-     Profile card: 800ms delay + 3000ms display + 500ms collapse animation = ~4300ms */
+  // Delay typewriter animation to start after the profile card collapses
+  // Profile card: 800ms delay + 3000ms display + 500ms collapse animation = ~4300ms
   setTimeout(() => {
     startTypewriterAnimation()
   }, 4500)
-
-  ouroffers.value = await fetchOurOffers()
 })
-
-/* L&T-specific ref for showing nudge warning modal */
-const showNudgeWarningModal = ref(false)
-const showNudgeTooSoonWarningModal = ref(false)
 </script>
 <style scoped lang="scss">
 @import 'bootstrap/scss/functions';
@@ -1039,7 +1021,7 @@ const showNudgeTooSoonWarningModal = ref(false)
   }
 }
 
-/* Mobile action bar styling */
+// Mobile action bar styling
 .d-flex.d-lg-none {
   padding: 4px 2px;
   gap: 2px;

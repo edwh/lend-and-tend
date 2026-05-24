@@ -23,8 +23,6 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/map': { ssr: false },
-    '/messages/**': { ssr: false },
-    '/profile': { ssr: false },
     '/admin/**': { ssr: false },
     '/garden/**': { ssr: false },
   },
@@ -32,6 +30,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       APIv2: process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2',
+      LAT_WORLD_GROUPID: parseInt(process.env.LAT_WORLD_GROUPID || '0'),
+      LAT_ALLOW_FAKE_PAYMENT: process.env.LAT_ALLOW_FAKE_PAYMENT !== 'false',
+      LAT_USE_FREEGLE_GEOCODER: process.env.LAT_USE_FREEGLE_GEOCODER === 'true',
+      LAT_MODERATION_ENABLED: process.env.LAT_MODERATION_ENABLED === 'true',
     },
   },
 
@@ -46,6 +48,17 @@ export default defineNuxtConfig({
         },
       },
     },
+    resolve: {
+      alias: [
+        // ~/components/ChatFooter in lat files expands to /app/components/ChatFooter
+        // (~ → /app/ in the lat build context). Override both with-and-without-extension
+        // so the lat ChatFooter.vue is loaded instead of the upstream one.
+        {
+          find: /^\/app\/components\/ChatFooter(\.vue)?$/,
+          replacement: fileURLToPath(new URL('./components/ChatFooter.vue', import.meta.url)),
+        },
+      ],
+    },
   },
 
   devServer: {
@@ -58,7 +71,7 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'en' },
       title: 'Lend & Tend — Share a garden, grow good things',
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', href: '/images/lat/logo.png' },
       ],
       meta: [
         { charset: 'utf-8' },
@@ -73,6 +86,62 @@ export default defineNuxtConfig({
         { key: 'og:title', property: 'og:title', content: 'Lend & Tend — Share a garden, grow good things' },
         { key: 'og:site_name', property: 'og:site_name', content: 'Lend & Tend' },
       ],
+      style: [
+        /* Inline critical L&T CSS variables and Bootstrap reset to prevent FOUC */
+        {
+          children: `
+            :root {
+              --lat-color-primary: #329732;
+              --lat-color-primary-dark: #4F6642;
+              --lat-color-primary-light: #8CC63F;
+              --lat-color-secondary: #BB68CA;
+              --lat-color-secondary-dark: #7a3a8a;
+              --lat-color-secondary-light: #f3e8f7;
+              --lat-color-accent: #CBCB00;
+              --lat-color-accent-dark: #A8B330;
+              --lat-color-surface: #EDE5D6;
+              --lat-color-background: #FFFFFF;
+              --lat-color-text: #333322;
+              --lat-color-text-muted: #5A3B1F;
+              --lat-color-alert: #CC3F00;
+              --lat-color-success: #329732;
+              --lat-color-lender-bg: #f3e8f7;
+              --lat-color-lender-text: #BB68CA;
+              --lat-color-tender-bg: #e8f5e9;
+              --lat-color-tender-text: #4F6642;
+              --lat-font-body: inherit;
+              --lat-font-heading: inherit;
+              --radius-md: 0.5rem;
+              --radius-xl: 1.25rem;
+              --transition-fast: 150ms ease-in-out;
+            }
+            html {
+              color: var(--lat-color-text);
+              scroll-behavior: smooth;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: var(--lat-color-background);
+            }
+            *, *::before, *::after {
+              box-sizing: border-box;
+              corner-shape: squircle;
+            }
+            .modal.show {
+              display: block;
+            }
+          `,
+          type: 'text/css',
+        },
+      ],
+    },
+  },
+
+  nitro: {
+    /* Disable app manifest which can interfere with CSS loading */
+    experimental: {
+      appManifest: false,
     },
   },
 

@@ -48,18 +48,9 @@
                 />
               </div>
               <div class="profile-header-stats">
-                <UserRatings
-                  :id="chat.otheruid"
-                  :key="'otheruser-' + chat.otheruid"
-                  size="sm"
-                />
                 <span v-if="otheruser.lastaccess" class="stat-chip">
                   <v-icon icon="clock" class="stat-icon" />
                   {{ otheraccessFull }}
-                </span>
-                <span v-if="replytimeFull" class="stat-chip">
-                  <v-icon icon="reply" class="stat-icon" />
-                  {{ replytimeFull }}
                 </span>
                 <span v-if="milesaway" class="stat-chip">
                   <v-icon icon="map-marker-alt" class="stat-icon" />
@@ -187,11 +178,11 @@
   </client-only>
 </template>
 <script setup>
-import ChatFooter from './ChatFooter'
+import ChatMessage from './ChatMessage.vue'
+import ChatFooter from '~/components/ChatFooter'
 import ChatTypingIndicator from '~/components/ChatTypingIndicator'
 import VisibleWhen from '~/components/VisibleWhen'
 import ProfileImage from '~/components/ProfileImage'
-import UserRatings from '~/components/UserRatings'
 import SupporterInfo from '~/components/SupporterInfo'
 import { navBarHidden } from '~/composables/useNavbar'
 import { useUserStore } from '~/stores/user'
@@ -200,14 +191,13 @@ import { setupChat } from '~/composables/useChat'
 import { timeago } from '~/composables/useTimeFormat'
 
 // Don't use dynamic imports because it stops us being able to scroll to the bottom after render.
-import ChatMessage from '~/components/ChatMessage.vue'
 import { useRouter } from '#imports'
 import { useAuthStore } from '~/stores/auth'
 import { useMe } from '~/composables/useMe'
 
-const ProfileModal = defineAsyncComponent(() =>
-  import('~/components/ProfileModal')
-)
+// IMPORTANT: do NOT explicit-import ProfileModal — `~/components/ProfileModal`
+// resolves to upstream Freegle, bypassing the lat layer override. Let Nuxt
+// auto-import resolve <ProfileModal> in the template to lat/components/ProfileModal.vue.
 const ChatBlockModal = defineAsyncComponent(() =>
   import('~/components/ChatBlockModal')
 )
@@ -254,33 +244,6 @@ const otheraccessFull = computed(() => {
   if (!otheruser.value?.lastaccess) return null
   const full = timeago(otheruser.value.lastaccess)
   return full.replace(/ ago$/, '')
-})
-
-const replytimeFull = computed(() => {
-  let ret = null
-  let secs = null
-
-  if (otheruser?.value?.info) {
-    secs = otheruser.value.info.replytime
-  }
-
-  if (secs) {
-    if (secs < 60) {
-      const val = Math.round(secs)
-      ret = val + (val === 1 ? ' second' : ' seconds')
-    } else if (secs < 60 * 60) {
-      const val = Math.round(secs / 60)
-      ret = val + (val === 1 ? ' minute' : ' minutes')
-    } else if (secs < 24 * 60 * 60) {
-      const val = Math.round(secs / 60 / 60)
-      ret = val + (val === 1 ? ' hour' : ' hours')
-    } else {
-      const val = Math.round(secs / 60 / 60 / 24)
-      ret = val + (val === 1 ? ' day' : ' days')
-    }
-  }
-
-  return ret
 })
 
 const showProfileModal = ref(false)

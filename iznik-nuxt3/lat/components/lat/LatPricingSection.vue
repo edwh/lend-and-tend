@@ -16,9 +16,9 @@
         <div class="price-label-top">Standard</div>
         <div class="price-amount">£12</div>
         <div class="price-label">one-time joining fee</div>
-        <NuxtLink to="/register" class="btn-primary price-cta">
+        <button class="btn-primary price-cta" @click="requestLogin()">
           Join now
-        </NuxtLink>
+        </button>
         <div class="price-free-note">Free with UC / Pension Credit</div>
       </div>
     </div>
@@ -27,6 +27,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
+import { useNavbar } from '~/composables/useNavbar'
+const { requestLogin } = useNavbar()
 </script>
 
 <style scoped>
@@ -128,6 +130,8 @@ import branding from '~/branding.config'
   margin-right: 12px;
   margin-bottom: 8px;
   transition: background 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-primary:hover { background: var(--lat-color-primary-dark); }

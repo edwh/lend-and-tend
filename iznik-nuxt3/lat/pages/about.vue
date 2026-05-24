@@ -121,9 +121,9 @@
         <p>
           Join {{ branding.siteName }} and start your gardening journey today.
         </p>
-        <NuxtLink to="/register" class="btn btn-primary btn-lg">
+        <button class="btn btn-primary btn-lg" @click="requestLogin()">
           Get started
-        </NuxtLink>
+        </button>
       </div>
     </section>
 
@@ -134,6 +134,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
+import { useNavbar } from '~/composables/useNavbar'
+const { requestLogin } = useNavbar()
 
 definePageMeta({
   layout: 'default',

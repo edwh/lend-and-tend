@@ -30,21 +30,32 @@
         <form @submit.prevent="submit">
           <GardenFormFields
             v-model="form"
-            :type="message.type"
             v-model:attachments="attachments"
-          />
-
-          <div class="field">
-            <label for="location">Location (postcode)</label>
-            <GardenLocationPicker
-              v-model="location"
-              @update:model-value="location = $event"
-            />
-          </div>
+            :type="message.type"
+          >
+            <template #after-title>
+              <div class="field">
+                <label>
+                  Full address <span class="field-required">*</span>
+                  <span class="field-hint"> (re-enter to update)</span>
+                </label>
+                <GardenLocationPicker
+                  v-model="location"
+                  :initial-postcode="existingPostcode"
+                />
+                <p v-if="existingAddress" class="existing-address">
+                  Current: {{ existingAddress }}
+                </p>
+              </div>
+            </template>
+          </GardenFormFields>
 
           <div v-if="formError" class="form-error">{{ formError }}</div>
 
           <div class="actions">
+            <NuxtLink to="/profile" class="btn btn-secondary btn-lg"
+              >Cancel</NuxtLink
+            >
             <button
               type="submit"
               class="btn btn-primary btn-lg"
@@ -52,9 +63,6 @@
             >
               {{ submitting ? 'Saving…' : 'Save changes' }}
             </button>
-            <NuxtLink to="/profile" class="btn btn-secondary btn-lg"
-              >Cancel</NuxtLink
-            >
           </div>
         </form>
       </div>
@@ -92,10 +100,14 @@ const message = ref(null)
 const isOwnListing = computed(() => {
   const fromuser = message.value?.fromuser
   const ownerId = typeof fromuser === 'number' ? fromuser : fromuser?.id
-  return ownerId && ownerId === authStore.user?.id
+  return ownerId && parseInt(ownerId) === parseInt(authStore.user?.id)
 })
 
-const form = reactive({
+// Use ref<Object> not reactive — GardenFormFields emits a NEW object on each
+// keystroke (it spreads + sets the changed field), and v-model on a component
+// reassigns the whole binding. Reactive can't be reassigned via `=`, so the
+// child's emits never landed and edits silently disappeared.
+const form = ref({
   subject: '',
   about: '',
   gardenSize: '',
@@ -111,6 +123,8 @@ const form = reactive({
 })
 
 const location = ref(null)
+const existingAddress = ref('')
+const existingPostcode = ref('')
 const attachments = ref([])
 
 async function fetchMessage() {
@@ -118,19 +132,14 @@ async function fetchMessage() {
     loading.value = true
     const msgId = route.params.id
 
-    const response = await fetch(
-      `${config.public.APIv2}/message/${msgId}`,
-      {
-        credentials: 'include',
-      }
-    )
+    const msgApi = api(config).message
+    const data = await msgApi.fetch(msgId)
 
-    if (!response.ok) {
+    if (!data) {
       error.value = 'Could not load listing.'
       return
     }
 
-    const data = await response.json()
     message.value = data
 
     if (!isOwnListing.value) {
@@ -140,26 +149,24 @@ async function fetchMessage() {
 
     const parsed = parseTextbody(data.textbody)
 
-    form.subject = data.item || ''
-    form.about = parsed.description || ''
-    form.gardenSize = parsed.gardenSize || ''
-    form.sunExposure = parsed.sunExposure || ''
-    form.waterAccess = parsed.waterAccess || ''
-    form.accessRoute = parsed.accessRoute || ''
-    form.arrangement = parsed.arrangement || ''
-    form.restrictions = parsed.restrictions || ''
-    form.whatToGrow = parsed.whatToGrow || ''
-    form.tools = parsed.tools || ''
-    form.availability = parsed.availability || ''
-    form.honestyDeclaration = parsed.honestyDeclaration || false
+    form.value.subject = (data.subject || '').replace(
+      /^(Offer|Wanted):\s*/i,
+      ''
+    )
+    form.value.about = parsed.description || ''
+    form.value.gardenSize = parsed.gardenSize || ''
+    form.value.sunExposure = parsed.sunExposure || ''
+    form.value.waterAccess = parsed.waterAccess || ''
+    form.value.accessRoute = parsed.accessRoute || ''
+    form.value.arrangement = parsed.arrangement || ''
+    form.value.restrictions = parsed.restrictions || ''
+    form.value.whatToGrow = parsed.whatToGrow || ''
+    form.value.tools = parsed.tools || ''
+    form.value.availability = parsed.availability || ''
+    form.value.honestyDeclaration = parsed.honestyDeclaration || false
 
-    if (data.lat && data.lng) {
-      location.value = {
-        lat: data.lat,
-        lng: data.lng,
-        postcode: '', /* Will be populated if reverse-lookup is needed */
-      }
-    }
+    existingAddress.value = parsed.address || parsed.postcode || ''
+    existingPostcode.value = parsed.postcode || ''
 
     if (data.attachments && data.attachments.length) {
       attachments.value = data.attachments
@@ -181,20 +188,29 @@ function parseTextbody(textbody) {
 }
 
 function buildTextbody() {
-  const body = { description: form.about }
+  // Start from the existing textbody so fields the user didn't touch (like an
+  // address loaded from server but not re-entered through the picker) survive.
+  const existing = parseTextbody(message.value?.textbody)
+  const body = { ...existing, description: form.value.about }
+
+  if (location.value?.address) body.address = location.value.address
+  if (location.value?.postcode) body.postcode = location.value.postcode
+  // PAF id when the user picked from the PAF dropdown — used by
+  // LatSendAddressModal to create a proper Freegle Address record on send.
+  if (location.value?.pafid) body.pafid = location.value.pafid
 
   if (message.value?.type === 'Offer') {
-    if (form.gardenSize) body.gardenSize = form.gardenSize
-    if (form.sunExposure) body.sunExposure = form.sunExposure
-    if (form.waterAccess) body.waterAccess = form.waterAccess
-    if (form.accessRoute) body.accessRoute = form.accessRoute
-    if (form.arrangement) body.arrangement = form.arrangement
-    if (form.restrictions) body.restrictions = form.restrictions
+    body.gardenSize = form.value.gardenSize || ''
+    body.sunExposure = form.value.sunExposure || ''
+    body.waterAccess = form.value.waterAccess || ''
+    body.accessRoute = form.value.accessRoute || ''
+    body.arrangement = form.value.arrangement || ''
+    body.restrictions = form.value.restrictions || ''
   } else {
-    if (form.whatToGrow) body.whatToGrow = form.whatToGrow
-    if (form.tools) body.tools = form.tools
-    if (form.availability) body.availability = form.availability
-    if (form.honestyDeclaration) body.honestyDeclaration = true
+    body.whatToGrow = form.value.whatToGrow || ''
+    body.tools = form.value.tools || ''
+    body.availability = form.value.availability || ''
+    body.honestyDeclaration = !!form.value.honestyDeclaration
   }
 
   return JSON.stringify(body)
@@ -204,36 +220,67 @@ async function submit() {
   submitting.value = true
   formError.value = ''
 
+  if (!authStore.user) {
+    formError.value = 'You must be logged in.'
+    submitting.value = false
+    return
+  }
+
+  if (!form.value.subject?.trim()) {
+    formError.value = 'Please enter a title for your listing.'
+    submitting.value = false
+    return
+  }
+
+  if (form.value.subject.trim().length > 200) {
+    formError.value = 'Title must be 200 characters or fewer.'
+    submitting.value = false
+    return
+  }
+
   try {
-    if (!authStore.user) {
-      formError.value = 'You must be logged in.'
-      return
-    }
-
-    if (!location.value) {
-      formError.value = 'Please set your location.'
-      return
-    }
-
     const msgApi = api(config).message
-    const msgId = route.params.id
+    const msgId = parseInt(route.params.id, 10)
 
+    // L&T listings don't carry a `locationid`, so the server's automatic
+    // subject reconstruction (which requires a non-empty location string)
+    // never fires. Build the subject ourselves so the My Gardens display
+    // reflects edits to the title.
+    const prefix = message.value?.type === 'Offer' ? 'Offer' : 'Wanted'
+    const title = form.value.subject.trim()
     const updatePayload = {
       id: msgId,
-      item: form.subject,
+      item: title,
+      subject: `${prefix}: ${title}`,
       textbody: buildTextbody(),
     }
 
-    if (location.value.lat && location.value.lng) {
+    if (location.value?.lat && location.value?.lng) {
       updatePayload.lat = location.value.lat
       updatePayload.lng = location.value.lng
+    }
+
+    // Include attachment IDs so photos uploaded/changed on this edit page persist.
+    const attids = (attachments.value || [])
+      .filter((a) => a && a.id)
+      .map((a) => a.id)
+    if (attids.length) {
+      updatePayload.attachments = attids
     }
 
     await msgApi.save(updatePayload)
 
     navigateTo(`/garden/${msgId}`)
   } catch (e) {
-    formError.value = e?.message || 'Failed to save. Please try again.'
+    const status = e?.data?.response?.status || e?.statusCode
+    if (status === 401 || status === 403) {
+      formError.value = 'You are not authorised to edit this listing.'
+    } else if (status === 404) {
+      formError.value = 'This listing could not be found.'
+    } else {
+      formError.value =
+        'Could not save changes. Please check your details and try again.'
+    }
   } finally {
     submitting.value = false
   }
@@ -301,8 +348,28 @@ label {
 
 .actions {
   display: flex;
+  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.field-required {
+  color: #dc3545;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.field-hint {
+  font-weight: 400;
+  color: var(--lat-color-text-muted);
+  font-size: 0.85rem;
+}
+
+.existing-address {
+  font-size: 0.85rem;
+  color: var(--lat-color-text-muted);
+  margin-top: 6px;
+  margin-bottom: 0;
 }
 
 .btn {

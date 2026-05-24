@@ -25,6 +25,38 @@ if (!function_exists('cronLog')) {
 }
 
 // =============================================================================
+// LAT BATCH MODE — minimal schedule for Lend & Tend
+// =============================================================================
+// When LAT_BATCH_ONLY=true only the essential system background jobs run.
+// Email, notifications, and all non-core jobs are disabled.
+// Additional jobs can be enabled here as L&T features are rolled out.
+
+if (getenv('LAT_BATCH_ONLY') === 'true') {
+    // Process pending chat messages so recipients can see them.
+    Schedule::command('chats:process-incoming')
+        ->everyMinute()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('chats:process-incoming'))
+        ->runInBackground();
+
+    // Alert existing users when a new garden listing appears within their radius.
+    Schedule::command('lat:send-activity-alerts')
+        ->dailyAt('08:00')
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('lat:send-activity-alerts'))
+        ->runInBackground();
+
+    // Send check-in reminder emails at 14d / 30d / 90d / 180d after an agreement is signed.
+    Schedule::command('lat:send-checkin-reminders')
+        ->dailyAt('09:00')
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('lat:send-checkin-reminders'))
+        ->runInBackground();
+
+    return;
+}
+
+// =============================================================================
 // ACTIVE SCHEDULED COMMANDS
 // =============================================================================
 

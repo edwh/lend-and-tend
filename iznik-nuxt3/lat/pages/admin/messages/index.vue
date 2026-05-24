@@ -1,67 +1,94 @@
 <template>
-  <div class="messages-page">
-    <h2>Flagged Messages</h2>
+  <div>
+    <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; color: #1a2e0d">
+      All listings
+    </h2>
 
-    <div class="controls-section">
-      <label class="show-reviewed-toggle">
-        <input v-model="showReviewed" type="checkbox" />
-        Show reviewed messages
-      </label>
+    <div style="display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap">
+      <select
+        v-model="collectionFilter"
+        class="sinput"
+        style="width: auto; max-width: 160px"
+      >
+        <option value="Approved">Approved</option>
+        <option value="Pending">Pending</option>
+        <option value="">All statuses</option>
+      </select>
+      <select
+        v-model="typeFilter"
+        class="sinput"
+        style="width: auto; max-width: 160px"
+      >
+        <option value="">All types</option>
+        <option value="Offer">Lenders</option>
+        <option value="Wanted">Tenders</option>
+      </select>
+      <button class="sbtn" :disabled="loading" @click="loadListings">
+        {{ loading ? 'Loading…' : 'Refresh' }}
+      </button>
     </div>
 
-    <div v-if="loading" class="loading-state">
-      <p>Loading messages...</p>
-    </div>
+    <p v-if="error" style="color: #c62828">{{ error }}</p>
 
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-    </div>
-
-    <div v-else-if="filteredMessages.length === 0" class="empty-state">
-      <p>No flagged messages to review</p>
-    </div>
-
-    <div v-else class="table-wrapper">
-      <table class="table table-striped">
+    <div class="admin-card">
+      <table class="at">
         <thead>
           <tr>
-            <th>From</th>
-            <th>To</th>
-            <th>Message</th>
-            <th>Flagged</th>
-            <th>Actions</th>
+            <th>ID</th>
+            <th>Subject</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Posted</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="msg in filteredMessages" :key="msg.id">
+          <tr v-for="m in filtered" :key="m.id">
+            <td class="muted">{{ m.id }}</td>
+            <td>{{ m.subject }}</td>
             <td>
-              <NuxtLink :to="`/admin/users/${msg.senderId}`">
-                {{ msg.senderDisplayName }}
-              </NuxtLink>
+              <span
+                class="badge"
+                :class="m.type === 'Offer' ? 'b-offer' : 'b-wanted'"
+                >{{ m.type === 'Offer' ? 'Lender' : 'Tender' }}</span
+              >
             </td>
             <td>
-              <NuxtLink :to="`/admin/users/${msg.recipientId}`">
-                {{ msg.recipientDisplayName }}
-              </NuxtLink>
-            </td>
-            <td class="message-preview">{{ truncateMessage(msg.content) }}</td>
-            <td class="flagged-at">{{ formatDate(msg.createdAt) }}</td>
-            <td class="actions">
-              <button
-                class="btn btn-sm btn-success me-2"
-                :disabled="reviewingIds.includes(msg.id)"
-                @click="reviewMessage(msg.id, true)"
+              <span
+                class="badge"
+                :class="
+                  m.collection === 'Approved' ? 'b-approved' : 'b-pending'
+                "
+                >{{ m.collection || 'Pending' }}</span
               >
-                {{ reviewingIds.includes(msg.id) ? '...' : 'Approve' }}
-              </button>
-              <button
-                class="btn btn-sm btn-danger"
-                :disabled="reviewingIds.includes(msg.id)"
-                @click="reviewMessage(msg.id, false)"
-              >
-                {{ reviewingIds.includes(msg.id) ? '...' : 'Delete' }}
-              </button>
             </td>
+            <td class="muted">{{ fmtDate(m.arrival) }}</td>
+            <td>
+              <div style="display: flex; gap: 4px; align-items: center">
+                <template v-if="m.collection === 'Pending'">
+                  <button
+                    class="btn-small btn-approve"
+                    :disabled="processing[m.id]"
+                    @click="approve(m)"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    class="btn-small btn-reject"
+                    :disabled="processing[m.id]"
+                    @click="reject(m)"
+                  >
+                    ✗
+                  </button>
+                </template>
+                <NuxtLink :to="`/garden/${m.id}`" class="btn-link"
+                  >View</NuxtLink
+                >
+              </div>
+            </td>
+          </tr>
+          <tr v-if="!filtered.length">
+            <td colspan="6" class="muted">No listings found.</td>
           </tr>
         </tbody>
       </table>
@@ -69,222 +96,195 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+<script setup>
+import { useAuthStore } from '~/stores/auth'
+import Api from '~/api'
 
-interface FlaggedMessage {
-  id: number
-  senderId: number
-  senderDisplayName: string
-  recipientId: number
-  recipientDisplayName: string
-  content: string
-  createdAt: string
-  reviewed: boolean
-}
+definePageMeta({ layout: 'admin' })
+useHead({ title: 'All listings — L&T Admin' })
 
-interface FlaggedMessagesResponse {
-  messages: FlaggedMessage[]
-}
-
-definePageMeta({
-  layout: 'admin',
-  middleware: 'admin',
-})
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const api = Api(config)
 
 const loading = ref(true)
 const error = ref('')
-const messages = ref<FlaggedMessage[]>([])
-const showReviewed = ref(false)
-const reviewingIds = ref<number[]>([])
+const typeFilter = ref('')
+const collectionFilter = ref('Approved')
+const listings = ref([])
+const processing = reactive({})
 
-const filteredMessages = computed(() => {
-  return messages.value.filter((msg) => showReviewed.value || !msg.reviewed)
-})
-
-onMounted(async () => {
-  await fetchMessages()
-})
-
-async function fetchMessages() {
-  try {
-    loading.value = true
-    error.value = ''
-    const response = await $fetch<FlaggedMessagesResponse>('/apiv2/admin/messages/flagged')
-    messages.value = response.messages || []
-  } catch (e: any) {
-    error.value = e.data?.error || 'Failed to load messages'
-  } finally {
-    loading.value = false
+const filtered = computed(() => {
+  let result = listings.value
+  if (typeFilter.value) {
+    result = result.filter((m) => m.type === typeFilter.value)
   }
-}
+  return result
+})
 
-function truncateMessage(content: string, length = 80): string {
-  return content.length > length ? content.substring(0, length) + '...' : content
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-async function reviewMessage(msgId: number, approve: boolean) {
-  reviewingIds.value.push(msgId)
+async function loadListings() {
+  loading.value = true
+  error.value = ''
   try {
-    await $fetch(`/apiv2/admin/messages/${msgId}/review`, {
-      method: 'POST',
-      body: { approve },
+    const groupid = config.public.LAT_WORLD_GROUPID
+    const collection = collectionFilter.value
+      ? collectionFilter.value
+      : undefined
+    const params = { groupid, types: 'Offer,Wanted', limit: 200 }
+    if (collection) params.collection = collection
+    // eslint-disable-next-line no-undef
+    const data = await $fetch(`${config.public.APIv2}/messages`, {
+      params,
+      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
     })
+    listings.value = Array.isArray(data) ? data : data?.messages ?? []
+  } catch {
+    error.value = 'Failed to load listings.'
+  }
+  loading.value = false
+}
 
-    if (approve) {
-      const msg = messages.value.find((m) => m.id === msgId)
-      if (msg) {
-        msg.reviewed = true
-      }
-    } else {
-      messages.value = messages.value.filter((m) => m.id !== msgId)
-    }
-  } catch (e: any) {
-    error.value = e.data?.error || 'Failed to review message'
+async function approve(m) {
+  processing[m.id] = true
+  try {
+    await api.message.approve(m.id, config.public.LAT_WORLD_GROUPID)
+    listings.value = listings.value.map((item) =>
+      item.id === m.id ? { ...item, collection: 'Approved' } : item
+    )
+  } catch {
+    error.value = `Failed to approve listing ${m.id}.`
   } finally {
-    reviewingIds.value = reviewingIds.value.filter((id) => id !== msgId)
+    processing[m.id] = false
   }
 }
+
+async function reject(m) {
+  processing[m.id] = true
+  try {
+    await api.message.reject(m.id, config.public.LAT_WORLD_GROUPID)
+    listings.value = listings.value.filter((item) => item.id !== m.id)
+  } catch {
+    error.value = `Failed to reject listing ${m.id}.`
+  } finally {
+    processing[m.id] = false
+  }
+}
+
+function fmtDate(iso) {
+  return iso
+    ? new Date(iso).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : ''
+}
+
+onMounted(loadListings)
 </script>
 
-<style scoped lang="scss">
-.messages-page {
-  h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: #1a2210;
-  }
-}
-
-.controls-section {
+<style scoped>
+.admin-card {
   background: white;
-  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  padding: 22px;
+}
+.at {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.at th {
+  text-align: left;
+  padding: 7px 10px;
+  background: #f8f8f8;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7c61;
+  border-bottom: 2px solid #e0e0e0;
+}
+.at td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.b-offer {
+  background: #e8f5e9;
+  color: #2d5a27;
+}
+.b-wanted {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.b-approved {
+  background: #c8e6c9;
+  color: #2d5a27;
+}
+.b-pending {
+  background: #fff3e0;
+  color: #e65100;
+}
+.btn-small {
+  padding: 4px 8px;
   border: 1px solid #ddd;
-  margin-bottom: 1.5rem;
-  border-radius: 3px;
-
-  .show-reviewed-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.95rem;
-    color: #1a2210;
-
-    input[type='checkbox'] {
-      cursor: pointer;
-    }
-  }
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
-
-.loading-state,
-.error-state,
-.empty-state {
-  background: white;
-  padding: 2rem;
+.btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-approve {
+  background: #e8f5e9;
+  color: #2d5a27;
+}
+.btn-approve:hover:not(:disabled) {
+  background: #c8e6c9;
+}
+.btn-reject {
+  background: #ffebee;
+  color: #c62828;
+}
+.btn-reject:hover:not(:disabled) {
+  background: #ffcdd2;
+}
+.btn-link {
+  color: #6b9e3c;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.sinput {
+  padding: 8px 12px;
   border: 1px solid #ddd;
-  text-align: center;
-  color: #5c6b4a;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  font-family: inherit;
 }
-
-.error-state {
-  color: #d32f2f;
-  border-left: 4px solid #d32f2f;
+.sbtn {
+  padding: 8px 16px;
+  background: #6b9e3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
 }
-
-.table-wrapper {
-  background: white;
-  border: 1px solid #ddd;
-  overflow: hidden;
-
-  .table {
-    margin-bottom: 0;
-
-    thead {
-      background-color: #f9faf5;
-
-      th {
-        border-bottom: 2px solid #ddd;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-        color: #1a2210;
-      }
-    }
-
-    tbody {
-      tr {
-        &:hover {
-          background-color: #fafafa;
-        }
-
-        td {
-          vertical-align: middle;
-          font-size: 0.95rem;
-
-          a {
-            color: #0066cc;
-            text-decoration: none;
-
-            &:hover {
-              text-decoration: underline;
-            }
-          }
-
-          &.message-preview {
-            max-width: 300px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #5c6b4a;
-          }
-
-          &.flagged-at {
-            font-size: 0.85rem;
-            color: #999;
-            white-space: nowrap;
-          }
-
-          &.actions {
-            white-space: nowrap;
-          }
-        }
-      }
-    }
-  }
+.sbtn:disabled {
+  opacity: 0.6;
 }
-
-.btn {
-  font-size: 0.8rem;
-  padding: 0.3rem 0.6rem;
-}
-
-@media (max-width: 768px) {
-  .table-wrapper {
-    :deep(table) {
-      font-size: 0.85rem;
-
-      td,
-      th {
-        padding: 0.5rem;
-      }
-
-      .message-preview {
-        max-width: 150px;
-      }
-    }
-  }
+.muted {
+  color: #6b7c61;
 }
 </style>

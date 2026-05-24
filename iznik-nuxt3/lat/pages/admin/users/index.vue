@@ -1,383 +1,82 @@
 <template>
-  <div class="users-page">
-    <h2>Users</h2>
+  <div>
+    <h2 style="font-size:1.5rem;margin-bottom:1.5rem;color:#1a2e0d;">Users</h2>
 
-    <!-- Filters Section -->
-    <div class="filters-section">
-      <div class="filter-group">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by email or name..."
-          @input="onSearchChange"
-          class="form-control"
-        />
-      </div>
-
-      <div class="filter-group">
-        <select v-model="roleFilter" @change="onFilterChange" class="form-control">
-          <option value="">All Roles</option>
-          <option value="lender">Garden Lender</option>
-          <option value="tender">Garden Tender</option>
-          <option value="both">Both</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <select v-model="statusFilter" @change="onFilterChange" class="form-control">
-          <option value="">All Payment Status</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="paid">Paid</option>
-          <option value="concession">Concession</option>
-        </select>
-      </div>
+    <div class="search-row">
+      <input v-model="query" class="sinput" type="text" placeholder="Search by name or email…" @keyup.enter="search" />
+      <button class="sbtn" :disabled="searching" @click="search">{{ searching ? 'Searching…' : 'Search' }}</button>
     </div>
+    <p v-if="searchError" style="color:#c62828;">{{ searchError }}</p>
 
-    <!-- Users Table -->
-    <div v-if="loading" class="loading-state">
-      <p>Loading users...</p>
-    </div>
-
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-    </div>
-
-    <div v-else class="table-wrapper">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Payment</th>
-            <th>Status</th>
-            <th>Joined</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+    <div class="admin-card">
+      <table v-if="results.length" class="at">
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Payment</th><th>Role</th><th></th></tr></thead>
         <tbody>
-          <tr v-for="user in users" :key="user.id" :class="{ inactive: !user.active }">
-            <td>{{ user.email }}</td>
-            <td>{{ user.displayName || '—' }}</td>
-            <td>
-              <span class="badge" :class="'badge-' + user.role">
-                {{ roleLabel(user.role) }}
-              </span>
-            </td>
-            <td>
-              <span class="badge" :class="'badge-' + user.paymentStatus">
-                {{ paymentStatusLabel(user.paymentStatus) }}
-              </span>
-            </td>
-            <td>
-              <span class="badge" :class="user.active ? 'bg-success' : 'bg-danger'">
-                {{ user.active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>{{ formatDate(user.createdAt) }}</td>
-            <td>
-              <NuxtLink :to="`/admin/users/${user.id}`" class="btn btn-sm btn-primary">
-                Edit
-              </NuxtLink>
-            </td>
+          <tr v-for="u in results" :key="u.id">
+            <td class="muted">{{ u.id }}</td>
+            <td>{{ u.displayname }}</td>
+            <td class="muted">{{ u.email || '—' }}</td>
+            <td><span class="badge" :class="pclass(u.settings?.lat_payment?.status)">{{ plabel(u.settings?.lat_payment?.status) }}</span></td>
+            <td class="muted">{{ u.settings?.lat_role || '—' }}</td>
+            <td><NuxtLink :to="`/admin/users/${u.id}`" class="btn-link">Edit</NuxtLink></td>
           </tr>
         </tbody>
       </table>
-
-      <!-- Pagination -->
-      <div class="pagination-controls">
-        <button
-          class="btn btn-sm btn-outline-secondary"
-          :disabled="currentPage === 1"
-          @click="previousPage"
-        >
-          ← Previous
-        </button>
-        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button
-          class="btn btn-sm btn-outline-secondary"
-          :disabled="currentPage === totalPages"
-          @click="nextPage"
-        >
-          Next →
-        </button>
-      </div>
+      <p v-else-if="searched && !searching" class="muted">No users found.</p>
+      <p v-else class="muted">Enter a name or email to search for users.</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
 
-interface User {
-  id: number
-  email: string
-  displayName: string
-  role: string
-  paymentStatus: string
-  active: boolean
-  createdAt: string
-}
+definePageMeta({ layout: 'admin' })
+useHead({ title: 'Users — L&T Admin' })
 
-interface ListResponse {
-  users: User[]
-  total: number
-  page: number
-}
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const query = ref('')
+const searching = ref(false)
+const searched = ref(false)
+const searchError = ref('')
+const results = ref<any[]>([])
 
-definePageMeta({
-  layout: 'admin',
-  middleware: 'admin',
-})
-
-const loading = ref(true)
-const error = ref('')
-const users = ref<User[]>([])
-const total = ref(0)
-const currentPage = ref(1)
-const limit = 20
-
-const searchQuery = ref('')
-const roleFilter = ref('')
-const statusFilter = ref('')
-
-const totalPages = computed(() => Math.ceil(total.value / limit))
-
-onMounted(() => {
-  fetchUsers()
-})
-
-const fetchUsers = async () => {
+async function search() {
+  if (!query.value.trim()) return
+  searching.value = true
+  searchError.value = ''
+  results.value = []
+  searched.value = false
   try {
-    loading.value = true
-    error.value = ''
-
-    const params = new URLSearchParams({
-      page: currentPage.value.toString(),
-      limit: limit.toString(),
+    const data = await $fetch(`${config.public.APIv2}/user/search`, {
+      params: { q: query.value.trim(), modtools: true },
+      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
     })
-
-    if (searchQuery.value) {
-      params.append('search', searchQuery.value)
-    }
-    if (roleFilter.value) {
-      params.append('role', roleFilter.value)
-    }
-    if (statusFilter.value) {
-      params.append('status', statusFilter.value)
-    }
-
-    const response = await $fetch<ListResponse>(`/apiv2/admin/users?${params}`)
-    users.value = response.users
-    total.value = response.total
-  } catch (e: any) {
-    error.value = e.data?.error || 'Failed to load users'
-  } finally {
-    loading.value = false
-  }
+    results.value = Array.isArray(data) ? data : data?.users ?? []
+  } catch { searchError.value = 'Search failed.' }
+  searching.value = false
+  searched.value = true
 }
 
-const onSearchChange = () => {
-  currentPage.value = 1
-  fetchUsers()
-}
-
-const onFilterChange = () => {
-  currentPage.value = 1
-  fetchUsers()
-}
-
-const previousPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-    fetchUsers()
-  }
-}
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-    fetchUsers()
-  }
-}
-
-const roleLabel = (role: string) => {
-  const labels: Record<string, string> = {
-    lender: '🌿 Lender',
-    tender: '🌱 Tender',
-    both: '🤝 Both',
-  }
-  return labels[role] || role
-}
-
-const paymentStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    unpaid: 'Unpaid',
-    paid: 'Paid',
-    concession: 'Concession',
-  }
-  return labels[status] || status
-}
-
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+const plabel = (s?: string) => s === 'paid' ? 'Paid' : s === 'concession' ? 'Concession' : 'Not joined'
+const pclass = (s?: string) => s === 'paid' ? 'b-paid' : s === 'concession' ? 'b-conc' : 'b-none'
 </script>
 
-<style scoped lang="scss">
-.users-page {
-  h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: #1a2210;
-  }
-}
-
-.filters-section {
-  background: white;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  margin-bottom: 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-
-  .filter-group {
-    .form-control {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-      font-size: 0.95rem;
-
-      &:focus {
-        outline: none;
-        border-color: #6b9e3c;
-        box-shadow: 0 0 0 2px rgba(107, 158, 60, 0.1);
-      }
-    }
-  }
-}
-
-.loading-state,
-.error-state {
-  background: white;
-  padding: 2rem;
-  border: 1px solid #ddd;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #5c6b4a;
-}
-
-.error-state {
-  color: #d32f2f;
-  border-left: 4px solid #d32f2f;
-}
-
-.table-wrapper {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 0;
-  overflow: hidden;
-
-  .table {
-    margin-bottom: 0;
-
-    thead {
-      background-color: #f9faf5;
-
-      th {
-        border-bottom: 2px solid #ddd;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-        color: #1a2210;
-      }
-    }
-
-    tbody {
-      tr {
-        &.inactive {
-          opacity: 0.6;
-        }
-
-        &:hover {
-          background-color: #fafafa;
-        }
-
-        td {
-          vertical-align: middle;
-          font-size: 0.95rem;
-        }
-      }
-    }
-  }
-}
-
-.badge {
-  font-size: 0.8rem;
-  padding: 0.35rem 0.65rem;
-
-  &.badge-lender {
-    background-color: #e8f5e0;
-    color: #2e6b10;
-  }
-
-  &.badge-tender {
-    background-color: #ede0f5;
-    color: #6b2e9b;
-  }
-
-  &.badge-both {
-    background-color: #f0e5ff;
-    color: #4a3c7a;
-  }
-
-  &.badge-paid {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-  }
-
-  &.badge-unpaid {
-    background-color: #fff3e0;
-    color: #e65100;
-  }
-
-  &.badge-concession {
-    background-color: #f3e5f5;
-    color: #6a1b9a;
-  }
-}
-
-.btn {
-  font-size: 0.85rem;
-  padding: 0.35rem 0.75rem;
-}
-
-.pagination-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border-top: 1px solid #ddd;
-  background: #f9faf5;
-
-  .page-info {
-    color: #5c6b4a;
-    font-weight: 500;
-    font-size: 0.95rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .filters-section {
-    grid-template-columns: 1fr;
-  }
-}
+<style scoped>
+.search-row { display:flex; gap:10px; margin-bottom:20px; }
+.sinput { flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:.92rem; font-family:inherit; }
+.sinput:focus { outline:none; border-color:#6b9e3c; }
+.sbtn { padding:8px 16px; background:#6b9e3c; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer; }
+.sbtn:disabled { opacity:.6; cursor:not-allowed; }
+.admin-card { background:white; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,.07); padding:22px; }
+.at { width:100%; border-collapse:collapse; font-size:.875rem; }
+.at th { text-align:left; padding:7px 10px; background:#f8f8f8; font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:#6b7c61; border-bottom:2px solid #e0e0e0; }
+.at td { padding:9px 10px; border-bottom:1px solid #f0f0f0; }
+.badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:.75rem; font-weight:600; }
+.b-paid { background:#e8f5e9; color:#2e7d32; }
+.b-conc { background:#fff3e0; color:#e65100; }
+.b-none { background:#f5f5f5; color:#757575; }
+.btn-link { color:#6b9e3c; text-decoration:none; font-size:.85rem; font-weight:600; }
+.muted { color:#6b7c61; }
 </style>

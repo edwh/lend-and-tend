@@ -2,7 +2,7 @@
   <div id="navbar-mobile">
     <div>
       <b-navbar
-        type="dark"
+        type="light"
         class="lat-navbar d-flex justify-content-between d-xl-none"
         :class="{ hideNavBarTop: navBarHidden, showNavBarTop: !navBarHidden }"
         fixed="top"
@@ -12,22 +12,32 @@
         </nuxt-link>
 
         <div v-if="!loggedIn" class="d-flex align-items-center">
-          <b-button variant="white" class="me-2" :disabled="signInDisabled" @click="navigateTo('/login')">
+          <b-button
+            variant="success"
+            class="me-2"
+            :disabled="signInDisabled"
+            @click="requestLogin()"
+          >
             Sign&nbsp;in
           </b-button>
         </div>
 
         <div v-if="loggedIn" class="d-flex align-items-center gap-2">
-          <nuxt-link to="/chats" class="text-white position-relative px-2">
+          <nuxt-link to="/chats" class="text-dark position-relative px-2">
             <v-icon icon="comments" class="fa-lg" />
-            <b-badge v-if="chatCount" variant="danger" class="chatbadge">{{ chatCount }}</b-badge>
+            <b-badge v-if="chatCount" variant="danger" class="chatbadge">{{
+              chatCount
+            }}</b-badge>
           </nuxt-link>
           <b-dropdown no-caret variant="primary" class="userOptions">
             <template #button-content>
               <v-icon icon="user" size="lg" />
             </template>
             <b-dropdown-item href="/profile">
-              <v-icon icon="user" class="menu-icon" /> Profile
+              <v-icon icon="user" class="menu-icon" /> My Garden
+            </b-dropdown-item>
+            <b-dropdown-item href="/settings">
+              <v-icon icon="cog" class="menu-icon" /> Settings
             </b-dropdown-item>
             <b-dropdown-item @click="logout">
               <v-icon icon="sign-out-alt" class="menu-icon" /> Logout
@@ -44,15 +54,38 @@
           'navbar-not-logged-in': !loggedIn,
         }"
       >
-        <NavbarMobileItem to="/map" icon="map" label="Map" @click="clickedMobileNav" />
-        <NavbarMobileItem to="/chats" icon="comments" label="Messages" :badge="chatCount" badge-variant="danger" @click="clickedMobileNav" />
-        <div class="post-button-wrapper">
-          <nuxt-link to="/garden/new" class="lat-post-btn" aria-label="Post a garden">
-            <v-icon icon="plus" />
-          </nuxt-link>
-        </div>
-        <NavbarMobileItem to="/profile" icon="user" label="Profile" @click="clickedMobileNav" />
-        <NavbarMobileItem to="/about" icon="info-circle" label="About" @click="clickedMobileNav" />
+        <NavbarMobileItem
+          to="/map"
+          icon="map"
+          label="Map"
+          @click="clickedMobileNav"
+        />
+        <NavbarMobileItem
+          to="/chats"
+          icon="comments"
+          label="Messages"
+          :badge="chatCount"
+          badge-variant="danger"
+          @click="clickedMobileNav"
+        />
+        <NavbarMobileItem
+          to="/lend"
+          icon="seedling"
+          label="Lend"
+          @click="clickedMobileNav"
+        />
+        <NavbarMobileItem
+          to="/tend"
+          icon="person-digging"
+          label="Tend"
+          @click="clickedMobileNav"
+        />
+        <NavbarMobileItem
+          to="/profile"
+          icon="user"
+          label="My Garden"
+          @click="clickedMobileNav"
+        />
       </nav>
     </div>
   </div>
@@ -69,30 +102,40 @@ import {
 } from '~/composables/useNavbar'
 import { useRoute } from '#imports'
 
-const { logout } = useNavbar()
+const { logout, requestLogin } = useNavbar()
 
 const loggedIn = computed(() => useAuthStore().user !== null)
 const chatCount = computed(() => useChatStore().unreadCount)
 
 const signInDisabled = ref(true)
-onMounted(() => { signInDisabled.value = false })
+onMounted(() => {
+  signInDisabled.value = false
+})
 
 const route = useRoute()
-const navBarBottomHidden = computed(() =>
-  route.path.startsWith('/garden/new') || navBarHidden.value
+const navBarBottomHidden = computed(
+  () =>
+    route.path.startsWith('/lend') ||
+    route.path.startsWith('/tend') ||
+    navBarHidden.value
 )
 
 const mobileNav = ref(null)
-const clickedMobileNav = () => { mobileNav?.value?.$el?.click() }
+const clickedMobileNav = () => {
+  mobileNav?.value?.$el?.click()
+}
 
-onBeforeUnmount(() => { clearNavBarTimeout() })
+onBeforeUnmount(() => {
+  clearNavBarTimeout()
+})
 </script>
 
 <style scoped lang="scss">
 @import 'assets/css/navbar.scss';
 
 .lat-navbar {
-  background: #2d5a27 !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 .lat-logo {
@@ -129,29 +172,6 @@ onBeforeUnmount(() => { clearNavBarTimeout() })
   pointer-events: none;
 }
 
-.post-button-wrapper {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  width: 64px;
-  height: 51px;
-}
-
-.lat-post-btn {
-  width: 48px;
-  height: 48px;
-  background: #2d5a27;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  transform: translateY(-12px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  text-decoration: none;
-}
-
 .hideNavBarBottom {
   transform: translateY(150px);
   transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1);
@@ -175,10 +195,19 @@ onBeforeUnmount(() => { clearNavBarTimeout() })
 :deep(.userOptions .dropdown-toggle) {
   background: transparent !important;
   border: none !important;
-  &::after { display: none; }
+  &::after {
+    display: none;
+  }
 }
 
 .menu-icon {
   margin-right: 0.5rem;
+}
+
+/* Active nav item styling in mobile navbar */
+:deep(.navbar-mobile-item.router-link-active),
+:deep(.navbar-mobile-item.nuxt-link-active) {
+  border-top: 3px solid var(--lat-color-primary);
+  margin-top: -3px;
 }
 </style>

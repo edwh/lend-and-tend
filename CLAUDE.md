@@ -31,6 +31,20 @@ The `lat/` layer extends the parent (`../`) using Nuxt's `extends` config. This 
 | Purely new L&T concept (e.g. garden map filtering by world group) | Add in `lat/` |
 | New Nuxt layout for L&T | Add/override in `lat/layouts/` |
 
+### Layer-resolution pitfall: `~/components/X` bypasses lat overrides
+
+Nuxt's auto-import in templates (`<MyComponent />`) DOES resolve `lat/components/X.vue` over `components/X.vue` — that's the layer system working as designed. **But `defineAsyncComponent(() => import('~/components/X'))` does NOT.** `~/` always resolves to the project root (i.e. upstream Freegle), so the lat override is silently bypassed.
+
+Concrete examples that bit us:
+- `lat/components/ChatPane.vue` and `lat/components/ChatFooter.vue` both did `import('~/components/ProfileModal')` — pulled upstream's `ProfileInfo`-based modal even though `lat/components/ProfileModal.vue` existed.
+- `lat/components/ChatFooter.vue` did `import('~/components/PromiseModal')` — same problem (lat override existed).
+
+**Rule**: in a lat-layer file, when there is also a lat-override of a component, **don't `defineAsyncComponent(() => import('~/components/X'))`**. Either:
+- Remove the explicit import and use the bare `<X>` tag in the template — Nuxt's template auto-import resolves to the lat version.
+- Or use a *relative* import: `import('./X.vue')`.
+
+Audit pattern: `grep -rn "import('~/components" lat/` and cross-check against `ls lat/components/`. Any match where the same filename exists in `lat/components/` is a latent layer-bypass bug.
+
 ### The modtools-lat pattern
 
 There will also be a `modtools-lat/` layer that extends `modtools/` in the same way. The same rules apply: `modtools/` is upstream, all changes go in `modtools-lat/`.

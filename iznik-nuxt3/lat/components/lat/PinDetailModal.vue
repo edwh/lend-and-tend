@@ -21,15 +21,15 @@
           </NuxtLink>
           <button
             class="btn btn-primary"
-            :disabled="!isAuthenticated"
+            :disabled="!loggedIn"
             @click="$emit('message', pin)"
           >
             Send message
           </button>
         </div>
 
-        <p v-if="!isAuthenticated" class="modal-auth-note">
-          <NuxtLink to="/login">Sign in</NuxtLink> to send messages
+        <p v-if="!loggedIn" class="modal-auth-note">
+          <NuxtLink to="/garden/{{ pin.id }}">View listing</NuxtLink> to send messages
         </p>
       </div>
     </div>
@@ -49,7 +49,7 @@ defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const isAuthenticated = computed(() => authStore.isAuthenticated)
+const loggedIn = computed(() => authStore.user !== null)
 </script>
 
 <style scoped>

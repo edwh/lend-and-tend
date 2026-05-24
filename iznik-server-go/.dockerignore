@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+.github
+
+# Development
+.idea
+.vscode
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Testing
+test/
+*_test.go
+.coverprofile
+
+# Build artifacts
+*.exe
+*.o
+*.so
+server
+knn-server
+
+# CircleCI
+.circleci
+
+# Documentation & config
+*.md
+docs/
+Dockerfile
+docker-compose*.yml
+
+# Environment
+.env*
+
+# Logs
+*.log

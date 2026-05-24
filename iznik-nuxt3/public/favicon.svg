@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="5" fill="#1A2210"/>
+  <!-- Seedling: stem -->
+  <line x1="16" y1="26" x2="16" y2="14" stroke="#8CC63F" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Left leaf -->
+  <path d="M16 20 Q8 19 8 11 Q13 11 16 17" fill="#6B9E3C"/>
+  <!-- Right leaf -->
+  <path d="M16 17 Q24 16 24 8 Q19 8 16 14" fill="#8CC63F"/>
+</svg>

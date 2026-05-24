@@ -1,5 +1,7 @@
 .git
 .gitignore
+.github
+.circleci
 node_modules
 .nuxt
 .output
@@ -12,3 +14,17 @@ coverage
 monocart-report
 playwright-report
 test-results
+.vitest
+.vscode
+.idea
+*.spec.js
+*.md
+docs
+.DS_Store
+Dockerfile
+build-info
+swagger/
+docker-compose*.yml
+scripts/
+*.swp
+*.swo

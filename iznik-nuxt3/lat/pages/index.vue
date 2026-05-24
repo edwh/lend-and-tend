@@ -15,7 +15,7 @@
             <strong>Good for the planet, good for people — and it feels great. Sound good?</strong>
           </p>
           <div class="hero-ctas">
-            <NuxtLink to="/register" class="btn-hero">Join to garden share</NuxtLink>
+            <button class="btn-hero" @click="requestLogin()">Join to garden share</button>
             <a href="#how" class="btn-hero-ghost">How it works ↓</a>
           </div>
         </div>
@@ -35,15 +35,15 @@
     <section class="section-light">
       <div class="container map-section">
         <div class="map-text">
-          <h2>Lenders and Tenders across the UK</h2>
+          <h2>Lenders and Tenders near you</h2>
           <p>
-            Members' pins appear on the map once they join — from Aberdeen to Fulham.
-            Locations are blurred by up to 400m for privacy. Your exact address is only
+            Members' pins appear on the map once they join.
+            Locations are blurred for privacy. Your exact address is only
             ever shared directly between matched members.
           </p>
-          <NuxtLink to="/register" class="btn-primary">
+          <button class="btn-primary" @click="requestLogin()">
             Get Patch Matched
-          </NuxtLink>
+          </button>
           <NuxtLink to="/map" class="btn-ghost">
             Browse the map →
           </NuxtLink>
@@ -83,10 +83,10 @@
     <section class="cta-section">
       <div class="container cta-inner">
         <h2>Ready to get patch-matched?</h2>
-        <p>Join gardeners sharing plots across the UK — from Aberdeen to Adelaide.</p>
-        <NuxtLink to="/register" class="btn-cta">
+        <p>Join gardeners sharing plots all around the world.</p>
+        <button class="btn-cta" @click="requestLogin()">
           Join Lend &amp; Tend
-        </NuxtLink>
+        </button>
       </div>
     </section>
 
@@ -98,6 +98,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
+import { useNavbar } from '~/composables/useNavbar'
+const { requestLogin } = useNavbar()
 
 definePageMeta({ layout: 'default' })
 

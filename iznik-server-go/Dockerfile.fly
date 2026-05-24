@@ -1,0 +1,62 @@
+# Multi-stage build for Lend & Tend Go API server
+# Stage 1: Builder
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git bash ca-certificates
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy knn-server dependencies
+COPY knn-server/go.mod knn-server/go.sum knn-server/
+RUN cd knn-server && go mod download
+
+# Copy source code
+COPY . .
+RUN go mod tidy
+
+# Build knn-server
+RUN cd knn-server && go build -o /app/knn-server .
+
+# Generate swagger docs
+RUN chmod +x generate-swagger.sh && ./generate-swagger.sh
+
+# Build the main API server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/server main.go
+
+# Stage 2: Runtime
+FROM alpine:3.20
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates dumb-init
+
+# Create non-root user for security
+RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
+
+# Copy binaries from builder
+COPY --from=builder /app/server .
+COPY --from=builder /app/knn-server .
+
+# Copy swagger documentation (if generated)
+COPY --from=builder /app/docs ./docs
+
+# Create data directory for knn-server
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports
+EXPOSE 8192 8194 8195
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the server (knn-server runs in background)
+CMD ["sh", "-c", "knn-server &>/dev/null & exec ./server"]

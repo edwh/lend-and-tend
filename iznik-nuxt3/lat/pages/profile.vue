@@ -1,258 +1,221 @@
 <template>
   <div class="profile-page">
     <div class="profile-container">
-      <h1 class="page-title">My Profile</h1>
+      <h1 class="page-title">My Gardens</h1>
 
       <div v-if="!authStore.user" class="text-center py-5">
-        <p class="text-muted">Please sign in to view your profile.</p>
+        <p class="text-muted">Please sign in to view your gardens.</p>
       </div>
 
       <template v-else>
         <!-- Posted success banner -->
-        <div v-if="postedSuccess" class="alert-success mb-3" style="margin-left:0;margin-right:0;margin-top:0;">
+        <div v-if="postedSuccess" class="alert-success mb-3">
           <strong>Your listing is submitted!</strong>
           Once approved it will appear on the map.
           When someone gets in touch you'll see a message in <NuxtLink to="/chats">Messages</NuxtLink> and receive an email alert — check your spam folder if you don't see it.
         </div>
 
-        <!-- Profile Photo -->
-        <section class="profile-card">
-          <h2 class="card-title">Profile photo</h2>
-          <div class="photo-section">
-            <div class="photo-display">
-              <img
-                v-if="profilePhotoUrl"
-                :src="profilePhotoUrl"
-                alt="Profile photo"
-                class="profile-photo"
-              />
-              <div v-else class="profile-photo-placeholder">
-                <VIcon :icon="['fas', 'user-circle']" />
-              </div>
-            </div>
-            <div class="photo-actions">
-              <div v-if="uploadingPhoto" class="uploader-wrapper">
-                <OurUploader v-model="photoAttachments" type="User" />
-              </div>
-              <button
-                v-else
-                class="btn btn-outline"
-                @click="uploadingPhoto = true"
+        <!-- My gardens -->
+        <div v-if="loadingListings" class="text-center py-4">
+          <div class="spinner-border" role="status" />
+          <p class="mt-3 text-muted">Loading your gardens…</p>
+        </div>
+
+        <div v-else-if="myListings.length === 0" class="empty-state">
+          <p class="text-muted">You haven't posted any gardens yet.</p>
+          <div class="empty-state-actions">
+            <NuxtLink to="/lend" class="btn btn-primary">Post a garden to lend</NuxtLink>
+            <NuxtLink to="/tend" class="btn btn-outline">Ask for a garden to tend</NuxtLink>
+          </div>
+        </div>
+
+        <article
+          v-for="listing in myListings"
+          :key="listing.id"
+          class="garden-card"
+        >
+          <div class="garden-header">
+            <div class="garden-header-text">
+              <div
+                class="role-badge"
+                :class="listing.type === 'Offer' ? 'badge-lender' : 'badge-tender'"
               >
-                <VIcon :icon="['fas', 'camera']" /> Upload photo
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Email change -->
-        <section class="profile-card">
-          <h2 class="card-title">Email address</h2>
-          <div class="field">
-            <label class="field-label" for="email">Current email</label>
-            <div class="current-email">{{ authStore.user?.email }}</div>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="newemail">New email address</label>
-            <input
-              id="newemail"
-              v-model="newEmail"
-              class="field-input"
-              type="email"
-              placeholder="Enter new email"
-            />
-          </div>
-
-          <div v-if="emailError" class="alert-error">{{ emailError }}</div>
-          <div v-if="emailSuccess" class="alert-success">
-            <VIcon :icon="['fas', 'check-circle']" /> Email saved.
-          </div>
-
-          <button
-            class="btn btn-outline mt-3"
-            :disabled="changingEmail || !newEmail"
-            @click="changeEmail"
-          >
-            {{ changingEmail ? 'Saving…' : 'Save email' }}
-          </button>
-        </section>
-
-        <!-- Account details -->
-        <section class="profile-card">
-          <h2 class="card-title">Account details</h2>
-          <div class="field">
-            <label class="field-label" for="displayname">Display name</label>
-            <input
-              id="displayname"
-              v-model="form.displayname"
-              class="field-input"
-              type="text"
-              maxlength="80"
-            />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="aboutme"
-              >About me
-              <span class="field-hint"
-                >(optional — visible to potential matches)</span
-              ></label
-            >
-            <textarea
-              id="aboutme"
-              v-model="form.aboutme"
-              class="field-textarea"
-              rows="4"
-              maxlength="500"
-              placeholder="A few words about yourself and what you're hoping for…"
-            />
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="role">I want to…</label>
-            <select id="role" v-model="form.lat_role" class="field-select">
-              <option value="">-- select --</option>
-              <option value="lender">Lend my garden</option>
-              <option value="tender">Tend someone's garden</option>
-              <option value="both">Both</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="radius"
-              >Travel radius <span class="field-hint">(miles)</span></label
-            >
-            <select
-              id="radius"
-              v-model="form.lat_travelRadius"
-              class="field-select"
-            >
-              <option value="2">Up to 2 miles</option>
-              <option value="5">Up to 5 miles</option>
-              <option value="10">Up to 10 miles</option>
-              <option value="20">Up to 20 miles</option>
-              <option value="50">Up to 50 miles</option>
-            </select>
-          </div>
-
-          <div v-if="saveError" class="alert-error">{{ saveError }}</div>
-          <div v-if="saveSuccess" class="alert-success">
-            <VIcon :icon="['fas', 'check-circle']" /> Profile saved.
-          </div>
-
-          <button
-            class="btn btn-primary mt-3"
-            :disabled="saving"
-            @click="saveProfile"
-          >
-            {{ saving ? 'Saving…' : 'Save changes' }}
-          </button>
-        </section>
-
-        <!-- My listings -->
-        <section class="profile-card">
-          <h2 class="card-title">My gardens</h2>
-          <div v-if="loadingListings" class="text-muted" style="font-size:0.9rem;">Loading…</div>
-          <div v-else-if="myListings.length === 0" class="text-muted" style="font-size:0.9rem;">
-            You haven't posted any gardens yet.
-            <div class="mt-2">
-              <NuxtLink to="/lend" class="btn btn-outline" style="font-size:0.85rem;padding:6px 14px;">Post a garden to lend</NuxtLink>
-              <NuxtLink to="/tend" class="btn btn-outline ms-2" style="font-size:0.85rem;padding:6px 14px;">Post a tender request</NuxtLink>
-            </div>
-          </div>
-          <ul v-else class="listings-list">
-            <li v-for="listing in myListings" :key="listing.id" class="listing-item">
-              <div class="listing-meta">
-                <span class="listing-badge" :class="listing.type === 'Offer' ? 'badge-lender' : 'badge-tender'">
-                  {{ listing.type === 'Offer' ? 'Garden to lend' : 'Looking to tend' }}
-                </span>
-                <NuxtLink :to="`/garden/${listing.id}`" class="listing-title">{{ listing.subject }}</NuxtLink>
-                <span class="listing-date">{{ formatDate(listing.arrival) }}</span>
+                {{ listing.type === 'Offer' ? 'Garden to lend' : 'Looking to tend' }}
               </div>
-              <button class="btn-remove" :disabled="deletingId === listing.id" @click="deleteListing(listing.id)">
-                {{ deletingId === listing.id ? 'Removing…' : 'Remove' }}
-              </button>
-            </li>
-          </ul>
-          <div v-if="deleteError" class="alert-error mt-2">{{ deleteError }}</div>
-        </section>
-
-        <!-- Notification settings link -->
-        <section class="profile-card" style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;">
-          <div>
-            <strong style="font-size:0.95rem;">Notification settings</strong>
-            <p class="status-note">Manage alerts for new gardens near you.</p>
-          </div>
-          <NuxtLink to="/settings" class="btn btn-outline" style="font-size:0.85rem;padding:8px 16px;white-space:nowrap;">Settings →</NuxtLink>
-        </section>
-
-        <!-- Payment status -->
-        <section class="profile-card">
-          <h2 class="card-title">Membership</h2>
-          <div v-if="hasPaid" class="status-paid">
-            <VIcon :icon="['fas', 'check-circle']" class="status-icon" />
-            <div>
-              <strong>Active member</strong>
-              <p class="status-note">You can send and receive messages.</p>
-            </div>
-          </div>
-          <div v-else class="status-unpaid">
-            <VIcon
-              :icon="['fas', 'lock']"
-              class="status-icon status-icon--lock"
-            />
-            <div>
-              <strong>Not yet joined</strong>
-              <p class="status-note">
-                Pay the one-off joining fee to send and receive messages.
+              <h2 class="garden-title">{{ listing.subject?.replace(/^(?:Offer|Wanted): /, '') }}</h2>
+              <p v-if="listing.location?.name" class="garden-location">
+                📍 {{ listing.location.name }}
               </p>
-              <NuxtLink to="/join" class="btn btn-primary mt-2"
-                >Join now — £{{ feeFormatted }}</NuxtLink
+            </div>
+            <div class="garden-status-wrap">
+              <span
+                v-if="hasAgreement(listing)"
+                class="garden-status"
+                :class="gardenStatusClass(listing)"
               >
+                <NuxtLink :to="agreementLink(listing)" class="agreement-link">
+                  {{ gardenStatus(listing) }} →
+                </NuxtLink>
+              </span>
+              <span
+                v-else
+                class="garden-status"
+                :class="gardenStatusClass(listing)"
+              >{{ gardenStatus(listing) }}</span>
             </div>
           </div>
-        </section>
 
-        <!-- Password change -->
-        <section class="profile-card">
-          <h2 class="card-title">Change password</h2>
-          <div class="field">
-            <label class="field-label" for="newpass">New password</label>
-            <input
-              id="newpass"
-              v-model="newPassword"
-              class="field-input"
-              type="password"
-              autocomplete="new-password"
-            />
-          </div>
-          <div class="field">
-            <label class="field-label" for="confirmpass"
-              >Confirm password</label
-            >
-            <input
-              id="confirmpass"
-              v-model="confirmPassword"
-              class="field-input"
-              type="password"
-              autocomplete="new-password"
-            />
-          </div>
-          <div v-if="passwordError" class="alert-error">
-            {{ passwordError }}
-          </div>
-          <div v-if="passwordSuccess" class="alert-success">
-            <VIcon :icon="['fas', 'check-circle']" /> Password changed.
-          </div>
-          <button
-            class="btn btn-outline mt-3"
-            :disabled="changingPassword"
-            @click="changePassword"
+          <!-- Photos -->
+          <div
+            v-if="listing.attachments && listing.attachments.length"
+            class="garden-photos"
           >
-            {{ changingPassword ? 'Saving…' : 'Change password' }}
-          </button>
-        </section>
+            <OurUploadedImage
+              v-for="photo in listing.attachments"
+              :key="photo.id"
+              :src="photo.ouruid || photo.externaluid"
+              :modifiers="photo.externalmods"
+              class="garden-photo"
+              alt="Garden photo"
+              :width="400"
+              :height="280"
+            />
+          </div>
+
+          <!-- Description -->
+          <section v-if="parsedBody(listing).description" class="garden-section">
+            <h3 class="section-title">About this listing</h3>
+            <p class="section-body">{{ parsedBody(listing).description }}</p>
+          </section>
+
+          <!-- Lender structured fields -->
+          <template v-if="listing.type === 'Offer'">
+            <section
+              v-if="hasLenderDetails(listing)"
+              class="garden-section"
+            >
+              <h3 class="section-title">Garden details</h3>
+              <dl class="detail-grid">
+                <template v-if="parsedBody(listing).gardenSize">
+                  <dt>Size</dt>
+                  <dd>{{ gardenSizeLabel(parsedBody(listing).gardenSize) }}</dd>
+                </template>
+                <template v-if="parsedBody(listing).sunExposure">
+                  <dt>Sun</dt>
+                  <dd>{{ sunLabel(parsedBody(listing).sunExposure) }}</dd>
+                </template>
+                <template v-if="parsedBody(listing).waterAccess">
+                  <dt>Water</dt>
+                  <dd>
+                    {{
+                      parsedBody(listing).waterAccess === 'yes'
+                        ? 'Tap / water butt available'
+                        : 'None — bring your own'
+                    }}
+                  </dd>
+                </template>
+                <template v-if="parsedBody(listing).accessRoute">
+                  <dt>Access</dt>
+                  <dd>{{ accessLabel(parsedBody(listing).accessRoute) }}</dd>
+                </template>
+              </dl>
+            </section>
+
+            <section v-if="parsedBody(listing).arrangement" class="garden-section">
+              <h3 class="section-title">Arrangement</h3>
+              <p class="section-body">{{ parsedBody(listing).arrangement }}</p>
+            </section>
+
+            <section v-if="parsedBody(listing).restrictions" class="garden-section">
+              <h3 class="section-title">Restrictions</h3>
+              <p class="section-body">{{ parsedBody(listing).restrictions }}</p>
+            </section>
+          </template>
+
+          <!-- Tender structured fields -->
+          <template v-else>
+            <section v-if="parsedBody(listing).whatToGrow" class="garden-section">
+              <h3 class="section-title">What I want to grow</h3>
+              <p class="section-body">{{ parsedBody(listing).whatToGrow }}</p>
+            </section>
+
+            <section
+              v-if="hasTenderDetails(listing)"
+              class="garden-section"
+            >
+              <h3 class="section-title">Availability & equipment</h3>
+              <dl class="detail-grid">
+                <template v-if="parsedBody(listing).tools">
+                  <dt>Tools</dt>
+                  <dd>{{ toolsLabel(parsedBody(listing).tools) }}</dd>
+                </template>
+                <template v-if="parsedBody(listing).availability">
+                  <dt>Available</dt>
+                  <dd>{{ availabilityLabel(parsedBody(listing).availability) }}</dd>
+                </template>
+                <template v-if="parsedBody(listing).honestyDeclaration">
+                  <dt>Declaration</dt>
+                  <dd>✓ Confirmed not on any offender's register</dd>
+                </template>
+              </dl>
+            </section>
+          </template>
+
+          <!-- Posted date -->
+          <p v-if="listing.arrival" class="garden-date">
+            Posted {{ formatDate(listing.arrival) }}
+          </p>
+
+          <!-- Actions -->
+          <div v-if="confirmRemoveId === listing.id" class="remove-confirm">
+            <template v-if="hasActiveAgreement(listing)">
+              <p class="remove-confirm__warning">
+                <VIcon icon="exclamation-triangle" /> This garden has an active agreement. What would you like to do?
+              </p>
+              <div class="remove-confirm__actions">
+                <button class="btn-action" :disabled="deletingId === listing.id" @click="makeAvailableAgain(listing)">
+                  <VIcon icon="rotate-left" /> Make available again
+                </button>
+                <button class="btn-action btn-action--danger" :disabled="deletingId === listing.id" @click="deleteListing(listing.id)">
+                  <VIcon icon="trash" /> {{ deletingId === listing.id ? 'Removing…' : 'Remove entirely' }}
+                </button>
+                <button class="btn-action" @click="confirmRemoveId = null">Cancel</button>
+              </div>
+            </template>
+            <template v-else>
+              <p class="remove-confirm__warning">Remove this garden listing?</p>
+              <div class="remove-confirm__actions">
+                <button class="btn-action btn-action--danger" :disabled="deletingId === listing.id" @click="deleteListing(listing.id)">
+                  <VIcon icon="trash" /> {{ deletingId === listing.id ? 'Removing…' : 'Yes, remove' }}
+                </button>
+                <button class="btn-action" @click="confirmRemoveId = null">Cancel</button>
+              </div>
+            </template>
+          </div>
+          <div v-else class="garden-actions">
+            <button class="btn-action btn-action--danger" @click="confirmRemoveId = listing.id">
+              <VIcon icon="trash" /> Remove
+            </button>
+            <NuxtLink :to="`/garden/${listing.id}/edit`" class="btn btn-primary">
+              <VIcon icon="pen" /> Edit garden
+            </NuxtLink>
+          </div>
+        </article>
+
+        <div v-if="deleteError" class="alert-error">{{ deleteError }}</div>
+
+        <!-- Post another garden -->
+        <div v-if="myListings.length > 0" class="post-another">
+          <NuxtLink to="/lend" class="btn btn-outline">Post another garden to lend</NuxtLink>
+          <NuxtLink to="/tend" class="btn btn-outline">Ask for a garden to tend</NuxtLink>
+        </div>
+
+        <!-- Link to settings -->
+        <div class="settings-link">
+          <NuxtLink to="/settings">
+            Account &amp; settings →
+          </NuxtLink>
+        </div>
       </template>
     </div>
   </div>
@@ -260,18 +223,21 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
-import { useImageStore } from '~/stores/image'
+import { useMessageStore } from '~/stores/message'
 import branding from '~/branding.config'
 import Api from '~/api'
-import OurUploader from '~/components/OurUploader'
+import OurUploadedImage from '~/components/OurUploadedImage'
 
 definePageMeta({ layout: 'default' })
-useHead({ title: `My Profile — ${branding.siteName}` })
+useHead({ title: `My Gardens — ${branding.siteName}` })
 
 const authStore = useAuthStore()
-const imageStore = useImageStore()
+const messageStore = useMessageStore()
 const config = useRuntimeConfig()
 const api = Api(config)
+const route = useRoute()
+
+const postedSuccess = computed(() => route.query.posted === '1')
 
 onMounted(async () => {
   if (!authStore.user) { navigateTo('/'); return }
@@ -283,6 +249,7 @@ const myListings = ref<any[]>([])
 const loadingListings = ref(false)
 const deletingId = ref<number | null>(null)
 const deleteError = ref('')
+const confirmRemoveId = ref<number | null>(null)
 
 async function loadMyListings() {
   const uid = authStore.user?.id
@@ -290,11 +257,21 @@ async function loadMyListings() {
   loadingListings.value = true
   try {
     const groupid = parseInt(config.public.LAT_WORLD_GROUPID)
-    const summaries = await api.message.fetchByUser(uid, true)
-    const filtered = (Array.isArray(summaries) ? summaries : []).filter((m: any) => m.groupid === groupid)
-    // Fetch full message details to get subject (MessageSummary lacks subject)
+    // Use active=false so listings with outcomes (Taken, Received, Withdrawn)
+    // also show — users want to see all their gardens in one place. We then
+    // de-dupe by message id because a message in multiple groups produces
+    // multiple summary rows.
+    const summaries = await api.message.fetchByUser(uid, false)
+    const arr = Array.isArray(summaries) ? summaries : []
+    const ourGroup = arr.filter((m: any) => Number(m.groupid) === groupid)
+    const seen = new Set<number>()
+    const unique = ourGroup.filter((m: any) => {
+      if (seen.has(m.id)) return false
+      seen.add(m.id)
+      return true
+    })
     const detailed = await Promise.all(
-      filtered.map((m: any) => api.message.fetch(m.id).catch(() => null))
+      unique.map((m: any) => api.message.fetch(m.id).catch(() => null))
     )
     myListings.value = detailed.filter((m: any) => m !== null)
   } catch { /* silently show empty */ } finally {
@@ -303,7 +280,7 @@ async function loadMyListings() {
 }
 
 async function deleteListing(id: number) {
-  if (!confirm('Remove this listing? This cannot be undone.')) return
+  confirmRemoveId.value = null
   deletingId.value = id
   deleteError.value = ''
   try {
@@ -321,181 +298,88 @@ function formatDate(ts: string | null) {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const user = computed(() => authStore.user)
-const route = useRoute()
-const postedSuccess = computed(() => route.query.posted === '1')
-
-const form = reactive({
-  displayname: user.value?.displayname ?? '',
-  aboutme: user.value?.aboutme?.text ?? '',
-  lat_role: user.value?.settings?.lat_role ?? '',
-  lat_travelRadius: String(user.value?.settings?.lat_travelRadius ?? '10'),
-})
-
-watch(
-  user,
-  (u) => {
-    if (!u) return
-    form.displayname = u.displayname ?? ''
-    form.aboutme = u.aboutme?.text ?? ''
-    form.lat_role = u.settings?.lat_role ?? ''
-    form.lat_travelRadius = String(u.settings?.lat_travelRadius ?? '10')
-  },
-  { immediate: true }
-)
-
-const saving = ref(false)
-const saveError = ref('')
-const saveSuccess = ref(false)
-
-const hasPaid = computed(() => {
-  const status = authStore.user?.settings?.lat_payment?.status
-  return status === 'paid' || status === 'concession'
-})
-
-const feeFormatted = computed(() => (branding.fee.amountPence / 100).toFixed(2))
-
-async function saveProfile() {
-  saving.value = true
-  saveError.value = ''
-  saveSuccess.value = false
+function parsedBody(listing: any) {
+  const raw = listing?.textbody
+  if (!raw) return {}
   try {
-    await api.user.save({
-      displayname: form.displayname,
-      aboutme: form.aboutme,
-    })
-    await api.session.save({
-      settings: {
-        ...(authStore.user?.settings ?? {}),
-        lat_role: form.lat_role || undefined,
-        lat_travelRadius: parseInt(form.lat_travelRadius),
-      },
-    })
-    await authStore.fetchUser()
-    saveSuccess.value = true
-    setTimeout(() => {
-      saveSuccess.value = false
-    }, 3000)
+    return JSON.parse(raw)
   } catch {
-    saveError.value = 'Could not save changes. Please try again.'
-  } finally {
-    saving.value = false
+    return { description: raw }
   }
 }
 
-const newPassword = ref('')
-const confirmPassword = ref('')
-const changingPassword = ref(false)
-const passwordError = ref('')
-const passwordSuccess = ref(false)
-
-async function changePassword() {
-  passwordError.value = ''
-  passwordSuccess.value = false
-  if (!newPassword.value || newPassword.value.length < 8) {
-    passwordError.value = 'Password must be at least 8 characters.'
-    return
-  }
-  if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = 'Passwords do not match.'
-    return
-  }
-  changingPassword.value = true
-  try {
-    await api.user.save({ password: newPassword.value })
-    newPassword.value = ''
-    confirmPassword.value = ''
-    passwordSuccess.value = true
-    setTimeout(() => {
-      passwordSuccess.value = false
-    }, 3000)
-  } catch {
-    passwordError.value = 'Could not change password. Please try again.'
-  } finally {
-    changingPassword.value = false
-  }
+function hasLenderDetails(listing: any) {
+  const b = parsedBody(listing)
+  return b.gardenSize || b.sunExposure || b.waterAccess || b.accessRoute
 }
 
-/* Profile photo */
-const uploadingPhoto = ref(false)
-const photoAttachments = ref<any[]>([])
-const photoCacheBust = ref(Date.now())
+function hasTenderDetails(listing: any) {
+  const b = parsedBody(listing)
+  return b.tools || b.availability || b.honestyDeclaration
+}
 
-const profilePhotoUrl = computed(() => {
-  if (authStore.user?.profile?.externaluid) {
-    // Use external photo (e.g. from social login)
-    return authStore.user.profile.path
-  } else if (authStore.user?.profile?.path && authStore.user?.profile?.ours) {
-    // Use uploaded photo with cache bust
-    return `${authStore.user.profile.path}?bust=${photoCacheBust.value}`
-  }
-  return null
-})
+function gardenSizeLabel(v: string) {
+  return ({ small: 'Small (up to 50 m²)', medium: 'Medium (50–200 m²)', large: 'Large (200 m²+)' }[v] || v)
+}
+function sunLabel(v: string) {
+  return ({ full: 'Full sun', partial: 'Partial shade', shade: 'Mostly shade' }[v] || v)
+}
+function accessLabel(v: string) {
+  return ({ gate: 'Side / back gate', through_house: 'Through the house', other: 'Other' }[v] || v)
+}
+function toolsLabel(v: string) {
+  return ({ basic: 'Basic hand tools', full: 'Full set of garden tools', none: "None — needs access to lender's tools" }[v] || v)
+}
+function availabilityLabel(v: string) {
+  return ({ weekends: 'Weekends', weekdays: 'Weekdays', flexible: 'Flexible', evenings: 'Evenings' }[v] || v)
+}
 
-watch(
-  photoAttachments,
-  async (newVal) => {
-    uploadingPhoto.value = false
-    if (newVal?.length) {
-      try {
-        const atts = {
-          externaluid: newVal[0].ouruid,
-          externalmods: newVal[0].externalmods,
-          imgtype: 'User',
-          msgid: authStore.user?.id,
-        }
-        await imageStore.post(atts)
-        await authStore.fetchUser()
-        photoCacheBust.value = Date.now()
-      } catch (err) {
-        console.error('Failed to upload photo:', err)
-      }
+function gardenStatus(listing: any): string {
+  if (listing.promises && listing.promises.length > 0) {
+    if (listing.promises[0].Acceptedat) {
+      return 'Agreement confirmed'
+    } else {
+      return 'Agreement proposed'
     }
-  },
-  { deep: true }
-)
-
-/* Email change */
-const newEmail = ref('')
-const changingEmail = ref(false)
-const emailError = ref('')
-const emailSuccess = ref(false)
-
-async function changeEmail() {
-  emailError.value = ''
-  emailSuccess.value = false
-
-  if (!newEmail.value) {
-    emailError.value = 'Please enter a new email address.'
-    return
   }
+  return 'Looking for a tender'
+}
 
-  if (!newEmail.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    emailError.value = 'Please enter a valid email address.'
-    return
+function gardenStatusClass(listing: any): string {
+  if (listing.promises && listing.promises.length > 0) {
+    if (listing.promises[0].Acceptedat) return 'status-confirmed'
+    return 'status-proposed'
   }
+  return 'status-available'
+}
 
-  changingEmail.value = true
+function hasAgreement(listing: any): boolean {
+  return listing.promises && listing.promises.length > 0
+}
+
+function agreementLink(listing: any): string {
+  if (listing.promises && listing.promises.length > 0) {
+    const tenderId = listing.promises[0].userid
+    return `/agreement/${listing.id}?userId=${tenderId}`
+  }
+  return ''
+}
+
+function hasActiveAgreement(listing: any): boolean {
+  return listing.promises && listing.promises.length > 0 && !listing.promises[0].Acceptedat
+}
+
+async function makeAvailableAgain(listing: any) {
+  confirmRemoveId.value = null
+  deleteError.value = ''
   try {
-    const data = await authStore.saveEmail(newEmail.value)
-    newEmail.value = ''
-    emailSuccess.value = true
-    setTimeout(() => {
-      emailSuccess.value = false
-    }, 3000)
-
-    // If confirmation needed, show a message
-    if (data && data.ret === 10) {
-      emailError.value = 'Check your email to confirm the change.'
-      setTimeout(() => {
-        emailError.value = ''
-      }, 5000)
+    const tenderId = listing.promises?.[0]?.userid
+    if (tenderId) {
+      await messageStore.renege(listing.id, tenderId)
     }
-  } catch (err) {
-    emailError.value = 'Could not save email. Please try again.'
-    console.error('Email change error:', err)
-  } finally {
-    changingEmail.value = false
+    await loadMyListings()
+  } catch {
+    deleteError.value = 'Could not make garden available again. Please try again.'
   }
 }
 </script>
@@ -508,7 +392,7 @@ async function changeEmail() {
 }
 
 .profile-container {
-  max-width: 600px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
@@ -519,69 +403,178 @@ async function changeEmail() {
   margin: 0 0 28px;
 }
 
-.profile-card {
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  padding: 40px 28px;
+  text-align: center;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.garden-card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
   padding: 28px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
-.card-title {
-  font-size: 1.05rem;
+.garden-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.garden-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.role-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.badge-lender { background: var(--lat-color-lender-bg); color: var(--lat-color-lender-text); }
+.badge-tender { background: var(--lat-color-tender-bg); color: var(--lat-color-tender-text); }
+
+.garden-title {
+  font-family: var(--lat-font-heading);
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--lat-color-text);
-  margin: 0 0 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  margin: 0 0 4px;
+  word-break: break-word;
 }
 
-.field {
-  margin-bottom: 16px;
-}
-
-.field-label {
-  display: block;
-  font-size: 0.87rem;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--lat-color-text);
-}
-
-.field-hint {
-  font-weight: 400;
+.garden-location {
   color: var(--lat-color-text-muted);
+  font-size: 0.88rem;
+  margin: 0;
 }
 
-.field-input,
-.field-textarea,
-.field-select {
+.garden-status-wrap {
+  flex-shrink: 0;
+}
+
+.garden-status {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.status-available { background: #e3f2fd; color: #1565c0; }
+.status-proposed { background: #fff3e0; color: #e65100; }
+.status-confirmed { background: #e8f5e9; color: #2d5a27; }
+
+.agreement-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.agreement-link:hover {
+  text-decoration: underline;
+}
+
+.garden-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.garden-photo {
+  display: block;
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.92rem;
-  font-family: inherit;
-  box-sizing: border-box;
+  height: 180px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* `<NuxtPicture>` (rendered by `OurUploadedImage`) wraps the `<img>` in a
+   `<picture>` — without constraining the inner img it renders at natural
+   size and breaks the layout. */
+.garden-photo :deep(img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.garden-section {
+  margin-bottom: 18px;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--lat-color-text);
-  background: white;
+  margin: 0 0 8px;
 }
 
-.field-textarea {
-  resize: vertical;
+.section-body {
+  color: var(--lat-color-text);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-line;
 }
 
-.field-input:focus,
-.field-textarea:focus,
-.field-select:focus {
-  outline: none;
-  border-color: var(--lat-color-primary);
+.detail-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.detail-grid dt {
+  font-weight: 600;
+  color: var(--lat-color-text-muted);
+  font-size: 0.85rem;
+}
+
+.detail-grid dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--lat-color-text);
+}
+
+.garden-date {
+  font-size: 0.8rem;
+  color: var(--lat-color-text-muted);
+  margin: 12px 0 16px;
+}
+
+.garden-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
   padding: 10px 20px;
   border-radius: 6px;
   font-weight: 600;
@@ -599,10 +592,6 @@ async function changeEmail() {
 .btn-primary:hover {
   background: var(--lat-color-primary-dark);
 }
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 .btn-outline {
   background: transparent;
@@ -612,16 +601,95 @@ async function changeEmail() {
 .btn-outline:hover {
   background: rgba(107, 158, 60, 0.07);
 }
-.btn-outline:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--lat-color-primary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.mt-2 {
-  margin-top: 8px;
+.btn-action:hover {
+  background: rgba(107, 158, 60, 0.08);
+  border-color: var(--lat-color-primary);
 }
-.mt-3 {
-  margin-top: 12px;
+
+.btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-action--danger {
+  color: #c0392b;
+}
+
+.btn-action--danger:hover {
+  background: #fff0f0;
+  border-color: #c0392b;
+}
+
+.remove-confirm {
+  margin-top: 16px;
+  background: #fff8f0;
+  border: 1px solid #f0c070;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.remove-confirm__warning {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7a4800;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remove-confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.post-another {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 24px 0 12px;
+}
+
+.settings-link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.settings-link a {
+  color: var(--lat-color-primary);
+  font-size: 0.9rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.settings-link a:hover {
+  text-decoration: underline;
+}
+
+.alert-success {
+  background: var(--lat-color-tender-bg, #e8f5e9);
+  color: var(--lat-color-tender-text, #2d5a27);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .alert-error {
@@ -629,195 +697,31 @@ async function changeEmail() {
   color: #c0392b;
   border-radius: 6px;
   padding: 10px 14px;
-  font-size: 0.88rem;
-  margin-top: 12px;
-}
-
-.alert-success {
-  background: var(--lat-color-tender-bg, #e8f5e9);
-  color: var(--lat-color-tender-text, #2d5a27);
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 0.88rem;
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-paid,
-.status-unpaid {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.status-icon {
-  font-size: 1.4rem;
-  margin-top: 2px;
-}
-
-.status-paid .status-icon {
-  color: var(--lat-color-primary);
-}
-.status-icon--lock {
-  color: #aaa;
-}
-
-.status-note {
-  color: var(--lat-color-text-muted);
-  font-size: 0.88rem;
-  margin: 4px 0 0;
+  font-size: 0.9rem;
+  margin: 12px 0;
 }
 
 .text-muted {
   color: var(--lat-color-text-muted);
 }
 
-/* My listings */
-.listings-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+.text-center { text-align: center; }
+.py-4 { padding-top: 24px; padding-bottom: 24px; }
+.py-5 { padding-top: 48px; padding-bottom: 48px; }
+.mt-3 { margin-top: 12px; }
+.mb-3 { margin-bottom: 12px; }
 
-.listing-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.listing-item:last-child { border-bottom: none; }
-
-.listing-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.listing-badge {
+.spinner-border {
   display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  width: fit-content;
-}
-
-.badge-lender { background: #e8f5e9; color: #2d5a27; }
-.badge-tender { background: #e3f2fd; color: #1565c0; }
-
-.listing-title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--lat-color-text);
-  text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.listing-title:hover { text-decoration: underline; }
-
-.listing-date {
-  font-size: 0.75rem;
-  color: var(--lat-color-text-muted);
-}
-
-.btn-remove {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.8rem;
-  color: #c0392b;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.btn-remove:hover { background: #fff0f0; border-color: #c0392b; }
-.btn-remove:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.ms-2 { margin-left: 8px; }
-.mt-2 { margin-top: 8px; }
-
-/* Profile photo styles */
-.photo-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.photo-display {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 120px;
-  height: 120px;
+  width: 36px;
+  height: 36px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-right-color: var(--lat-color-primary);
   border-radius: 50%;
-  background: #f5f5f5;
-  overflow: hidden;
-  border: 2px solid #e0e0e0;
+  animation: spin 0.6s linear infinite;
 }
 
-.profile-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.profile-photo-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 3.5rem;
-  color: #ccc;
-}
-
-.photo-actions {
-  display: flex;
-  justify-content: center;
-}
-
-.uploader-wrapper {
-  width: 100%;
-  max-width: 300px;
-}
-
-/* Email change styles */
-.current-email {
-  padding: 8px 12px;
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 0.92rem;
-  color: var(--lat-color-text);
-  font-weight: 500;
-}
-
-@media (max-width: 480px) {
-  .profile-card {
-    padding: 20px 16px;
-  }
-  .page-title {
-    font-size: 1.4rem;
-  }
-
-  .photo-display {
-    width: 100px;
-    height: 100px;
-  }
-
-  .profile-photo-placeholder {
-    font-size: 3rem;
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

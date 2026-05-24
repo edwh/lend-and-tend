@@ -3,6 +3,63 @@
 /* Bootstrap base — provides reset, utilities (mb-3, w-100, etc.) and form classes */
 @import 'bootstrap/scss/bootstrap';
 
+/* L&T Brand Color Palette — from Wilder Gardens style guide */
+:root {
+  /* Primary palette */
+  --lat-color-primary: #329732;
+  --lat-color-primary-dark: #4F6642;
+  --lat-color-primary-light: #8CC63F;
+
+  /* Secondary palette */
+  --lat-color-secondary: #BB68CA;
+  --lat-color-secondary-dark: #7a3a8a;
+  --lat-color-secondary-light: #f3e8f7;
+
+  /* Accents */
+  --lat-color-accent: #CBCB00;
+  --lat-color-accent-dark: #A8B330;
+
+  /* Surface & backgrounds */
+  --lat-color-surface: #EDE5D6;
+  --lat-color-background: #FFFFFF;
+
+  /* Text colors */
+  --lat-color-text: #333322;
+  --lat-color-text-muted: #5A3B1F;
+
+  /* Semantic colors */
+  --lat-color-alert: #CC3F00;
+  --lat-color-success: #329732;
+
+  /* Role-specific colors — match map pins: lender = lilac (garden offered), tender = green (does growing) */
+  --lat-color-lender-bg: #f3e8f7;
+  --lat-color-lender-text: #BB68CA;
+  --lat-color-tender-bg: #e8f5e9;
+  --lat-color-tender-text: #4F6642;
+
+  /* Gray color palette for action-chip buttons */
+  --color-gray-50: #faf9f7;
+  --color-gray-100: #f5f3f0;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #ced4da;
+  --color-gray-400: #adb5bd;
+  --color-gray-500: #6c757d;
+  --color-gray-600: #495057;
+  --color-gray-700: #343a40;
+  --color-gray-900: #212529;
+
+  /* Typography — inherit from Freegle's upstream typography.scss
+     (Source Sans Pro body, system fallbacks). Existing
+     `var(--lat-font-*)` call-sites still work via `inherit`. */
+  --lat-font-body: inherit;
+  --lat-font-heading: inherit;
+
+  /* Layout & spacing */
+  --radius-md: 0.5rem;
+  --radius-xl: 1.25rem;
+  --transition-fast: 150ms ease-in-out;
+}
+
 /* Page-level resets for L&T */
 *,
 *::before,
@@ -10,7 +67,101 @@
   box-sizing: border-box;
 }
 
+html {
+  color: var(--lat-color-text);
+}
+
 body {
   margin: 0;
   padding: 0;
+  background-color: var(--lat-color-background);
+}
+
+/* bootstrap-vue-next adds the `show` class but relies on Bootstrap JS for
+   display:block. Since we don't load Bootstrap JS separately, fix via CSS. */
+.modal.show {
+  display: block;
+}
+
+/* Remove Freegle SVG background pattern from L&T chat page.
+   The pattern was part of the Freegle brand and bleeds through modal backdrops
+   on the chat page. L&T uses a clean green brand instead. */
+.chatContent {
+  background-image: none !important;
+}
+
+.empty-state-pane {
+  background-image: none !important;
+}
+
+/* Hide Freegle reaction buttons and reply time — L&T doesn't use these */
+.reply-pill {
+  display: none !important;
+}
+
+/* bootstrap-vue-next renders `.modal-backdrop` as a CHILD of `.modal` (not a body-level
+   sibling like vanilla Bootstrap). The .modal element creates its own stacking context,
+   so the backdrop must sit below the dialog WITHIN that context.
+   Backdrop at 1040 above dialog at auto = backdrop in front. Lifting the dialog above
+   1040 fixes the stacking. */
+.modal {
+  z-index: 1055 !important;
+}
+
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+.modal .modal-dialog {
+  position: relative;
+  z-index: 1050 !important;
+}
+
+/* Override Bootstrap primary colour to L&T green for all btn-primary and outline-primary elements */
+.btn-primary,
+.btn-outline-primary {
+  --bs-btn-bg: var(--lat-color-primary);
+  --bs-btn-border-color: var(--lat-color-primary);
+  --bs-btn-hover-bg: var(--lat-color-primary-dark);
+  --bs-btn-hover-border-color: var(--lat-color-primary-dark);
+  --bs-btn-active-bg: var(--lat-color-primary-dark);
+  --bs-btn-active-border-color: var(--lat-color-primary-dark);
+  --bs-btn-disabled-bg: var(--lat-color-primary);
+  --bs-btn-disabled-border-color: var(--lat-color-primary);
+  --bs-btn-color: #fff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-color: #fff;
+}
+
+.btn-outline-primary {
+  --bs-btn-bg: transparent;
+  --bs-btn-color: var(--lat-color-primary);
+  --bs-btn-hover-bg: var(--lat-color-primary);
+}
+
+/* Bootstrap link / focus ring primary */
+:root {
+  --bs-primary: var(--lat-color-primary);
+  --bs-primary-rgb: 50, 151, 50;
+  --bs-link-color: var(--lat-color-primary);
+  --bs-link-hover-color: var(--lat-color-primary-dark);
+}
+
+/* Bottom nav is fixed at 67px on mobile/tablet (hidden at xl+).
+   Add clearance so page content isn't hidden beneath it. */
+@media (max-width: 1199.98px) {
+  .aboveSticky {
+    padding-bottom: calc(67px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Chat pane: subtract bottom nav height so the footer/input stays visible */
+  .chatHolder {
+    height: calc(100vh - 60px - 67px) !important;
+  }
+
+  @supports (height: 100dvh) {
+    .chatHolder {
+      height: calc(100dvh - 60px - 67px) !important;
+    }
+  }
 }
