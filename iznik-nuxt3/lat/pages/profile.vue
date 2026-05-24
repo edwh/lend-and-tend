@@ -1,772 +1,823 @@
 <template>
   <div class="profile-page">
-    <div class="container-fluid py-4">
-      <div class="row">
-        <div class="col-12">
-          <h1 class="mb-4">My Profile</h1>
-        </div>
+    <div class="profile-container">
+      <h1 class="page-title">My Profile</h1>
+
+      <div v-if="!authStore.user" class="text-center py-5">
+        <p class="text-muted">Please sign in to view your profile.</p>
       </div>
 
-      <!-- Error Alert -->
-      <div v-if="error" class="row mb-3">
-        <div class="col-12">
-          <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ error }}
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="alert"
-              aria-label="Close"
-              @click="error = null"
+      <template v-else>
+        <!-- Posted success banner -->
+        <div v-if="postedSuccess" class="alert-success mb-3" style="margin-left:0;margin-right:0;margin-top:0;">
+          <strong>Your listing is submitted!</strong>
+          Once approved it will appear on the map.
+          When someone gets in touch you'll see a message in <NuxtLink to="/chats">Messages</NuxtLink> and receive an email alert — check your spam folder if you don't see it.
+        </div>
+
+        <!-- Profile Photo -->
+        <section class="profile-card">
+          <h2 class="card-title">Profile photo</h2>
+          <div class="photo-section">
+            <div class="photo-display">
+              <img
+                v-if="profilePhotoUrl"
+                :src="profilePhotoUrl"
+                alt="Profile photo"
+                class="profile-photo"
+              />
+              <div v-else class="profile-photo-placeholder">
+                <VIcon :icon="['fas', 'user-circle']" />
+              </div>
+            </div>
+            <div class="photo-actions">
+              <div v-if="uploadingPhoto" class="uploader-wrapper">
+                <OurUploader v-model="photoAttachments" type="User" />
+              </div>
+              <button
+                v-else
+                class="btn btn-outline"
+                @click="uploadingPhoto = true"
+              >
+                <VIcon :icon="['fas', 'camera']" /> Upload photo
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Email change -->
+        <section class="profile-card">
+          <h2 class="card-title">Email address</h2>
+          <div class="field">
+            <label class="field-label" for="email">Current email</label>
+            <div class="current-email">{{ authStore.user?.email }}</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="newemail">New email address</label>
+            <input
+              id="newemail"
+              v-model="newEmail"
+              class="field-input"
+              type="email"
+              placeholder="Enter new email"
             />
           </div>
-        </div>
-      </div>
 
-      <!-- Success Alert -->
-      <div v-if="successMessage" class="row mb-3">
-        <div class="col-12">
-          <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ successMessage }}
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="alert"
-              aria-label="Close"
-              @click="successMessage = null"
+          <div v-if="emailError" class="alert-error">{{ emailError }}</div>
+          <div v-if="emailSuccess" class="alert-success">
+            <VIcon :icon="['fas', 'check-circle']" /> Email saved.
+          </div>
+
+          <button
+            class="btn btn-outline mt-3"
+            :disabled="changingEmail || !newEmail"
+            @click="changeEmail"
+          >
+            {{ changingEmail ? 'Saving…' : 'Save email' }}
+          </button>
+        </section>
+
+        <!-- Account details -->
+        <section class="profile-card">
+          <h2 class="card-title">Account details</h2>
+          <div class="field">
+            <label class="field-label" for="displayname">Display name</label>
+            <input
+              id="displayname"
+              v-model="form.displayname"
+              class="field-input"
+              type="text"
+              maxlength="80"
             />
           </div>
-        </div>
-      </div>
 
-      <!-- Tabs -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <ul class="nav nav-tabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button
-                id="my-details-tab"
-                class="nav-link"
-                :class="{ active: activeTab === 'details' }"
-                type="button"
-                role="tab"
-                aria-controls="my-details"
-                :aria-selected="activeTab === 'details'"
-                @click="activeTab = 'details'"
-              >
-                My Details
-              </button>
-            </li>
-            <li v-if="userRole === 'lender' || userRole === 'both'" class="nav-item" role="presentation">
-              <button
-                id="my-lending-tab"
-                class="nav-link"
-                :class="{ active: activeTab === 'garden' }"
-                type="button"
-                role="tab"
-                aria-controls="my-lending"
-                :aria-selected="activeTab === 'garden'"
-                @click="activeTab = 'garden'"
-              >
-                My Lending
-              </button>
-            </li>
-            <li v-if="userRole === 'tender' || userRole === 'both'" class="nav-item" role="presentation">
-              <button
-                id="my-tending-tab"
-                class="nav-link"
-                :class="{ active: activeTab === 'preferences' }"
-                type="button"
-                role="tab"
-                aria-controls="my-tending"
-                :aria-selected="activeTab === 'preferences'"
-                @click="activeTab = 'preferences'"
-              >
-                My Tending
+          <div class="field">
+            <label class="field-label" for="aboutme"
+              >About me
+              <span class="field-hint"
+                >(optional — visible to potential matches)</span
+              ></label
+            >
+            <textarea
+              id="aboutme"
+              v-model="form.aboutme"
+              class="field-textarea"
+              rows="4"
+              maxlength="500"
+              placeholder="A few words about yourself and what you're hoping for…"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="role">I want to…</label>
+            <select id="role" v-model="form.lat_role" class="field-select">
+              <option value="">-- select --</option>
+              <option value="lender">Lend my garden</option>
+              <option value="tender">Tend someone's garden</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="radius"
+              >Travel radius <span class="field-hint">(miles)</span></label
+            >
+            <select
+              id="radius"
+              v-model="form.lat_travelRadius"
+              class="field-select"
+            >
+              <option value="2">Up to 2 miles</option>
+              <option value="5">Up to 5 miles</option>
+              <option value="10">Up to 10 miles</option>
+              <option value="20">Up to 20 miles</option>
+              <option value="50">Up to 50 miles</option>
+            </select>
+          </div>
+
+          <div v-if="saveError" class="alert-error">{{ saveError }}</div>
+          <div v-if="saveSuccess" class="alert-success">
+            <VIcon :icon="['fas', 'check-circle']" /> Profile saved.
+          </div>
+
+          <button
+            class="btn btn-primary mt-3"
+            :disabled="saving"
+            @click="saveProfile"
+          >
+            {{ saving ? 'Saving…' : 'Save changes' }}
+          </button>
+        </section>
+
+        <!-- My listings -->
+        <section class="profile-card">
+          <h2 class="card-title">My gardens</h2>
+          <div v-if="loadingListings" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+          <div v-else-if="myListings.length === 0" class="text-muted" style="font-size:0.9rem;">
+            You haven't posted any gardens yet.
+            <div class="mt-2">
+              <NuxtLink to="/lend" class="btn btn-outline" style="font-size:0.85rem;padding:6px 14px;">Post a garden to lend</NuxtLink>
+              <NuxtLink to="/tend" class="btn btn-outline ms-2" style="font-size:0.85rem;padding:6px 14px;">Post a tender request</NuxtLink>
+            </div>
+          </div>
+          <ul v-else class="listings-list">
+            <li v-for="listing in myListings" :key="listing.id" class="listing-item">
+              <div class="listing-meta">
+                <span class="listing-badge" :class="listing.type === 'Offer' ? 'badge-lender' : 'badge-tender'">
+                  {{ listing.type === 'Offer' ? 'Garden to lend' : 'Looking to tend' }}
+                </span>
+                <NuxtLink :to="`/garden/${listing.id}`" class="listing-title">{{ listing.subject }}</NuxtLink>
+                <span class="listing-date">{{ formatDate(listing.arrival) }}</span>
+              </div>
+              <button class="btn-remove" :disabled="deletingId === listing.id" @click="deleteListing(listing.id)">
+                {{ deletingId === listing.id ? 'Removing…' : 'Remove' }}
               </button>
             </li>
           </ul>
-        </div>
-      </div>
+          <div v-if="deleteError" class="alert-error mt-2">{{ deleteError }}</div>
+        </section>
 
-      <!-- Tab Content -->
-      <div class="tab-content">
-        <!-- My Details Tab -->
-        <div
-          id="my-details"
-          class="tab-pane fade"
-          :class="{ 'show active': activeTab === 'details' }"
-          role="tabpanel"
-          aria-labelledby="my-details-tab"
-        >
-          <div class="row">
-            <div class="col-lg-8">
-              <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                  <form @submit.prevent="submitProfileUpdate">
-                    <!-- Role Badge -->
-                    <div class="mb-4">
-                      <label class="form-label fw-bold">Your Role</label>
-                      <div class="d-flex gap-2 align-items-center">
-                        <span
-                          class="badge fs-6 px-3 py-2"
-                          :style="getRoleBadgeStyle()"
-                        >
-                          {{ getRoleLabel() }}
-                        </span>
-                      </div>
-                      <small class="text-muted d-block mt-2">
-                        Role set during registration. Visit join page to change role.
-                      </small>
-                    </div>
+        <!-- Notification settings link -->
+        <section class="profile-card" style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;">
+          <div>
+            <strong style="font-size:0.95rem;">Notification settings</strong>
+            <p class="status-note">Manage alerts for new gardens near you.</p>
+          </div>
+          <NuxtLink to="/settings" class="btn btn-outline" style="font-size:0.85rem;padding:8px 16px;white-space:nowrap;">Settings →</NuxtLink>
+        </section>
 
-                    <!-- Avatar & Display Name -->
-                    <div class="row mb-4">
-                      <div class="col-md-auto mb-3 mb-md-0">
-                        <div class="avatar-placeholder"
-                          :style="{ backgroundColor: branding.colors.primary }"
-                        >
-                          {{ getInitials() }}
-                        </div>
-                      </div>
-                      <div class="col-md">
-                        <div class="mb-3">
-                          <label for="displayName" class="form-label">Display Name</label>
-                          <input
-                            id="displayName"
-                            v-model="formData.displayName"
-                            type="text"
-                            class="form-control"
-                            placeholder="Your name as others will see it"
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- About -->
-                    <div class="mb-4">
-                      <label for="about" class="form-label">About You</label>
-                      <textarea
-                        id="about"
-                        v-model="formData.about"
-                        class="form-control"
-                        rows="4"
-                        placeholder="Tell other gardeners about yourself (hobbies, gardening experience, etc.)"
-                      />
-                      <small class="text-muted d-block mt-1">Optional</small>
-                    </div>
-
-                    <!-- Postcode -->
-                    <div class="mb-4">
-                      <label for="postcode" class="form-label">Postcode</label>
-                      <input
-                        id="postcode"
-                        v-model="formData.postcode"
-                        type="text"
-                        class="form-control"
-                        placeholder="e.g., B1 1AA"
-                        required
-                      />
-                      <small class="text-muted d-block mt-1">
-                        We use this to find local matches near you.
-                      </small>
-                    </div>
-
-                    <!-- Travel Radius -->
-                    <div class="mb-4">
-                      <label for="travelRadius" class="form-label">
-                        Travel Radius: <strong>{{ formData.travelRadius }} mile{{ formData.travelRadius !== 1 ? 's' : '' }}</strong>
-                      </label>
-                      <input
-                        id="travelRadius"
-                        v-model.number="formData.travelRadius"
-                        type="range"
-                        class="form-range"
-                        min="1"
-                        max="20"
-                        step="1"
-                      />
-                      <small class="text-muted d-block mt-1">
-                        How far can you travel? (1–20 miles)
-                      </small>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="d-grid gap-2 pt-3">
-                      <button
-                        type="submit"
-                        class="btn btn-lg"
-                        :style="{ backgroundColor: branding.colors.primary, color: 'white' }"
-                        :disabled="isLoading"
-                      >
-                        <span v-if="!isLoading">Save Changes</span>
-                        <span v-else>
-                          <span
-                            class="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Saving...
-                        </span>
-                      </button>
-                    </div>
-                  </form>
-
-                  <!-- Change Password -->
-                  <hr class="my-4" />
-                  <h6 class="fw-bold mb-3">Change Password</h6>
-                  <div v-if="passwordSuccess" class="alert alert-success py-2 mb-3">Password changed.</div>
-                  <div v-if="passwordError" class="alert alert-danger py-2 mb-3">{{ passwordError }}</div>
-                  <form @submit.prevent="changePassword">
-                    <div class="mb-3">
-                      <label for="currentPassword" class="form-label">Current password</label>
-                      <input
-                        id="currentPassword"
-                        v-model="pwForm.current"
-                        type="password"
-                        class="form-control"
-                        autocomplete="current-password"
-                        required
-                      />
-                    </div>
-                    <div class="mb-3">
-                      <label for="newPassword" class="form-label">New password</label>
-                      <input
-                        id="newPassword"
-                        v-model="pwForm.newPw"
-                        type="password"
-                        class="form-control"
-                        autocomplete="new-password"
-                        minlength="8"
-                        required
-                      />
-                    </div>
-                    <div class="mb-3">
-                      <label for="confirmPassword" class="form-label">Confirm new password</label>
-                      <input
-                        id="confirmPassword"
-                        v-model="pwForm.confirm"
-                        type="password"
-                        class="form-control"
-                        autocomplete="new-password"
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      class="btn btn-outline-secondary"
-                      :disabled="pwChanging"
-                    >
-                      {{ pwChanging ? 'Changing…' : 'Change Password' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <!-- Info Panel (Desktop) -->
-            <div class="col-lg-4 d-none d-lg-block">
-              <div class="card border-0 shadow-sm bg-light">
-                <div class="card-body">
-                  <h6 class="card-title fw-bold mb-3">Profile Tips</h6>
-                  <ul class="list-unstyled small">
-                    <li class="mb-2">
-                      <span class="text-success">✓</span> A complete profile helps us find better matches
-                    </li>
-                    <li class="mb-2">
-                      <span class="text-success">✓</span> Share a bit about yourself to build trust
-                    </li>
-                    <li class="mb-2">
-                      <span class="text-success">✓</span> An accurate postcode ensures local matches
-                    </li>
-                    <li class="mb-2">
-                      <span class="text-success">✓</span> Your email is never shown publicly
-                    </li>
-                  </ul>
-                </div>
-              </div>
+        <!-- Payment status -->
+        <section class="profile-card">
+          <h2 class="card-title">Membership</h2>
+          <div v-if="hasPaid" class="status-paid">
+            <VIcon :icon="['fas', 'check-circle']" class="status-icon" />
+            <div>
+              <strong>Active member</strong>
+              <p class="status-note">You can send and receive messages.</p>
             </div>
           </div>
-        </div>
-
-        <!-- My Garden Tab -->
-        <div
-          v-if="userRole === 'lender' || userRole === 'both'"
-          id="my-garden"
-          class="tab-pane fade"
-          :class="{ 'show active': activeTab === 'garden' }"
-          role="tabpanel"
-          aria-labelledby="my-garden-tab"
-        >
-          <div class="row">
-            <div class="col-lg-8">
-              <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                  <h5 class="card-title mb-3">Your Garden Details</h5>
-                  <p class="text-muted mb-3">
-                    Tell potential tenders about your garden space so we can find the right match.
-                  </p>
-
-                  <div v-if="gardenSaved" class="alert alert-success mb-3 py-2">Garden details saved!</div>
-                  <div v-if="gardenError" class="alert alert-danger mb-3 py-2">{{ gardenError }}</div>
-
-                  <form @submit.prevent="saveGardenProfile">
-                    <div class="mb-3">
-                      <label class="form-label">Garden size</label>
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button
-                          v-for="opt in [['small','Small (up to 20m²)'],['medium','Medium (20–60m²)'],['large','Large (60m²+)']]"
-                          :key="opt[0]"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="gardenForm.gardenSize === opt[0] ? 'btn-success' : 'btn-outline-secondary'"
-                          @click="gardenForm.gardenSize = opt[0]"
-                        >{{ opt[1] }}</button>
-                      </div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Sun exposure</label>
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button
-                          v-for="opt in [['full_sun','Full sun'],['partial_shade','Part shade'],['full_shade','Full shade']]"
-                          :key="opt[0]"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="gardenForm.sunExposure === opt[0] ? 'btn-success' : 'btn-outline-secondary'"
-                          @click="gardenForm.sunExposure = opt[0]"
-                        >{{ opt[1] }}</button>
-                      </div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">What kind of arrangement are you open to?</label>
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button
-                          v-for="opt in [['exchange_tasks','Exchange tasks'],['goodwill','Goodwill only'],['flexible','Flexible']]"
-                          :key="opt[0]"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="gardenForm.arrangementType === opt[0] ? 'btn-success' : 'btn-outline-secondary'"
-                          @click="gardenForm.arrangementType = opt[0]"
-                        >{{ opt[1] }}</button>
-                      </div>
-                    </div>
-
-                    <div class="mb-3 form-check">
-                      <input id="waterAccess" v-model="gardenForm.waterAccess" type="checkbox" class="form-check-input" />
-                      <label for="waterAccess" class="form-check-label">Water access available</label>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="gardenDesc" class="form-label">Describe your garden</label>
-                      <textarea
-                        id="gardenDesc"
-                        v-model="gardenForm.description"
-                        class="form-control"
-                        rows="4"
-                        placeholder="Tell tenders what your garden is like, what you'd like grown, any restrictions..."
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      class="btn"
-                      :style="{ backgroundColor: branding.colors.primary, color: 'white' }"
-                      :disabled="gardenSaving"
-                    >
-                      {{ gardenSaving ? 'Saving…' : 'Save Garden Details' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
+          <div v-else class="status-unpaid">
+            <VIcon
+              :icon="['fas', 'lock']"
+              class="status-icon status-icon--lock"
+            />
+            <div>
+              <strong>Not yet joined</strong>
+              <p class="status-note">
+                Pay the one-off joining fee to send and receive messages.
+              </p>
+              <NuxtLink to="/join" class="btn btn-primary mt-2"
+                >Join now — £{{ feeFormatted }}</NuxtLink
+              >
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- My Preferences Tab -->
-        <div
-          v-if="userRole === 'tender' || userRole === 'both'"
-          id="my-preferences"
-          class="tab-pane fade"
-          :class="{ 'show active': activeTab === 'preferences' }"
-          role="tabpanel"
-          aria-labelledby="my-preferences-tab"
-        >
-          <div class="row">
-            <div class="col-lg-8">
-              <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                  <h5 class="card-title mb-3">Your Tender Preferences</h5>
-                  <p class="text-muted mb-3">
-                    Help us find gardens that suit what you want to grow.
-                  </p>
-
-                  <div v-if="tenderSaved" class="alert alert-success mb-3 py-2">Preferences saved!</div>
-                  <div v-if="tenderError" class="alert alert-danger mb-3 py-2">{{ tenderError }}</div>
-
-                  <form @submit.prevent="saveTenderProfile">
-                    <div class="mb-3">
-                      <label class="form-label">What do you want to grow? (select all that apply)</label>
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button
-                          v-for="interest in ['Vegetables','Fruit','Herbs','Flowers','Wildlife garden','Permaculture']"
-                          :key="interest"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="tenderForm.growingInterestsArray.includes(interest) ? 'btn-success' : 'btn-outline-secondary'"
-                          @click="toggleInterest(interest)"
-                        >{{ interest }}</button>
-                      </div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label class="form-label">Which days can you garden?</label>
-                      <div class="d-flex gap-2 flex-wrap">
-                        <button
-                          v-for="day in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']"
-                          :key="day"
-                          type="button"
-                          class="btn btn-sm"
-                          :class="tenderForm.availableDaysArray.includes(day) ? 'btn-success' : 'btn-outline-secondary'"
-                          @click="toggleDay(day)"
-                        >{{ day }}</button>
-                      </div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="tenderDesc" class="form-label">About your gardening</label>
-                      <textarea
-                        id="tenderDesc"
-                        v-model="tenderForm.description"
-                        class="form-control"
-                        rows="3"
-                        placeholder="Tell lenders about your experience, what you'd like to grow, your goals..."
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      class="btn"
-                      :style="{ backgroundColor: branding.colors.primary, color: 'white' }"
-                      :disabled="tenderSaving"
-                    >
-                      {{ tenderSaving ? 'Saving…' : 'Save Preferences' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
+        <!-- Password change -->
+        <section class="profile-card">
+          <h2 class="card-title">Change password</h2>
+          <div class="field">
+            <label class="field-label" for="newpass">New password</label>
+            <input
+              id="newpass"
+              v-model="newPassword"
+              class="field-input"
+              type="password"
+              autocomplete="new-password"
+            />
           </div>
-        </div>
-      </div>
+          <div class="field">
+            <label class="field-label" for="confirmpass"
+              >Confirm password</label
+            >
+            <input
+              id="confirmpass"
+              v-model="confirmPassword"
+              class="field-input"
+              type="password"
+              autocomplete="new-password"
+            />
+          </div>
+          <div v-if="passwordError" class="alert-error">
+            {{ passwordError }}
+          </div>
+          <div v-if="passwordSuccess" class="alert-success">
+            <VIcon :icon="['fas', 'check-circle']" /> Password changed.
+          </div>
+          <button
+            class="btn btn-outline mt-3"
+            :disabled="changingPassword"
+            @click="changePassword"
+          >
+            {{ changingPassword ? 'Saving…' : 'Change password' }}
+          </button>
+        </section>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { useImageStore } from '~/stores/image'
 import branding from '~/branding.config'
+import Api from '~/api'
+import OurUploader from '~/components/OurUploader'
 
-definePageMeta({
-  layout: 'default',
-  middleware: 'auth',
-})
+definePageMeta({ layout: 'default' })
+useHead({ title: `My Profile — ${branding.siteName}` })
 
 const authStore = useAuthStore()
-const activeTab = ref<'details' | 'garden' | 'preferences'>('details')
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const successMessage = ref<string | null>(null)
+const imageStore = useImageStore()
+const config = useRuntimeConfig()
+const api = Api(config)
 
-const formData = ref({
-  displayName: '',
-  about: '',
-  postcode: '',
-  travelRadius: 10,
+onMounted(async () => {
+  if (!authStore.user) { navigateTo('/'); return }
+  await loadMyListings()
 })
 
-const userRole = computed(() => authStore.latRole || 'both')
+/* My listings */
+const myListings = ref<any[]>([])
+const loadingListings = ref(false)
+const deletingId = ref<number | null>(null)
+const deleteError = ref('')
 
-// Load current user data — merged with garden/tender load below
-
-function getInitials(): string {
-  const name = authStore.displayName || ''
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-function getRoleLabel(): string {
-  const role = authStore.latRole || 'both'
-  return branding.roles[role as keyof typeof branding.roles]?.labelShort || 'Both'
-}
-
-function getRoleBadgeStyle() {
-  const role = authStore.latRole || 'both'
-  if (role === 'lender') {
-    return {
-      backgroundColor: branding.colors.lenderBg,
-      color: branding.colors.lenderText,
-    }
-  } else if (role === 'tender') {
-    return {
-      backgroundColor: branding.colors.tenderBg,
-      color: branding.colors.tenderText,
-    }
-  }
-  return {
-    backgroundColor: branding.colors.primaryLight,
-    color: 'white',
-  }
-}
-
-// ── Garden profile ───────────────────────────────────────────────────────────
-const gardenForm = ref({
-  gardenSize: '',
-  sunExposure: '',
-  waterAccess: false,
-  arrangementType: '',
-  description: '',
-})
-const gardenSaving = ref(false)
-const gardenSaved = ref(false)
-const gardenError = ref<string | null>(null)
-
-const tenderForm = ref({
-  growingInterestsArray: [] as string[],
-  availableDaysArray: [] as string[],
-  description: '',
-})
-const tenderSaving = ref(false)
-const tenderSaved = ref(false)
-const tenderError = ref<string | null>(null)
-
-// ── Change password ───────────────────────────────────────────────────────────
-const pwForm = ref({ current: '', newPw: '', confirm: '' })
-const pwChanging = ref(false)
-const passwordSuccess = ref(false)
-const passwordError = ref<string | null>(null)
-
-async function changePassword() {
-  passwordError.value = null
-  passwordSuccess.value = false
-  if (pwForm.value.newPw !== pwForm.value.confirm) {
-    passwordError.value = 'New passwords do not match.'
-    return
-  }
-  if (pwForm.value.newPw.length < 8) {
-    passwordError.value = 'New password must be at least 8 characters.'
-    return
-  }
-  pwChanging.value = true
+async function loadMyListings() {
+  const uid = authStore.user?.id
+  if (!uid) return
+  loadingListings.value = true
   try {
-    const config = useRuntimeConfig()
-    await $fetch(`${config.public.APIv2}/lat/user/password`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: authStore.authHeaders(),
-      body: { currentPassword: pwForm.value.current, newPassword: pwForm.value.newPw },
-    })
-    passwordSuccess.value = true
-    pwForm.value = { current: '', newPw: '', confirm: '' }
-    setTimeout(() => { passwordSuccess.value = false }, 5000)
-  } catch (err: any) {
-    passwordError.value = err.data?.error || err.message || 'Failed to change password.'
+    const groupid = parseInt(config.public.LAT_WORLD_GROUPID)
+    const summaries = await api.message.fetchByUser(uid, true)
+    const filtered = (Array.isArray(summaries) ? summaries : []).filter((m: any) => m.groupid === groupid)
+    // Fetch full message details to get subject (MessageSummary lacks subject)
+    const detailed = await Promise.all(
+      filtered.map((m: any) => api.message.fetch(m.id).catch(() => null))
+    )
+    myListings.value = detailed.filter((m: any) => m !== null)
+  } catch { /* silently show empty */ } finally {
+    loadingListings.value = false
+  }
+}
+
+async function deleteListing(id: number) {
+  if (!confirm('Remove this listing? This cannot be undone.')) return
+  deletingId.value = id
+  deleteError.value = ''
+  try {
+    await api.message.del(id)
+    myListings.value = myListings.value.filter(m => m.id !== id)
+  } catch {
+    deleteError.value = 'Could not remove listing. Please try again.'
   } finally {
-    pwChanging.value = false
+    deletingId.value = null
   }
 }
 
-function toggleInterest(interest: string) {
-  const idx = tenderForm.value.growingInterestsArray.indexOf(interest)
-  if (idx === -1) tenderForm.value.growingInterestsArray.push(interest)
-  else tenderForm.value.growingInterestsArray.splice(idx, 1)
+function formatDate(ts: string | null) {
+  if (!ts) return ''
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function toggleDay(day: string) {
-  const idx = tenderForm.value.availableDaysArray.indexOf(day)
-  if (idx === -1) tenderForm.value.availableDaysArray.push(day)
-  else tenderForm.value.availableDaysArray.splice(idx, 1)
-}
+const user = computed(() => authStore.user)
+const route = useRoute()
+const postedSuccess = computed(() => route.query.posted === '1')
 
-async function saveGardenProfile() {
-  gardenSaving.value = true
-  gardenSaved.value = false
-  gardenError.value = null
+const form = reactive({
+  displayname: user.value?.displayname ?? '',
+  aboutme: user.value?.aboutme?.text ?? '',
+  lat_role: user.value?.settings?.lat_role ?? '',
+  lat_travelRadius: String(user.value?.settings?.lat_travelRadius ?? '10'),
+})
+
+watch(
+  user,
+  (u) => {
+    if (!u) return
+    form.displayname = u.displayname ?? ''
+    form.aboutme = u.aboutme?.text ?? ''
+    form.lat_role = u.settings?.lat_role ?? ''
+    form.lat_travelRadius = String(u.settings?.lat_travelRadius ?? '10')
+  },
+  { immediate: true }
+)
+
+const saving = ref(false)
+const saveError = ref('')
+const saveSuccess = ref(false)
+
+const hasPaid = computed(() => {
+  const status = authStore.user?.settings?.lat_payment?.status
+  return status === 'paid' || status === 'concession'
+})
+
+const feeFormatted = computed(() => (branding.fee.amountPence / 100).toFixed(2))
+
+async function saveProfile() {
+  saving.value = true
+  saveError.value = ''
+  saveSuccess.value = false
   try {
-    const config = useRuntimeConfig()
-    await $fetch(`${config.public.APIv2}/lat/lender/profile`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: authStore.authHeaders(),
-      body: gardenForm.value,
+    await api.user.save({
+      displayname: form.displayname,
+      aboutme: form.aboutme,
     })
-    gardenSaved.value = true
-    setTimeout(() => { gardenSaved.value = false }, 4000)
-  } catch (err: any) {
-    gardenError.value = err.data?.error || err.message || 'Failed to save'
-  } finally {
-    gardenSaving.value = false
-  }
-}
-
-async function saveTenderProfile() {
-  tenderSaving.value = true
-  tenderSaved.value = false
-  tenderError.value = null
-  try {
-    const config = useRuntimeConfig()
-    await $fetch(`${config.public.APIv2}/lat/tender/profile`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: authStore.authHeaders(),
-      body: {
-        growingInterests: tenderForm.value.growingInterestsArray.join(','),
-        availableDays: tenderForm.value.availableDaysArray.join(','),
-        description: tenderForm.value.description,
+    await api.session.save({
+      settings: {
+        ...(authStore.user?.settings ?? {}),
+        lat_role: form.lat_role || undefined,
+        lat_travelRadius: parseInt(form.lat_travelRadius),
       },
     })
-    tenderSaved.value = true
-    setTimeout(() => { tenderSaved.value = false }, 4000)
-  } catch (err: any) {
-    tenderError.value = err.data?.error || err.message || 'Failed to save'
+    await authStore.fetchUser()
+    saveSuccess.value = true
+    setTimeout(() => {
+      saveSuccess.value = false
+    }, 3000)
+  } catch {
+    saveError.value = 'Could not save changes. Please try again.'
   } finally {
-    tenderSaving.value = false
+    saving.value = false
   }
 }
 
-// Load existing profile on mount
-onMounted(() => {
-  if (authStore.user) {
-    let settings: Record<string, any> = {}
-    try { settings = JSON.parse((authStore.user as any).settings || '{}') } catch { /* */ }
-    formData.value = {
-      displayName: (authStore.user as any).fullname || (authStore.user as any).firstname || '',
-      about: settings.lat_about || '',
-      postcode: settings.lat_postcode || '',
-      travelRadius: settings.lat_travel_radius || 3,
-    }
+const newPassword = ref('')
+const confirmPassword = ref('')
+const changingPassword = ref(false)
+const passwordError = ref('')
+const passwordSuccess = ref(false)
+
+async function changePassword() {
+  passwordError.value = ''
+  passwordSuccess.value = false
+  if (!newPassword.value || newPassword.value.length < 8) {
+    passwordError.value = 'Password must be at least 8 characters.'
+    return
   }
+  if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = 'Passwords do not match.'
+    return
+  }
+  changingPassword.value = true
+  try {
+    await api.user.save({ password: newPassword.value })
+    newPassword.value = ''
+    confirmPassword.value = ''
+    passwordSuccess.value = true
+    setTimeout(() => {
+      passwordSuccess.value = false
+    }, 3000)
+  } catch {
+    passwordError.value = 'Could not change password. Please try again.'
+  } finally {
+    changingPassword.value = false
+  }
+}
+
+/* Profile photo */
+const uploadingPhoto = ref(false)
+const photoAttachments = ref<any[]>([])
+const photoCacheBust = ref(Date.now())
+
+const profilePhotoUrl = computed(() => {
+  if (authStore.user?.profile?.externaluid) {
+    // Use external photo (e.g. from social login)
+    return authStore.user.profile.path
+  } else if (authStore.user?.profile?.path && authStore.user?.profile?.ours) {
+    // Use uploaded photo with cache bust
+    return `${authStore.user.profile.path}?bust=${photoCacheBust.value}`
+  }
+  return null
 })
 
-async function submitProfileUpdate() {
-  error.value = null
-  successMessage.value = null
-  isLoading.value = true
+watch(
+  photoAttachments,
+  async (newVal) => {
+    uploadingPhoto.value = false
+    if (newVal?.length) {
+      try {
+        const atts = {
+          externaluid: newVal[0].ouruid,
+          externalmods: newVal[0].externalmods,
+          imgtype: 'User',
+          msgid: authStore.user?.id,
+        }
+        await imageStore.post(atts)
+        await authStore.fetchUser()
+        photoCacheBust.value = Date.now()
+      } catch (err) {
+        console.error('Failed to upload photo:', err)
+      }
+    }
+  },
+  { deep: true }
+)
 
+/* Email change */
+const newEmail = ref('')
+const changingEmail = ref(false)
+const emailError = ref('')
+const emailSuccess = ref(false)
+
+async function changeEmail() {
+  emailError.value = ''
+  emailSuccess.value = false
+
+  if (!newEmail.value) {
+    emailError.value = 'Please enter a new email address.'
+    return
+  }
+
+  if (!newEmail.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    emailError.value = 'Please enter a valid email address.'
+    return
+  }
+
+  changingEmail.value = true
   try {
-    await authStore.updateProfile({
-      displayName: formData.value.displayName,
-      postcode: formData.value.postcode,
-      about: formData.value.about,
-      travelRadius: formData.value.travelRadius,
-    })
-
-    successMessage.value = 'Profile updated successfully!'
-
-    // Clear message after 5 seconds
+    const data = await authStore.saveEmail(newEmail.value)
+    newEmail.value = ''
+    emailSuccess.value = true
     setTimeout(() => {
-      successMessage.value = null
-    }, 5000)
-  } catch (err: any) {
-    error.value = err.message || 'Failed to update profile. Please try again.'
+      emailSuccess.value = false
+    }, 3000)
+
+    // If confirmation needed, show a message
+    if (data && data.ret === 10) {
+      emailError.value = 'Check your email to confirm the change.'
+      setTimeout(() => {
+        emailError.value = ''
+      }, 5000)
+    }
+  } catch (err) {
+    emailError.value = 'Could not save email. Please try again.'
+    console.error('Email change error:', err)
   } finally {
-    isLoading.value = false
+    changingEmail.value = false
   }
 }
 </script>
 
 <style scoped>
 .profile-page {
-  background-color: var(--lat-color-background);
+  background: var(--lat-color-surface);
   min-height: 100vh;
+  padding: 40px 16px;
 }
 
-.avatar-placeholder {
-  width: 100px;
-  height: 100px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: white;
+.profile-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.page-title {
   font-family: var(--lat-font-heading);
+  font-size: 1.8rem;
+  color: var(--lat-color-text);
+  margin: 0 0 28px;
 }
 
-.nav-tabs .nav-link {
+.profile-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--lat-color-text);
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.87rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--lat-color-text);
+}
+
+.field-hint {
+  font-weight: 400;
   color: var(--lat-color-text-muted);
-  border: none;
-  border-bottom: 3px solid transparent;
-  font-weight: 500;
-  transition: all 0.2s;
 }
 
-.nav-tabs .nav-link:hover {
-  color: var(--lat-color-primary);
-  border-bottom-color: var(--lat-color-primary-light);
-}
-
-.nav-tabs .nav-link.active {
-  color: var(--lat-color-primary);
-  border-bottom-color: var(--lat-color-primary);
-  background-color: transparent;
-}
-
-.card {
-  border-radius: 8px;
-}
-
-.form-control,
-.form-select,
-.form-range {
-  border-color: #ddd;
+.field-input,
+.field-textarea,
+.field-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
   border-radius: 6px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  color: var(--lat-color-text);
+  background: white;
 }
 
-.form-control:focus,
-.form-select:focus {
+.field-textarea {
+  resize: vertical;
+}
+
+.field-input:focus,
+.field-textarea:focus,
+.field-select:focus {
+  outline: none;
   border-color: var(--lat-color-primary);
-  box-shadow: 0 0 0 0.2rem rgba(107, 158, 60, 0.25);
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
   border-radius: 6px;
   font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s;
 }
 
-.btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.btn-primary {
+  background: var(--lat-color-primary);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--lat-color-primary-dark);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.badge {
-  font-family: var(--lat-font-body);
+.btn-outline {
+  background: transparent;
+  color: var(--lat-color-primary);
+  border: 2px solid var(--lat-color-primary);
+}
+.btn-outline:hover {
+  background: rgba(107, 158, 60, 0.07);
+}
+.btn-outline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .avatar-placeholder {
-    width: 80px;
-    height: 80px;
-    font-size: 2rem;
+.mt-2 {
+  margin-top: 8px;
+}
+.mt-3 {
+  margin-top: 12px;
+}
+
+.alert-error {
+  background: #fff0f0;
+  color: #c0392b;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  margin-top: 12px;
+}
+
+.alert-success {
+  background: var(--lat-color-tender-bg, #e8f5e9);
+  color: var(--lat-color-tender-text, #2d5a27);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-paid,
+.status-unpaid {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.status-icon {
+  font-size: 1.4rem;
+  margin-top: 2px;
+}
+
+.status-paid .status-icon {
+  color: var(--lat-color-primary);
+}
+.status-icon--lock {
+  color: #aaa;
+}
+
+.status-note {
+  color: var(--lat-color-text-muted);
+  font-size: 0.88rem;
+  margin: 4px 0 0;
+}
+
+.text-muted {
+  color: var(--lat-color-text-muted);
+}
+
+/* My listings */
+.listings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.listing-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.listing-item:last-child { border-bottom: none; }
+
+.listing-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.listing-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.badge-lender { background: #e8f5e9; color: #2d5a27; }
+.badge-tender { background: #e3f2fd; color: #1565c0; }
+
+.listing-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--lat-color-text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listing-title:hover { text-decoration: underline; }
+
+.listing-date {
+  font-size: 0.75rem;
+  color: var(--lat-color-text-muted);
+}
+
+.btn-remove {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  color: #c0392b;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-remove:hover { background: #fff0f0; border-color: #c0392b; }
+.btn-remove:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ms-2 { margin-left: 8px; }
+.mt-2 { margin-top: 8px; }
+
+/* Profile photo styles */
+.photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.photo-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  overflow: hidden;
+  border: 2px solid #e0e0e0;
+}
+
+.profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 3.5rem;
+  color: #ccc;
+}
+
+.photo-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.uploader-wrapper {
+  width: 100%;
+  max-width: 300px;
+}
+
+/* Email change styles */
+.current-email {
+  padding: 8px 12px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  color: var(--lat-color-text);
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    padding: 20px 16px;
+  }
+  .page-title {
+    font-size: 1.4rem;
   }
 
-  .container-fluid {
-    padding: 1rem;
+  .photo-display {
+    width: 100px;
+    height: 100px;
   }
 
-  h1 {
-    font-size: 1.75rem;
+  .profile-photo-placeholder {
+    font-size: 3rem;
   }
 }
 </style>

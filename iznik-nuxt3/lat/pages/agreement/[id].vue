@@ -1,53 +1,51 @@
 <template>
   <div class="agreement-page">
     <div class="breadcrumb">
-      <NuxtLink to="/lat">Home</NuxtLink>
+      <NuxtLink to="/">Home</NuxtLink>
       <span> / </span>
-      <NuxtLink to="/agreements">My Agreements</NuxtLink>
+      <NuxtLink :to="`/garden/${messageId}`">Garden</NuxtLink>
       <span> / </span>
-      <span>Agreement #{{ agreementId }}</span>
+      <span>Agreement</span>
     </div>
 
     <div class="page-header">
       <h1>Garden Sharing Agreement</h1>
-      <div class="user-role">
-        <span class="role-badge" :class="userRole">
-          {{ userRole === 'lender' ? 'Garden Owner' : 'Gardener' }}
-        </span>
-      </div>
     </div>
 
-    <AgreementForm
-      :agreement-id="agreementId"
-      :role="userRole"
+    <div v-if="!otherUserId" class="error-state">
+      <p>Missing required information. Please navigate here from a garden listing.</p>
+      <NuxtLink to="/map" class="btn btn-primary">Browse gardens</NuxtLink>
+    </div>
+
+    <LatAgreementForm
+      v-else
+      :message-id="messageId"
+      :other-user-id="otherUserId"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 const route = useRoute()
 
-const agreementId = computed(() => {
+const messageId = computed(() => {
   const id = route.params.id
-  return typeof id === 'string' ? parseInt(id, 10) : id
+  return typeof id === 'string' ? parseInt(id, 10) : Number(id)
 })
 
-// In a real app, this would come from user context
-// For now, default to 'lender' - can be determined by checking agreement parties
-const userRole = ref<'lender' | 'tender'>('lender')
+const otherUserId = computed(() => {
+  const uid = route.query.userId
+  return uid ? parseInt(uid as string, 10) : null
+})
 
-onMounted(() => {})
-
-definePageMeta({ layout: 'default', middleware: 'auth' })
+definePageMeta({ layout: 'default' })
 </script>
 
 <style scoped>
 .agreement-page {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 2rem 1rem;
 }
 
 .breadcrumb {
@@ -57,7 +55,7 @@ definePageMeta({ layout: 'default', middleware: 'auth' })
 }
 
 .breadcrumb a {
-  color: #2196f3;
+  color: var(--lat-color-primary);
   text-decoration: none;
 }
 
@@ -66,9 +64,6 @@ definePageMeta({ layout: 'default', middleware: 'auth' })
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #f0f0f0;
@@ -76,30 +71,27 @@ definePageMeta({ layout: 'default', middleware: 'auth' })
 
 h1 {
   margin: 0;
-  color: #333;
+  color: var(--lat-color-text);
+  font-family: var(--lat-font-heading);
   font-size: 2rem;
 }
 
-.user-role {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.error-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--lat-color-text-muted);
 }
 
-.role-badge {
+.btn {
   display: inline-block;
-  padding: 0.5rem 1rem;
+  padding: 10px 20px;
   border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--lat-color-primary);
   color: white;
-}
-
-.role-badge.lender {
-  background-color: #2196f3;
-}
-
-.role-badge.tender {
-  background-color: #4caf50;
 }
 </style>
