@@ -48,7 +48,7 @@ enabled = true
 
 [scale]
 min_machines_running = 0
-memory_mb = 512
+memory_mb = 2048
 cpu_kind = "performance"
 cpus = 1
 processes = ["app"]

@@ -187,11 +187,16 @@ See [plans/active/lat-adversarial-review.md](plans/active/lat-adversarial-review
 - Add tables or columns without explicit approval
 - Create new API concepts (all available in Freegle's schema)
 
-L&T is a **pure frontend layer** built on Freegle's immutable backend.
+**At present, almost all L&T-specific changes are in the frontend layer.** That balance will shift slightly once the L&T-specific Laravel batch commands (activity alerts, check-in reminders, agreement-confirmation emails) ship — those live under `iznik-batch/app/Console/Commands/Lat/` and `iznik-batch/app/Mail/Lat/`. Even so, the vast majority of platform behaviour — auth, chat, message moderation, batch infrastructure, the database schema, the Go API — is inherited unchanged from Freegle.
+
+## Credits
+
+- **[Freegle](https://github.com/freegle/iznik)** — the entire underlying platform. L&T inherits Freegle's Nuxt 3 frontend, Go API, Laravel batch processor, database schema and operational tooling unchanged. Auth, chat, message moderation, the `messages_promises` table that powers Garden Sharing Agreements, the PAF address lookup endpoints — all Freegle. Lend & Tend is technically a small layer of UI overrides, a handful of L&T-specific Laravel commands, and one schema migration, sitting on top of a very substantial existing codebase. Sincere thanks to the Freegle community.
+- **Edward Hibbert ([@edwh](https://github.com/edwh))** — concept and author of the L&T layer.
 
 ## License
 
-GNU General Public License v2. See `iznik-nuxt3/LICENSE` for full terms. Built on [Freegle](https://github.com/freegle/iznik) — credit and thanks to the Freegle community.
+GNU General Public License v2 — inherited from Freegle. See `iznik-nuxt3/LICENSE` for full terms.
 
 ## Further Reading
 

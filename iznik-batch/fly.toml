@@ -32,8 +32,8 @@ primary_region = "lhr"
 # Always keep the worker alive — scheduler must run.
 [scale]
   min_machines_running = 1
-  memory_mb = 512
-  cpu_kind = "shared"
+  memory_mb = 2048
+  cpu_kind = "performance"
   cpus = 1
 
 [deploy]

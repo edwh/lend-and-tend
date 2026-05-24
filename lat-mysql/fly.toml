@@ -34,5 +34,5 @@ primary_region = "lhr"
 
 [scale]
   memory_mb = 2048
-  cpu_kind = "shared"
+  cpu_kind = "performance"
   cpus = 1
