@@ -44,6 +44,13 @@ useHead({
     { key: 'og:site_name', property: 'og:site_name', content: 'Lend and Tend' },
     { key: 'og:description', property: 'og:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
     { key: 'og:image', property: 'og:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png' },
+    // Explicit type + dimensions help crawlers (FB especially) skip the HEAD-
+    // probe step and render the card without an extra round-trip. 1024x1024
+    // is square (1:1) — FB will crop to its preferred 1.91:1 but still shows
+    // the image rather than rejecting outright.
+    { key: 'og:image:type', property: 'og:image:type', content: 'image/png' },
+    { key: 'og:image:width', property: 'og:image:width', content: '1024' },
+    { key: 'og:image:height', property: 'og:image:height', content: '1024' },
     { key: 'og:url', property: 'og:url', content: 'https://lat.lend-and-tend.katapult.cloud' },
     { key: 'twitter:title', name: 'twitter:title', content: 'Lend and Tend' },
     { key: 'twitter:description', name: 'twitter:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
