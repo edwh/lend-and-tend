@@ -33,19 +33,25 @@ useHead({
   // useHead at component setup runs AFTER nuxt.config head merging, so
   // these entries are registered last and beat the upstream values for
   // any page that uses the lat default layout.
+  // Social-preview meta — title + description match the existing
+  // lendandtend.com cards verbatim so an FB/Twitter unfurl looks the
+  // same whether someone shared the old site or the new one. Note
+  // we use "Lend and Tend" (no ampersand) in social cards even though
+  // the in-product brand is "Lend & Tend" — that's how the legacy site
+  // presents itself to crawlers.
   meta: [
-    { key: 'og:title', property: 'og:title', content: 'Lend & Tend — Share a garden, grow good things' },
-    { key: 'og:site_name', property: 'og:site_name', content: 'Lend & Tend' },
-    { key: 'og:description', property: 'og:description', content: 'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.' },
+    { key: 'og:title', property: 'og:title', content: 'Lend and Tend' },
+    { key: 'og:site_name', property: 'og:site_name', content: 'Lend and Tend' },
+    { key: 'og:description', property: 'og:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
     { key: 'og:image', property: 'og:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png' },
     { key: 'og:url', property: 'og:url', content: 'https://lat.lend-and-tend.katapult.cloud' },
-    { key: 'twitter:title', name: 'twitter:title', content: 'Lend & Tend — Share a garden, grow good things' },
-    { key: 'twitter:description', name: 'twitter:description', content: 'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.' },
+    { key: 'twitter:title', name: 'twitter:title', content: 'Lend and Tend' },
+    { key: 'twitter:description', name: 'twitter:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
     { key: 'twitter:image', name: 'twitter:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png' },
-    { key: 'twitter:image:alt', name: 'twitter:image:alt', content: 'The Lend & Tend logo' },
+    { key: 'twitter:image:alt', name: 'twitter:image:alt', content: 'The Lend and Tend logo' },
     { key: 'twitter:site', name: 'twitter:site', content: '' },
-    { key: 'author', name: 'author', content: 'Lend & Tend' },
-    { key: 'apple-mobile-web-app-title', name: 'apple-mobile-web-app-title', content: 'Lend & Tend — Share a garden, grow good things' },
+    { key: 'author', name: 'author', content: 'Lend and Tend' },
+    { key: 'apple-mobile-web-app-title', name: 'apple-mobile-web-app-title', content: 'Lend and Tend' },
   ],
 })
 

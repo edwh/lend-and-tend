@@ -12,8 +12,12 @@ export const branding = {
   siteNameShort: 'L&T',
   tagline: 'Share a garden, grow good things',
   subTagline: 'Get Patch Matched',
+  // Matches the existing lendandtend.com social-card text so previews stay
+  // consistent between the legacy site and the new platform. Don't replace
+  // with marketing-of-the-week copy — change here ripples to <meta description>,
+  // og:description and twitter:description.
   description:
-    'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.',
+    "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours.",
   companyName: 'Lend and Tend Ltd',
   companyNumber: '15481570',
   email: 'hello@lendandtend.com',
