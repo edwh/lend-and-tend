@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lend and Tend — be back in a moment</title>
+  <meta name="robots" content="noindex" />
+  <style>
+    :root {
+      --lat-green: #329732;
+      --lat-text: #333322;
+      --lat-bg: #fff;
+      --lat-muted: #5a3b1f;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--lat-bg);
+      color: var(--lat-text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .card {
+      max-width: 480px;
+      text-align: center;
+    }
+    .logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 16px;
+      margin: 0 auto 24px;
+      display: block;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 12px;
+      color: var(--lat-green);
+    }
+    p {
+      margin: 0 0 16px;
+      color: var(--lat-muted);
+      font-size: 1rem;
+    }
+    .tip {
+      font-size: 0.9rem;
+      color: var(--lat-muted);
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 10px 20px;
+      background: var(--lat-green);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .btn:hover { opacity: 0.92; }
+  </style>
+</head>
+<body>
+  <main class="card" role="alert" aria-live="polite">
+    <img class="logo" src="/images/lat/logo.png?v=2" alt="Lend and Tend" />
+    <h1>We'll be right back</h1>
+    <p>
+      Lend and Tend is briefly doing some maintenance.
+      Please try again in a few minutes.
+    </p>
+    <p class="tip">
+      If this lingers, the issue is on our side, not yours —
+      thank you for your patience.
+    </p>
+    <a class="btn" href="/" onclick="setTimeout(()=>location.reload(),300);return true;">Try again</a>
+  </main>
+</body>
+</html>

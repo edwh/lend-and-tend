@@ -1,0 +1,81 @@
+# /etc/caddy/Caddyfile on the L&T Katapult VM.
+#
+# This file is committed to the repo so the config is reviewable in git;
+# the live copy lives at /etc/caddy/Caddyfile on the VM. To deploy a change:
+#   scp conf/caddy/Caddyfile root@<vm>:/etc/caddy/Caddyfile
+#   ssh root@<vm> 'caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy'
+#
+# The maintenance page at /var/www/lat-maintenance/maintenance.html is
+# served whenever an upstream returns 502/503/504 (i.e. lat-nuxt or
+# lat-api is rebuilding, down, or unreachable).
+
+{
+        email geeks@ilovefreegle.org
+}
+
+lat.lend-and-tend.katapult.cloud {
+        encode zstd gzip
+
+        # Go API (Freegle apiv2) — handles /apiv2/* and /api/*
+        @api path /apiv2* /api*
+        handle @api {
+                reverse_proxy 127.0.0.1:4001
+        }
+
+        # Moderator interface
+        handle /admin* {
+                reverse_proxy 127.0.0.1:4003
+        }
+
+        # Mailpit web UI (dev convenience — outbound is disabled
+        # for now, but if any mail does get spooled we can inspect it)
+        handle /mail* {
+                reverse_proxy 127.0.0.1:4025
+        }
+
+
+        # Prefix-routed reverse proxies for the L&T image plumbing.
+        # /lat-uploads/<id>   -> lat-tusd (host 127.0.0.1:14080) at /<id>
+        # /lat-delivery/...   -> lat-delivery (host 127.0.0.1:14081) at /
+        # We use prefix-on-443 instead of separate ports because some mobile
+        # carriers and Wi-Fi networks block non-standard outbound ports.
+        handle_path /lat-uploads/* {
+                reverse_proxy 127.0.0.1:14080
+        }
+        handle_path /lat-delivery/* {
+                reverse_proxy 127.0.0.1:14081
+        }
+
+        # Everything else -> Nuxt SSR frontend
+        handle {
+                reverse_proxy 127.0.0.1:4002
+        }
+
+        # Maintenance page when any upstream is rebuilding/unreachable.
+        # Caddy's handle_errors catches reverse_proxy failures (502/503/504)
+        # and serves the static maintenance.html instead of Caddy's default
+        # bare "502 Bad Gateway" body. The page references /images/lat/logo.png
+        # — which is served by lat-nuxt — so if lat-nuxt itself is down the
+        # logo will fail to load. That's acceptable: the textual message
+        # still renders, and once lat-nuxt is back the next reload picks up
+        # both the logo and the real site.
+        handle_errors {
+                @upstream_down `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+                handle @upstream_down {
+                        root * /var/www/lat-maintenance
+                        rewrite * /maintenance.html
+                        header Cache-Control "no-store"
+                        header Content-Type "text/html; charset=utf-8"
+                        file_server
+                }
+        }
+
+        # Reasonable logging — drop to file so we can grep on issues.
+        log {
+                output file /var/log/caddy/lat-access.log {
+                        roll_size 50mb
+                        roll_keep 5
+                }
+                format console
+        }
+}
