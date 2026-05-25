@@ -56,6 +56,11 @@ const { requestLogin } = useNavbar()
   .roles-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 640px) {
+  .roles-section { padding: 48px 12px; }
+  .role-body { padding: 20px 16px; }
+}
+
 .role-card {
   border-radius: 10px;
   overflow: hidden;
@@ -193,5 +198,10 @@ const { requestLogin } = useNavbar()
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 24px;
+}
+
+@media (max-width: 640px) {
+  .section-light { padding: 48px 12px; }
+  .container { padding: 0 12px; }
 }
 </style>

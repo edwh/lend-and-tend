@@ -131,6 +131,12 @@ useHead({
   padding: 0 24px;
 }
 
+/* On narrow viewports the 24px side padding eats into a substantial
+   fraction of the visible width — tighten it so cards aren't squeezed. */
+@media (max-width: 640px) {
+  .container { padding: 0 12px; }
+}
+
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 /* #1A2210 bg + white text → 17:1 ✓ */
 .hero {
@@ -151,6 +157,10 @@ useHead({
 @media (max-width: 768px) {
   .hero-inner { grid-template-columns: 1fr; }
   .hero-image { display: none; }
+}
+
+@media (max-width: 640px) {
+  .hero { padding: 48px 12px 40px; }
 }
 
 .hero h1 {
@@ -235,6 +245,16 @@ useHead({
 .section-tinted {
   background: var(--lat-color-surface);
   padding: 80px 24px;
+}
+
+/* Tighten section gutters on small viewports so content cards aren't
+   visually squeezed into a narrow centred column. */
+@media (max-width: 640px) {
+  .section-light,
+  .section-tinted,
+  .cta-section {
+    padding: 48px 12px;
+  }
 }
 
 /* #1A2210 on white/surface → 17:1 ✓ */

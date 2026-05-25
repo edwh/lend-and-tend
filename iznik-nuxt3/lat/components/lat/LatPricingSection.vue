@@ -141,4 +141,8 @@ const { requestLogin } = useNavbar()
   margin: 0 auto;
   padding: 0 24px;
 }
+@media (max-width: 640px) {
+  .section-light, .section-tinted { padding: 48px 12px; }
+  .container { padding: 0 12px; }
+}
 </style>
