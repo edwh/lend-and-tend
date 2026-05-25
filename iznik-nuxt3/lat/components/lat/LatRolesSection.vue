@@ -14,7 +14,7 @@
             <li>Learn or share gardening skills</li>
             <li>Be part of a kind, supported Patch-Matching process</li>
           </ul>
-          <button class="role-cta tender-cta" @click="requestLogin()">Find a garden →</button>
+          <button class="role-cta tender-cta" @click="ctaClick('tend')">Find a garden →</button>
         </div>
       </div>
       <div class="role-card role-lender">
@@ -29,7 +29,7 @@
             <li>Enjoy the potential for extra help in the garden</li>
             <li>Benefit from our supported, thoughtful Patch-Matching process</li>
           </ul>
-          <button class="role-cta lender-cta" @click="requestLogin()">Share my garden →</button>
+          <button class="role-cta lender-cta" @click="ctaClick('lend')">Share my garden →</button>
         </div>
       </div>
     </div>
@@ -38,8 +38,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
-import { useNavbar } from '~/composables/useNavbar'
-const { requestLogin } = useNavbar()
+import { useLatAuth } from '../../composables/useLatAuth.js'
+const { ctaClick } = useLatAuth()
 </script>
 
 <style scoped>

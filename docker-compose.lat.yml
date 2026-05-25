@@ -135,6 +135,14 @@ services:
       IMAGE_DOMAIN: localhost
       GROUP_DOMAIN: localhost
       PASSWORD_SALT: lat-dev-salt
+      # Image plumbing — point at L&T-owned containers, not Freegle.
+      # GetImageDeliveryUrl builds  <IMAGE_DELIVERY>?url=<UPLOADS><uid>.
+      # IMAGE_DELIVERY is the host the *browser* hits (must resolve from
+      # the user's machine), but UPLOADS is fetched by the lat-delivery
+      # container itself — so it must resolve inside the docker network.
+      # Use the lat-tusd service alias on lat-network, port 8080.
+      UPLOADS: "http://lat-tusd:8080/files/"
+      IMAGE_DELIVERY: "${LAT_DELIVERY_PUBLIC_URL:-http://localhost:${PORT_LAT_DELIVERY:-4081}}"
     depends_on:
       lat-percona:
         condition: service_healthy
@@ -164,6 +172,7 @@ services:
       network: host
     volumes:
       - ./iznik-nuxt3/lat/components:/app/lat/components:rw
+      - ./iznik-nuxt3/lat/composables:/app/lat/composables:rw
       - ./iznik-nuxt3/lat/pages:/app/lat/pages:rw
       - ./iznik-nuxt3/lat/stores:/app/lat/stores:rw
       - ./iznik-nuxt3/lat/layouts:/app/lat/layouts:rw
@@ -178,6 +187,17 @@ services:
     environment:
       IZNIK_API_V2: http://lat-api.localhost:${PORT_LAT_API:-4001}/apiv2
       LAT_WORLD_GROUPID: "1000000"
+      # Photo upload + image delivery routed to L&T-owned containers.
+      # Uppy/TUS will POST file bytes to TUS_UPLOADER from the browser,
+      # so this needs to be a host-side URL — not the in-network alias.
+      # Defaults match the local dev compose; prod overrides via .env.
+      TUS_UPLOADER: "${LAT_TUS_PUBLIC_URL:-http://localhost:${PORT_LAT_TUSD:-4080}/files/}"
+      IMAGE_DELIVERY: "${LAT_DELIVERY_PUBLIC_URL:-http://localhost:${PORT_LAT_DELIVERY:-4081}}"
+      # USER_SITE drives icon URL + og:url. Defaults to Freegle's site
+      # when unset — every page would then load the navbar icon from
+      # delivery.ilovefreegle.org. Pin to the L&T host so static assets
+      # (icon.png, app-manifest etc.) are served by lat-nuxt itself.
+      USER_SITE: "${LAT_USER_SITE:-http://localhost:4002}"
       NODE_ENV: development
       NUXT_DEV_MODE: "true"
       SMTP_HOST: lat-mailpit
@@ -190,6 +210,55 @@ services:
     depends_on:
       lat-api:
         condition: service_healthy
+    networks:
+      - lat-network
+
+  # Resumable file upload server. Stores raw bytes from PhotoUploader/Uppy.
+  # Returns a TUS upload URL whose last path segment becomes the
+  # externaluid the frontend then POSTs to lat-api /image to register
+  # the attachment in the L&T DB. No -hooks-http needed because the
+  # frontend (OurUploader.vue uploadSuccess) handles registration in
+  # the apiv2 Go server — apiv1 is gone.
+  #
+  # -base-path=/files/ matches GetImageDeliveryUrl's UPLOADS env (below).
+  # -cors-allow-headers covers what Uppy/TUS sends.
+  lat-tusd:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-tusd
+    image: tusproject/tusd:latest
+    restart: unless-stopped
+    command:
+      - -base-path=/files/
+      - -cors-allow-headers=baggage,sentry-trace,authorization,x-token
+    ports:
+      - "${PORT_LAT_TUSD:-4080}:8080"
+    volumes:
+      - lat-tusd-data:/srv/tusd-data
+    networks:
+      - lat-network
+
+  # Image-resize / delivery proxy (weserv/imagesweserv). Accepts
+  # ?url=<tusd-file> queries and returns optionally-resized images.
+  # Reuses Freegle's nginx + weserv configs verbatim from /delivery-*.conf
+  # — they're generic, no Freegle-specific hostnames baked in.
+  lat-delivery:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-delivery
+    image: ghcr.io/weserv/images:5.x
+    restart: unless-stopped
+    shm_size: 1gb
+    depends_on:
+      lat-tusd:
+        condition: service_started
+    ports:
+      - "${PORT_LAT_DELIVERY:-4081}:80"
+    volumes:
+      - ./delivery-nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./delivery-imagesweserv.conf:/etc/nginx/imagesweserv.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - lat-network
 
@@ -218,6 +287,8 @@ services:
 
 volumes:
   lat-db:
+    driver: local
+  lat-tusd-data:
     driver: local
 
 networks:

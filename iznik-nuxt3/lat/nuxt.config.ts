@@ -16,6 +16,22 @@ export default defineNuxtConfig({
         latGlobalCssPath,
       ]
     },
+    // Strip Freegle's Prebid/GoogleTag/Playwire ad-init script from the
+    // shared head. Upstream injects a ~5KB inline <script> that registers
+    // dozens of Freegle ad-slot codes (/22794232631/freegle_sticky etc.)
+    // and identifies the page as "26548_Freegle" to the ad broker. L&T
+    // shows no ads, so this script is pure dead-weight AND a heavy brand
+    // leak in view-source. Keep the other two upstream script entries
+    // (__initSearch capture, globalThis polyfill) — they're tiny and
+    // load-bearing for Nuxt hydration / Safari 12 polyfill.
+    function (_options: Record<string, never>, nuxt: any) {
+      const scripts = nuxt.options?.app?.head?.script
+      if (!Array.isArray(scripts)) return
+      nuxt.options.app.head.script = scripts.filter((s: any) => {
+        const body = String(s?.innerHTML ?? '')
+        return !(body.includes('pbjs') || body.includes('googletag'))
+      })
+    },
   ],
 
   ssr: true,

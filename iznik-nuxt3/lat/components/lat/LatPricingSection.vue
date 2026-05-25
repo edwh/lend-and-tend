@@ -16,8 +16,8 @@
         <div class="price-label-top">Standard</div>
         <div class="price-amount">£12</div>
         <div class="price-label">one-time joining fee</div>
-        <button class="btn-primary price-cta" @click="requestLogin()">
-          Join now
+        <button class="btn-primary price-cta" @click="ctaClick('join')">
+          {{ hasPaid ? 'Browse gardens' : 'Join now' }}
         </button>
         <div class="price-free-note">Free with UC / Pension Credit</div>
       </div>
@@ -27,8 +27,8 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
-import { useNavbar } from '~/composables/useNavbar'
-const { requestLogin } = useNavbar()
+import { useLatAuth } from '../../composables/useLatAuth.js'
+const { hasPaid, ctaClick } = useLatAuth()
 </script>
 
 <style scoped>

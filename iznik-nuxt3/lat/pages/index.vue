@@ -15,7 +15,9 @@
             <strong>Good for the planet, good for people — and it feels great. Sound good?</strong>
           </p>
           <div class="hero-ctas">
-            <button class="btn-hero" @click="requestLogin()">Join to garden share</button>
+            <button class="btn-hero" @click="ctaClick('join')">
+              {{ hasPaid ? 'Browse gardens' : 'Join to garden share' }}
+            </button>
             <a href="#how" class="btn-hero-ghost">How it works ↓</a>
           </div>
         </div>
@@ -41,8 +43,8 @@
             Locations are blurred for privacy. Your exact address is only
             ever shared directly between matched members.
           </p>
-          <button class="btn-primary" @click="requestLogin()">
-            Get Patch Matched
+          <button class="btn-primary" @click="ctaClick('browse')">
+            {{ hasPaid ? 'Browse the map' : 'Get Patch Matched' }}
           </button>
           <NuxtLink to="/map" class="btn-ghost">
             Browse the map →
@@ -87,8 +89,8 @@
       <div class="container cta-inner">
         <h2>Ready to get patch-matched?</h2>
         <p>Join gardeners sharing plots all around the world.</p>
-        <button class="btn-cta" @click="requestLogin()">
-          Join Lend &amp; Tend
+        <button class="btn-cta" @click="ctaClick('join')">
+          {{ hasPaid ? 'Browse gardens' : 'Join Lend &amp; Tend' }}
         </button>
       </div>
     </section>
@@ -102,7 +104,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
 import branding from '~/branding.config'
-import { useNavbar } from '~/composables/useNavbar'
+import { useLatAuth } from '../composables/useLatAuth.js'
 
 // MapView pulls in Leaflet, which touches `window` at module load.
 // Deferring the import via defineAsyncComponent means the module is
@@ -112,7 +114,7 @@ import { useNavbar } from '~/composables/useNavbar'
 const MapView = defineAsyncComponent(() =>
   import('~/components/lat/MapView.vue')
 )
-const { requestLogin } = useNavbar()
+const { hasPaid, ctaClick } = useLatAuth()
 
 definePageMeta({ layout: 'default' })
 

@@ -1,11 +1,22 @@
 // Tests for the landing-page section components: presentation + the
-// few click handlers that go through useNavbar.requestLogin.
+// few click handlers that go through useLatAuth.ctaClick (with intent).
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
 
-const mockRequestLogin = vi.fn()
+const mockCtaClick = vi.fn()
+vi.mock('~/lat/composables/useLatAuth.js', () => ({
+  useLatAuth: () => ({
+    isLoggedIn: ref(false),
+    hasPaid: ref(false),
+    ctaClick: mockCtaClick,
+  }),
+}))
+
+// LatSiteFooter still uses useNavbar — keep a minimal stub so its
+// `useRoute()` call doesn't blow up under vitest (no Nuxt runtime).
 vi.mock('~/composables/useNavbar', () => ({
-  useNavbar: () => ({ requestLogin: mockRequestLogin }),
+  useNavbar: () => ({ requestLogin: vi.fn() }),
 }))
 // Sparse mock with just the fields LatSiteFooter actually reads.
 vi.mock('~/branding.config', () => ({
@@ -60,18 +71,18 @@ describe('LatRolesSection', () => {
     expect(h2s).toContain("Can't Garden? Find out who can.")
   })
 
-  it('Tender CTA triggers requestLogin', async () => {
-    mockRequestLogin.mockClear()
+  it('Tender CTA dispatches ctaClick with intent="tend"', async () => {
+    mockCtaClick.mockClear()
     const w = makeWrapper(LatRolesSection)
     await w.get('.tender-cta').trigger('click')
-    expect(mockRequestLogin).toHaveBeenCalledOnce()
+    expect(mockCtaClick).toHaveBeenCalledWith('tend')
   })
 
-  it('Lender CTA triggers requestLogin', async () => {
-    mockRequestLogin.mockClear()
+  it('Lender CTA dispatches ctaClick with intent="lend"', async () => {
+    mockCtaClick.mockClear()
     const w = makeWrapper(LatRolesSection)
     await w.get('.lender-cta').trigger('click')
-    expect(mockRequestLogin).toHaveBeenCalledOnce()
+    expect(mockCtaClick).toHaveBeenCalledWith('lend')
   })
 })
 

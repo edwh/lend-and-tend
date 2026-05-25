@@ -612,6 +612,63 @@ long-term answer is to split runtime config into an SSR-internal base URL
 
 ---
 
+## Shared Freegle infrastructure leaks into L&T HTML (added 2026-05-25)
+
+**How surfaced:** `view-source` on `https://lat.lend-and-tend.katapult.cloud/` shows 68 "freegle" references. Local dev (`http://localhost:4002/`) showed 62. After the head-meta + Prebid/GoogleTag script-filter fixes done in this session, local is down to **20**. Every one of the remaining 20 leaks is a Freegle URL or domain name baked into the page — pure shared-infrastructure exposure, not branding text we forgot to override.
+
+**What's still being shared (env-var driven, applies to local + prod identically):**
+
+| Concern | Surfaces as | Source | L&T need? |
+|---|---|---|---|
+| `USER_SITE` = `https://www.ilovefreegle.org` | `og:url` (now overridden by useHead), navbar logo `<img src=…/icon.png>`, all email link bases | env var (default in `nuxt.config.ts`) | Should be `https://lat.lend-and-tend.katapult.cloud`. |
+| `USER_DOMAIN` = `ilovefreegle.org` | Cookies, domain restrictions in Pinia hydration JSON | env var | Should be `lend-and-tend.katapult.cloud`. |
+| `IMAGE_SITE` = `https://images.ilovefreegle.org` | Image URL builder (anything not uploaded by users) | env var | Either point at an L&T-branded CDN, or keep the dependency but document it. |
+| `IMAGE_DELIVERY` = `https://delivery.ilovefreegle.org` | `<link rel=preconnect>`, `<link rel=dns-prefetch>`, `<img srcset>` URLs | env var | Image-resize CDN (weserv-style). Either rebrand domain or document the dependency openly. |
+| `OSM_TILE` = `https://tiles.ilovefreegle.org/...` | Map tile URLs (no leaks in view-source, but every map tile request reveals the dependency) | env var | Could stand up an `lat-tiles.…` alias OR document. |
+| `GEOCODE` = `https://geocode.ilovefreegle.org/api` | Geocoder requests (one of the LAT_USE_FREEGLE_GEOCODER toggle paths) | env var | Currently `LAT_USE_FREEGLE_GEOCODER=false` in production — already side-stepped via postcodes.io. Safe. |
+| `TUS_UPLOADER` = `https://uploads.ilovefreegle.org:8080` | Resumable upload endpoint | env var | Either rebrand domain or document. |
+| `MODTOOLS_SITE` = `https://modtools.org` | Not visible on L&T pages but present in `window.__NUXT__` | env var | Cosmetic — could be blanked for L&T builds, but harmless. |
+| `SENTRY_DSN` = Freegle project key | Sentry tags errors as `freegle` | env var | L&T errors going into Freegle Sentry confuses oncall. Spin up an L&T Sentry project. |
+| `delivery.ilovefreegle.org` (navbar logo `src`) | `<img>` for the navbar icon, served from Freegle's CDN | upstream `branding.config.ts` defaults | Once `USER_SITE` is L&T'd, the icon URL becomes `lend-and-tend.katapult.cloud/icon.png` — but **that file doesn't exist yet** in lat's `public/`. Need to drop an L&T `icon.png` (used for OG image, navbar logo, etc.). |
+
+**Why this matters beyond aesthetics:**
+
+1. **Trust / brand**: anyone right-clicking → view-source sees a site that *says* it's Lend & Tend in copy but *behaves* as ilovefreegle.org under the hood. Looks like a clone or a phishing site.
+2. **Privacy / GDPR**: `delivery.ilovefreegle.org` (and friends) is a third-party domain from the user's perspective. Image-delivery CDNs see request headers including `Referer: https://lat.lend-and-tend.katapult.cloud/` — every L&T pageview is logged on a Freegle-owned domain. Worth a privacy-policy line.
+3. **Operational coupling**: an outage of `delivery.ilovefreegle.org` takes L&T images down. An L&T deploy doesn't insulate against Freegle infrastructure failure.
+4. **Confused observability**: Sentry events from L&T land in Freegle's project; oncall sees noise; root cause analysis crosses teams.
+
+**Suggested fix (cheap first):**
+
+1. **Stand up L&T-branded CNAMEs that proxy to the existing Freegle infra**, OR run lightweight reverse-proxies on the Katapult VM:
+   - `cdn.lendandtend.com` → `delivery.ilovefreegle.org`
+   - `tiles.lendandtend.com` → `tiles.ilovefreegle.org`
+   - `uploads.lendandtend.com` → `uploads.ilovefreegle.org:8080`
+   - `images.lendandtend.com` → `images.ilovefreegle.org`
+   No new infrastructure to operate — just rebrand the customer-visible URL.
+2. **Set lat-specific env vars** in the lat container's `.env` (or docker-compose lat override) so `USER_SITE`, `USER_DOMAIN`, `IMAGE_SITE`, `IMAGE_DELIVERY`, `OSM_TILE`, `TUS_UPLOADER` all use the lendandtend.com (or katapult.cloud) hostnames.
+3. **Drop an L&T `icon.png` into `lat/public/`** (or `iznik-nuxt3/public/lat/icon.png`) so once `USER_SITE` is rebranded the navbar/og:image actually resolves to an L&T-branded image. The current `lat/public/images/lat/logo.png` is the right asset; need either a copy or a route.
+4. **Create an L&T Sentry project** and point `SENTRY_DSN` at it for lat builds.
+5. **Document any unavoidable shared dependencies** in the privacy policy: "Lend & Tend uses the same image-delivery CDN as our sister site Freegle (operated by …). Your image requests are routed via …".
+
+**Status of what's already done in this session (lat layer, local only):**
+- [x] Re-registered og/twitter meta tags at runtime in `lat/layouts/default.vue` so the upstream Freegle og:title / og:site_name / og:description / twitter:title / twitter:description don't win the @unhead dedupe.
+- [x] Added author, apple-mobile-web-app-title, og:image, og:url, twitter:image, twitter:image:alt, twitter:site overrides on the same useHead.
+- [x] Added a `lat/nuxt.config.ts` module that filters the upstream Prebid/GoogleTag inline `<script>` out of `app.head.script` (it carried `wrappername: "26548_Freegle"` and ~17 `/22794232631/freegle_*` ad slot codes — pure Freegle monetization L&T doesn't use). Local freegle-string count: 62 → 20.
+- [x] **Stood up L&T-owned tusd + delivery (weserv) containers** as services in `docker-compose.lat.yml` (`lat-tusd` on host port 4080, `lat-delivery` on host port 4081). Set `TUS_UPLOADER` and `IMAGE_DELIVERY` env vars on lat-nuxt + `UPLOADS` and `IMAGE_DELIVERY` env vars on lat-api so the apiv2 `GetImageDeliveryUrl` constructs URLs against L&T containers, not Freegle's. Live garden image (uid `24f377ac…`) migrated into local tusd at original uid so existing DB rows resolve. Playwright spec `test-lat-upload-routing.spec.js` regression-guards the routing (asserts upload requests hit lat-tusd, not `uploads.ilovefreegle.org` / `images.ilovefreegle.org`).
+- [x] Pinned `USER_SITE` env var on lat-nuxt to `http://localhost:4002` (dev) / `${LAT_USER_SITE}` (prod) so og:url + `/icon.png` references resolve to L&T host. Dropped an L&T `icon.png` in `lat/public/` (copy of `images/lat/logo.png`).
+
+**Known remaining leak — navbar SSR fallback (not a data-path issue):**
+The upstream `iznik-nuxt3/app.vue:58-72` `<template #fallback>` block for the `<ClientOnly>` navbar **hard-codes** the navbar logo `<picture srcset=…>` with `delivery.ilovefreegle.org` URLs as the no-JS fallback. This fires before client-side hydration replaces the navbar with the lat-branded one. Fix path: either (a) override `app.vue` in `lat/` with an L&T fallback (heavy — duplicates the whole upstream app shell), or (b) submit an upstream PR to make the fallback URL configurable. Tracked as separate finding because the routing infra is sound — only the static branding asset is wrong.
+
+- [ ] Stand up L&T-branded CNAMEs for the shared CDN / tile / upload domains
+- [ ] Set lat-specific runtime config env vars (USER_SITE, USER_DOMAIN, IMAGE_*, OSM_TILE, TUS_UPLOADER)
+- [ ] Provide an L&T `icon.png` so `og:image` and the navbar logo aren't Freegle's
+- [ ] Spin up a dedicated L&T Sentry project
+- [ ] Add a privacy-policy line about any infrastructure remaining shared
+
+---
+
 ## Tender can't see Garden Sharing Agreement via /message API (added 2026-05-25)
 
 `AgreementForm.vue` displays the agreement state by reading
