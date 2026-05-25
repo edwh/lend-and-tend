@@ -56,7 +56,12 @@ useHead({
     { key: 'twitter:description', name: 'twitter:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
     { key: 'twitter:image', name: 'twitter:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png' },
     { key: 'twitter:image:alt', name: 'twitter:image:alt', content: 'The Lend and Tend logo' },
-    { key: 'twitter:site', name: 'twitter:site', content: '' },
+    // twitter:site is the @handle for site attribution on the card.
+    // Mirroring the instagram handle from branding.config.ts — if L&T's
+    // Twitter handle differs, update both here and branding.config.social.
+    // Must NOT be empty (Twitter treats empty value as malformed and
+    // falls back to whatever the upstream Freegle layer set — "thisisfreegle").
+    { key: 'twitter:site', name: 'twitter:site', content: '@LendandTend' },
     { key: 'author', name: 'author', content: 'Lend and Tend' },
     { key: 'apple-mobile-web-app-title', name: 'apple-mobile-web-app-title', content: 'Lend and Tend' },
   ],
