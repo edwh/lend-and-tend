@@ -178,6 +178,12 @@ services:
       - ./iznik-nuxt3/lat/layouts:/app/lat/layouts:rw
       - ./iznik-nuxt3/lat/plugins:/app/lat/plugins:rw
       - ./iznik-nuxt3/lat/assets:/app/lat/assets:rw
+      # Mount lat/public so any .output rebuild copies the real L&T logo (and
+      # any future static assets) from the host, not whatever stale snapshot
+      # was baked into the container image. Without this, every container
+      # rebuild reverts /icon.png + /images/lat/logo.png to whatever the
+      # Dockerfile copied at image-build time.
+      - ./iznik-nuxt3/lat/public:/app/lat/public:rw
       - ./iznik-nuxt3/lat/nuxt.config.ts:/app/lat/nuxt.config.ts:rw
       - ./iznik-nuxt3/lat/branding.config.ts:/app/lat/branding.config.ts:rw
     ports:
