@@ -1,47 +1,59 @@
-# Multi-stage build for Lend & Tend Nuxt 3 frontend
+# Multi-stage build for the Lend & Tend Nuxt 3 frontend.
+#
+# IMPORTANT: this Dockerfile builds the L&T layer (`iznik-nuxt3/lat/`), NOT
+# the upstream Freegle frontend. The lat layer's nuxt.config.ts uses
+# `extends: ['../']`, so the build still needs the parent Freegle codebase
+# present in the build context. The build command is `npm run build` run
+# from the `lat/` directory; its Nitro output lands in `lat/.output/`.
+
 # Stage 1: Builder
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-COPY ./lat/package*.json ./lat/
+# Install build-time toolchain (some Nuxt modules compile native code)
+RUN apk add --no-cache python3 make g++
 
-# `--ignore-scripts` skips the package.json `prepare` hook which tries to
-# install git hooks (./setup-hooks.sh) — fails in a Docker context with no
-# /.git directory. The Nuxt build itself doesn't need git hooks.
+# Install parent (Freegle) dependencies first.
+COPY package*.json ./
 RUN npm ci --ignore-scripts
 
-# Copy source code (both upstream and lat layer)
+# Install lat-layer dependencies. `lat/` has only a package.json (no
+# package-lock.json), so `npm install` instead of `npm ci`. The shrinkwrap
+# behaviour isn't important here — the lat-layer is tiny (a couple of
+# direct deps); the bulk of the dependency tree resolves through the parent
+# Freegle install above.
+COPY lat/package*.json ./lat/
+RUN cd lat && npm install --ignore-scripts --no-audit --no-fund
+
+# Bring in source for both upstream and the lat layer.
 COPY . .
 
-# Build the application
-# The lat/ layer extends the parent Nuxt config via extends: ['../']
-RUN npm run build
+# A rolldown/vite plugin in the build pipeline resolves tsconfig via the
+# parent root rather than the lat rootDir, so we need `/app/.nuxt/tsconfig.json`
+# to exist before the lat build runs. Generate it with `nuxi prepare`.
+RUN npx nuxi prepare
+
+# Build the lat layer — Nuxt picks up `lat/nuxt.config.ts`, follows
+# `extends: ['../']` back to the Freegle root, and produces `lat/.output/`.
+RUN cd lat && npm run build
 
 # Stage 2: Runner
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
+# dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
-# Set production environment
 ENV NODE_ENV=production
 
-# `node:20-alpine` already ships a `node` user (uid 1000). Use it directly
-# rather than creating a duplicate uid which fails.
-COPY --from=builder --chown=node:node /app/.output .
+# `node:20-alpine` already ships a `node` user (uid 1000). Use it directly.
+COPY --from=builder --chown=node:node /app/lat/.output .
 
 USER node
 
-# Expose port (matches fly.toml internal_port: 3000)
 EXPOSE 3000
 
-# Use dumb-init to ensure signals are properly forwarded to Node process
 ENTRYPOINT ["dumb-init", "--"]
-
-# Start the server
 CMD ["node", "server/index.mjs"]

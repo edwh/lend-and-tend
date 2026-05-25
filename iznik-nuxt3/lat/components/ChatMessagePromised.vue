@@ -56,8 +56,8 @@ const gardenName = computed(() =>
 )
 
 const currentPromise = computed(() => refmsg.value?.promises?.[0] || null)
-const isConfirmed = computed(() => !!currentPromise.value?.Acceptedat)
-const isProposed = computed(() => !!currentPromise.value && !currentPromise.value.Acceptedat)
+const isConfirmed = computed(() => !!currentPromise.value?.acceptedat)
+const isProposed = computed(() => !!currentPromise.value && !currentPromise.value.acceptedat)
 
 const statusLabel = computed(() => {
   if (isConfirmed.value) return 'Both parties agreed'

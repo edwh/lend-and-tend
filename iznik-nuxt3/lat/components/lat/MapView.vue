@@ -32,12 +32,14 @@
                 )
           "
           @click="
-            item.properties.cluster
-              ? expandCluster(item)
-              : onPinClick(item.properties)
+            preview
+              ? null
+              : item.properties.cluster
+                ? expandCluster(item)
+                : onPinClick(item.properties)
           "
         >
-          <l-popup v-if="!item.properties.cluster">
+          <l-popup v-if="!item.properties.cluster && !preview">
             <div class="pin-popup">
               <div class="popup-header">
                 <h3>
@@ -90,9 +92,24 @@ const mapReady = ref(false)
 const defaultCenter = computed(() => branding.map.defaultCenter)
 const defaultZoom = computed(() => branding.map.defaultZoom)
 
-const mapOptions = { dragging: true, touchZoom: true, scrollWheelZoom: true }
+const props = withDefaults(
+  defineProps<{ pins?: any[]; preview?: boolean }>(),
+  { pins: undefined, preview: false }
+)
 
-const props = withDefaults(defineProps<{ pins?: any[] }>(), { pins: undefined })
+// In preview mode the map is a non-interactive teaser: no dragging,
+// no zoom, no popups. Pins still render so visitors can see where
+// gardens are clustered.
+const mapOptions = computed(() => ({
+  dragging: !props.preview,
+  touchZoom: !props.preview,
+  scrollWheelZoom: !props.preview,
+  doubleClickZoom: !props.preview,
+  boxZoom: !props.preview,
+  keyboard: !props.preview,
+  zoomControl: !props.preview,
+  attributionControl: true,
+}))
 
 const sc = new Supercluster({ radius: 60, maxZoom: 16 })
 let scLoaded = false
@@ -174,7 +191,7 @@ function typeToRole(type: string): string {
 
 // Check if a garden has an active agreement
 function isActiveGarden(pin: any): boolean {
-  return pin.promises && pin.promises.length > 0 && pin.promises[0].Acceptedat
+  return pin.promises && pin.promises.length > 0 && pin.promises[0].acceptedat
 }
 
 // ── Garden SVG pin icons ──────────────────────────────────────────────────────

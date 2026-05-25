@@ -39,6 +39,17 @@ if (getenv('LAT_BATCH_ONLY') === 'true') {
         ->sendOutputTo(cronLog('chats:process-incoming'))
         ->runInBackground();
 
+    // Auto-approve clean Pending messages.
+    // Garden listings POST through the Go API land as collection='Pending'
+    // (Freegle default). Without this job they never appear on the map.
+    // The content-check service promotes anything passing the spam/abuse
+    // checks; suspect content stays Pending for human review.
+    Schedule::command('messages:contentcheck')
+        ->everyMinute()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('messages:contentcheck'))
+        ->runInBackground();
+
     // Alert existing users when a new garden listing appears within their radius.
     Schedule::command('lat:send-activity-alerts')
         ->dailyAt('08:00')

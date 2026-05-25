@@ -78,7 +78,11 @@ class SendActivityAlertsCommand extends Command
             $settings  = json_decode($user->settings ?? '{}', true);
             $alerts    = $settings['lat_alerts'] ?? [];
             $enabled   = $alerts['enabled'] ?? true;
-            $frequency = $alerts['frequency'] ?? 'weekly';
+            // Default to 'daily' to match the settings form default
+            // (lat/pages/settings/index.vue uses ?? 'daily'). Previously
+            // 'weekly' here meant users who never opened settings only got
+            // alerts on Mondays.
+            $frequency = $alerts['frequency'] ?? 'daily';
 
             if (!$enabled) continue;
             if ($frequency === 'weekly' && !$isMonday) continue;

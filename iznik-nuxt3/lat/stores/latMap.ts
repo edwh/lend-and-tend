@@ -10,7 +10,7 @@ export interface MapPin {
   subject: string
   textbody?: string
   location?: { name?: string }
-  promises?: Array<{ Acceptedat?: string | null }>
+  promises?: Array<{ acceptedat?: string | null }>
 }
 
 export interface LatLng { lat: number; lng: number; zoom?: number }

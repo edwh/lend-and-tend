@@ -231,6 +231,16 @@ import { useNavbar } from '~/composables/useNavbar'
 import { useChatStore } from '~/stores/chat'
 import branding from '~/branding.config'
 import OurUploadedImage from '~/components/OurUploadedImage'
+import {
+  parsedBody as parsedBodyOf,
+  hasLenderDetails as listingHasLenderDetails,
+  hasTenderDetails as listingHasTenderDetails,
+  gardenSizeLabel,
+  sunLabel,
+  accessLabel,
+  toolsLabel,
+  availabilityLabel,
+} from '../../../composables/useGardenStatus.js'
 
 definePageMeta({ layout: 'default' })
 
@@ -270,29 +280,14 @@ const {
 const message = computed(() => messageData.value ?? null)
 const startingChat = ref(false)
 
-const parsedBody = computed(() => {
-  const raw = message.value?.textbody
-  if (!raw) return {}
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return { description: raw }
-  }
-})
-
-const hasLenderDetails = computed(
-  () =>
-    parsedBody.value.gardenSize ||
-    parsedBody.value.sunExposure ||
-    parsedBody.value.waterAccess ||
-    parsedBody.value.accessRoute
+// parsedBody / hasLenderDetails / hasTenderDetails come from
+// ~/lat/composables/useGardenStatus.js (see useGardenStatus.spec.js).
+const parsedBody = computed(() => parsedBodyOf(message.value))
+const hasLenderDetails = computed(() =>
+  listingHasLenderDetails(message.value)
 )
-
-const hasTenderDetails = computed(
-  () =>
-    parsedBody.value.tools ||
-    parsedBody.value.availability ||
-    parsedBody.value.honestyDeclaration
+const hasTenderDetails = computed(() =>
+  listingHasTenderDetails(message.value)
 )
 
 const hasWhatToGrow = computed(() => !!parsedBody.value.whatToGrow)
@@ -309,49 +304,9 @@ const agreementLinkForOwner = computed(() => {
   return ''
 })
 
-function gardenSizeLabel(v) {
-  return (
-    {
-      small: 'Small (up to 50 m²)',
-      medium: 'Medium (50–200 m²)',
-      large: 'Large (200 m²+)',
-    }[v] || v
-  )
-}
-function sunLabel(v) {
-  return (
-    { full: 'Full sun', partial: 'Partial shade', shade: 'Mostly shade' }[v] ||
-    v
-  )
-}
-function accessLabel(v) {
-  return (
-    {
-      gate: 'Side / back gate',
-      through_house: 'Through the house',
-      other: 'Other',
-    }[v] || v
-  )
-}
-function toolsLabel(v) {
-  return (
-    {
-      basic: 'Basic hand tools',
-      full: 'Full set of garden tools',
-      none: "None — needs access to lender's tools",
-    }[v] || v
-  )
-}
-function availabilityLabel(v) {
-  return (
-    {
-      weekends: 'Weekends',
-      weekdays: 'Weekdays',
-      flexible: 'Flexible',
-      evenings: 'Evenings',
-    }[v] || v
-  )
-}
+// gardenSizeLabel / sunLabel / accessLabel / toolsLabel /
+// availabilityLabel imported from useGardenStatus.js — see that file
+// for the canonical option→label mappings.
 
 async function blockUser() {
   if (!confirm('Block this user? They will no longer be able to contact you.'))

@@ -276,12 +276,12 @@ const currentPromise = computed(() => {
 })
 
 const isProposed = computed(
-  () => !!currentPromise.value && !currentPromise.value.Acceptedat
+  () => !!currentPromise.value && !currentPromise.value.acceptedat
 )
-const isConfirmed = computed(() => !!currentPromise.value?.Acceptedat)
+const isConfirmed = computed(() => !!currentPromise.value?.acceptedat)
 
 const confirmedDate = computed(() => {
-  const d = currentPromise.value?.Acceptedat
+  const d = currentPromise.value?.acceptedat
   if (!d) return ''
   return new Date(d).toLocaleDateString('en-GB', {
     day: 'numeric',

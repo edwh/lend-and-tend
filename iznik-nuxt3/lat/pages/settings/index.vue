@@ -308,6 +308,11 @@ import branding from '~/branding.config'
 import Api from '~/api'
 import OurUploader from '~/components/OurUploader'
 import { useImageStore } from '~/stores/image'
+import {
+  kmToMiles,
+  milesToKm,
+  nearestMileOption,
+} from '../../composables/useLatGeo.js'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: `Settings — ${branding.siteName}` })
@@ -323,21 +328,8 @@ onMounted(() => {
 
 const user = computed(() => authStore.user)
 
-function kmToMiles(km) {
-  return km * 0.621371
-}
-function milesToKm(miles) {
-  return Math.round(miles / 0.621371)
-}
-
-const MILE_OPTIONS = [1, 2, 5, 10, 20, 50]
-function nearestMileOption(miles) {
-  return String(
-    MILE_OPTIONS.reduce((prev, curr) =>
-      Math.abs(curr - miles) < Math.abs(prev - miles) ? curr : prev
-    )
-  )
-}
+// kmToMiles / milesToKm / nearestMileOption / MILE_OPTIONS imported
+// from ~/lat/composables/useLatGeo.js — unit-tested there.
 
 const displayMiles = computed(() => parseFloat(form.lat_travelRadius))
 

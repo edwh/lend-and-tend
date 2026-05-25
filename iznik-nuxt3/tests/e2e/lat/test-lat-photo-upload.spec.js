@@ -92,10 +92,11 @@ test.describe('Photo upload on listing forms', () => {
     await page.goto('/')
     await signUpViaModal(page)
 
-    await page.goto('/profile')
-    await expect(page.getByRole('button', { name: /Log out/ })).toBeVisible({
-      timeout: 10_000,
-    })
+    // The profile-photo upload section is on /settings now — /profile is
+    // "My Gardens" (post-restructure) and only lists your listings.
+    await page.goto('/settings')
+    // The navbar logout link is a single word "Logout" rendered as <a>.
+    await expect(logoutLink(page)).toBeVisible({ timeout: 10_000 })
 
     // Find the Upload photo button in the profile photo section
     const uploadBtn = page

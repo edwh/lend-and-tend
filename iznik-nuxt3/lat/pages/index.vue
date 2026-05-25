@@ -51,16 +51,14 @@
         <div class="map-preview-wrapper">
           <ClientOnly>
             <div class="map-preview">
-              <l-map
-                :zoom="6"
-                :center="[52.4862, -1.8904]"
-                :options="{ zoomControl: false, dragging: false, scrollWheelZoom: false, attributionControl: true }"
-              >
-                <l-tile-layer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution="© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
-                />
-              </l-map>
+              <!-- Use the same MapView component as /map so members'
+                   pins actually appear here. preview=true makes the
+                   map non-interactive (no drag/zoom/popups) — visitors
+                   still get to see where gardens cluster but can't
+                   hijack the teaser into being a full map.
+                   ClientOnly is required because Leaflet (imported by
+                   MapView) touches `window` at module load time. -->
+              <MapView preview />
             </div>
             <template #fallback>
               <div class="map-placeholder">Loading map…</div>
@@ -97,8 +95,18 @@
 </template>
 
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import branding from '~/branding.config'
 import { useNavbar } from '~/composables/useNavbar'
+
+// MapView pulls in Leaflet, which touches `window` at module load.
+// Deferring the import via defineAsyncComponent means the module is
+// only evaluated when ClientOnly renders the component on the client.
+// The /map page sidesteps this by being marked ssr:false in
+// routeRules, but the landing page is SSR'd for SEO.
+const MapView = defineAsyncComponent(() =>
+  import('~/components/lat/MapView.vue')
+)
 const { requestLogin } = useNavbar()
 
 definePageMeta({ layout: 'default' })

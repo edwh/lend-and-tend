@@ -34,7 +34,7 @@
             </td>
             <td>
               <span
-                v-if="p.Acceptedat"
+                v-if="p.acceptedat"
                 class="lat-admin-badge lat-admin-b-sealed"
                 >Sealed</span
               >
@@ -46,7 +46,7 @@
               {{ fmtDate(p.promisedAt || p.timestamp) }}
             </td>
             <td class="lat-admin-muted">
-              {{ p.Acceptedat ? fmtDate(p.Acceptedat) : '—' }}
+              {{ p.acceptedat ? fmtDate(p.acceptedat) : '—' }}
             </td>
             <td>
               <NuxtLink :to="`/agreement/${p.msgid}`" class="lat-admin-btn-link"

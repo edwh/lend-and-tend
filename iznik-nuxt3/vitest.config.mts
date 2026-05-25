@@ -161,6 +161,11 @@ export default defineConfig({
         'modtools/stores/**/*.js',
         'pages/**/*.vue',
         'modtools/pages/**/*.vue',
+        // L&T layer
+        'lat/components/**/*.vue',
+        'lat/composables/**/*.{js,ts}',
+        'lat/stores/**/*.{js,ts}',
+        'lat/pages/**/*.vue',
       ],
       exclude: [
         // Mirror the sourceFilter exclusions in playwright.config.js.

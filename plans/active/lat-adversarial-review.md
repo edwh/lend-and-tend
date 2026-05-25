@@ -573,6 +573,111 @@ Do NOT mark L&T as ready to ship until:
 
 ---
 
+## SSR / Prerender (added 2026-05-24, first prod deploy on Katapult VM)
+
+The upstream Freegle Nuxt config has `crawlLinks: true` and a route map that
+the prerenderer walks at build time. In L&T this fails because Freegle paths
+like `/essex`, `/wakefield`, etc. call `/authority/<id>` against the API and
+there is **no UK authority data in the L&T database** — the prerenderer gets
+404s and `nitro` exits non-zero, taking down the whole build.
+
+**Workaround in place:** `lat/nuxt.config.ts` overrides `nitro.prerender` to
+`{ crawlLinks: false, routes: [], failOnError: false }`. So every request
+SSRs per-hit; nothing is statically generated.
+
+**Why this matters:**
+- We give up the first-paint perf benefit Freegle's prerender provides for
+  the public landing surfaces (`/`, browse pages, etc.).
+- We carry a permanent SSR fan-out for routes the user never hits.
+- The fix isn't "turn prerender back on" — that re-creates the 404 crash.
+  Either:
+  1. Curate an L&T-only prerender list in `lat/nuxt.config.ts` (`routes: ['/']`
+     and any other safe static pages), with `crawlLinks: false` to stop the
+     walk into authority territory, OR
+  2. Stub the authority endpoints in `iznik-server-go` for L&T so they return
+     200 with empty bodies instead of 404, OR
+  3. Pre-seed the L&T DB with a minimal authority table (probably overkill).
+
+**Also tied to this issue:** when SSR ran inside the lat-nuxt container, it
+tried to fetch the public API URL and connected to its own container's
+`127.0.0.1:443`, where nothing listens. Fixed by adding
+`extra_hosts: lat.lend-and-tend.katapult.cloud:host-gateway` to the
+compose override so SSR fetches resolve to the host's Caddy. A cleaner
+long-term answer is to split runtime config into an SSR-internal base URL
+(e.g. `http://lat-api:8192/apiv2`) and a public browser base URL.
+
+- [ ] Decide between curated prerender list vs API-side stubbing
+- [ ] Re-enable prerender for `/` once authority 404s are handled
+- [ ] Split SSR-internal vs browser API base URLs in runtime config
+
+---
+
+## Tender can't see Garden Sharing Agreement via /message API (added 2026-05-25)
+
+`AgreementForm.vue` displays the agreement state by reading
+`currentPromise = message.promises[0]`, where `message` comes from
+`GET /apiv2/message/{id}`. For the **lender** this works — the API
+returns `promises: [...]` because they own the listing.
+
+For the **tender** (the other party named in the agreement), the Go
+server explicitly strips this:
+
+```go
+// iznik-server-go/message/message.go:502
+if message.Fromuser != myid {
+    // Shouldn't see promise details, but should see if it's promised to them.
+    for i := range message.MessagePromises {
+        if message.MessagePromises[i].Userid == myid {
+            message.PromisedToYou = true
+        }
+    }
+    message.MessagePromises = nil   // ← wipes the agreement terms
+}
+```
+
+That's a Freegle privacy filter — promises on regular Freegle offers are
+between the giver and one recipient; revealing promise details to a
+recipient outside the giver-recipient context is intentional information
+leakage on Freegle's model. **For L&T it's wrong** — the tender is the
+counter-party in the agreement, by definition entitled to see the
+terms and the accept/reject controls.
+
+**Affected behaviour:** when a tender navigates to
+`/agreement/{id}?userId={lenderId}`, the form has no `currentPromise`,
+so `isProposed = false` and the page renders the "Draft" banner instead
+of the proposed agreement. The tender can't see the terms or the
+Accept-and-confirm button. Tests in
+`tests/e2e/lat/test-lat-agreement-flow.spec.js` that exercise this path
+(`tender can accept agreement`, `tender can suggest changes to
+agreement`, `ChatMessagePromised shows confirmed status with
+checkmark`) are currently `.skip`ped with a pointer to this note.
+
+**Three possible fixes, ordered cleanest-first:**
+
+1. **API change (cleanest):** make the Go server return the relevant
+   promise to the tender too, restricted to the row where
+   `messages_promises.userid == myid`. The existing loop already finds
+   that row; just keep it instead of nilling the whole slice. Small
+   change, ~5 lines in `message/message.go:502`, but it does touch
+   `iznik-server-go/` which is otherwise off-limits per project rules.
+2. **Frontend re-source:** read the promise from the **chat message**
+   of type `Promised` (the ChatMessagePromised flow already surfaces
+   it; the data is there client-side once the chat loads). The
+   AgreementForm could accept a `promise` prop from its container or
+   look it up via `chatStore`.
+3. **Server-extend differently:** add a new L&T-only endpoint
+   `/apiv2/lat/agreement/{msgid}` that returns the promise row for the
+   tender or lender. Doesn't touch the existing handler but adds a new
+   one — closer to "don't modify Go" but still a Go change.
+
+Option (1) is the right answer if we relax the don't-touch rule. Until
+then, the affected playwright tests stay skipped.
+
+- [ ] Pick a fix path for tender-side agreement visibility
+- [ ] Un-skip the 3 affected agreement-flow tests once fixed
+
+---
+
 ## References
 
 - `iznik-batch/app/Console/Commands/Lat/` — L&T command implementations

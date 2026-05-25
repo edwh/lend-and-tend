@@ -227,6 +227,22 @@ import { useMessageStore } from '~/stores/message'
 import branding from '~/branding.config'
 import Api from '~/api'
 import OurUploadedImage from '~/components/OurUploadedImage'
+import {
+  formatDate,
+  parsedBody,
+  hasLenderDetails,
+  hasTenderDetails,
+  gardenSizeLabel,
+  sunLabel,
+  accessLabel,
+  toolsLabel,
+  availabilityLabel,
+  hasAgreement,
+  hasActiveAgreement,
+  gardenStatus,
+  gardenStatusClass,
+  agreementLink,
+} from '../composables/useGardenStatus.js'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: `My Gardens — ${branding.siteName}` })
@@ -293,81 +309,11 @@ async function deleteListing(id: number) {
   }
 }
 
-function formatDate(ts: string | null) {
-  if (!ts) return ''
-  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-function parsedBody(listing: any) {
-  const raw = listing?.textbody
-  if (!raw) return {}
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return { description: raw }
-  }
-}
-
-function hasLenderDetails(listing: any) {
-  const b = parsedBody(listing)
-  return b.gardenSize || b.sunExposure || b.waterAccess || b.accessRoute
-}
-
-function hasTenderDetails(listing: any) {
-  const b = parsedBody(listing)
-  return b.tools || b.availability || b.honestyDeclaration
-}
-
-function gardenSizeLabel(v: string) {
-  return ({ small: 'Small (up to 50 m²)', medium: 'Medium (50–200 m²)', large: 'Large (200 m²+)' }[v] || v)
-}
-function sunLabel(v: string) {
-  return ({ full: 'Full sun', partial: 'Partial shade', shade: 'Mostly shade' }[v] || v)
-}
-function accessLabel(v: string) {
-  return ({ gate: 'Side / back gate', through_house: 'Through the house', other: 'Other' }[v] || v)
-}
-function toolsLabel(v: string) {
-  return ({ basic: 'Basic hand tools', full: 'Full set of garden tools', none: "None — needs access to lender's tools" }[v] || v)
-}
-function availabilityLabel(v: string) {
-  return ({ weekends: 'Weekends', weekdays: 'Weekdays', flexible: 'Flexible', evenings: 'Evenings' }[v] || v)
-}
-
-function gardenStatus(listing: any): string {
-  if (listing.promises && listing.promises.length > 0) {
-    if (listing.promises[0].Acceptedat) {
-      return 'Agreement confirmed'
-    } else {
-      return 'Agreement proposed'
-    }
-  }
-  return 'Looking for a tender'
-}
-
-function gardenStatusClass(listing: any): string {
-  if (listing.promises && listing.promises.length > 0) {
-    if (listing.promises[0].Acceptedat) return 'status-confirmed'
-    return 'status-proposed'
-  }
-  return 'status-available'
-}
-
-function hasAgreement(listing: any): boolean {
-  return listing.promises && listing.promises.length > 0
-}
-
-function agreementLink(listing: any): string {
-  if (listing.promises && listing.promises.length > 0) {
-    const tenderId = listing.promises[0].userid
-    return `/agreement/${listing.id}?userId=${tenderId}`
-  }
-  return ''
-}
-
-function hasActiveAgreement(listing: any): boolean {
-  return listing.promises && listing.promises.length > 0 && !listing.promises[0].Acceptedat
-}
+// formatDate / parsedBody / hasLenderDetails / hasTenderDetails /
+// gardenSizeLabel / sunLabel / accessLabel / toolsLabel /
+// availabilityLabel / gardenStatus / gardenStatusClass / hasAgreement /
+// hasActiveAgreement / agreementLink are imported from
+// ~/lat/composables/useGardenStatus.js — see that file for tests.
 
 async function makeAvailableAgain(listing: any) {
   confirmRemoveId.value = null

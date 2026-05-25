@@ -16,23 +16,35 @@ test.describe('Admin moderation queue', () => {
     await expect(page.getByText(/admin or support role/i)).toBeVisible({ timeout: 10_000 })
   })
 
-  test('admin moderation page has review queue heading when visited by admin', async ({ page }) => {
-    // We can't easily create an admin user in E2E, but we can verify the URL is reachable
-    // and the page template renders (the auth guard shows the correct message for non-admins)
+  test('admin moderation page is reachable but blocks non-admins with a notice', async ({ page }) => {
+    // We can't easily create an admin user in E2E, so verify the layout's
+    // non-admin guard actually shows the notice instead of redirecting.
     await page.goto('/')
     await signUpViaModal(page)
 
     await page.goto('/admin/moderation')
-    // Admin nav is visible regardless of role
-    await expect(page.getByRole('link', { name: 'Review queue' })).toBeVisible({ timeout: 10_000 })
+    // The admin layout's "L&T Admin" branding should be visible — proves
+    // we landed on an admin-layout page rather than getting redirected.
+    await expect(page.getByText('L&T Admin').first()).toBeVisible({
+      timeout: 10_000,
+    })
+    // And the non-admin notice should be shown.
+    await expect(
+      page.getByText(/admin or support role to access this area/i)
+    ).toBeVisible({ timeout: 5_000 })
   })
 
-  test('admin nav shows review queue link', async ({ page }) => {
+  test('admin dashboard page also blocks non-admins consistently', async ({ page }) => {
     await page.goto('/')
     await signUpViaModal(page)
 
     await page.goto('/admin')
-    await expect(page.getByRole('link', { name: 'Review queue' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('L&T Admin').first()).toBeVisible({
+      timeout: 10_000,
+    })
+    await expect(
+      page.getByText(/admin or support role to access this area/i)
+    ).toBeVisible({ timeout: 5_000 })
   })
 
   test('moderation page shows empty state when no flagged messages', async ({ page }) => {

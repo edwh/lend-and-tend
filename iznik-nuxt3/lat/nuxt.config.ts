@@ -27,6 +27,18 @@ export default defineNuxtConfig({
     '/garden/**': { ssr: false },
   },
 
+  // Prerender disabled: the parent Freegle nuxt config crawls links and
+  // tries to render UK-authority pages (e.g. /essex), which fail in L&T
+  // because the authority data isn't in the L&T database. SSR per-request
+  // still works.
+  nitro: {
+    prerender: {
+      crawlLinks: false,
+      routes: [],
+      failOnError: false,
+    },
+  },
+
   runtimeConfig: {
     public: {
       APIv2: process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2',

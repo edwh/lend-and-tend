@@ -8,7 +8,7 @@
       <h1>Garden Sharing Agreement</h1>
     </div>
 
-    <div v-if="!otherUserId" class="error-state">
+    <div v-if="otherUserId === null" class="error-state">
       <p>Missing required information. Please navigate here from a garden listing.</p>
       <NuxtLink to="/map" class="btn btn-primary">Browse gardens</NuxtLink>
     </div>

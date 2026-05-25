@@ -26,6 +26,7 @@
         <div class="field">
           <label for="subject">
             What would you like to grow? <span class="field-required">*</span>
+            <VisibilityHint kind="public" />
           </label>
           <input
             id="subject"
@@ -37,13 +38,17 @@
         </div>
 
         <div class="field">
-          <label>Your full address <span class="field-required">*</span></label>
+          <label>
+            Your full address <span class="field-required">*</span>
+            <VisibilityHint kind="approximate" />
+          </label>
           <GardenLocationPicker v-model="location" />
         </div>
 
         <div class="field">
           <label for="phone">
             Contact phone number <span class="field-required">*</span>
+            <VisibilityHint kind="private" />
           </label>
           <input
             id="phone"
@@ -55,7 +60,10 @@
         </div>
 
         <div class="field">
-          <label for="about">About you as a gardener</label>
+          <label for="about">
+            About you as a gardener
+            <VisibilityHint kind="public" />
+          </label>
           <textarea
             id="about"
             v-model="form.about"
@@ -66,7 +74,10 @@
 
         <div class="field-row">
           <div class="field">
-            <label for="tools">Tools and equipment</label>
+            <label for="tools">
+              Tools and equipment
+              <VisibilityHint kind="public" />
+            </label>
             <select id="tools" v-model="form.tools">
               <option value="">Not specified</option>
               <option value="basic">Basic hand tools</option>
@@ -78,7 +89,10 @@
           </div>
 
           <div class="field">
-            <label for="availability">Availability</label>
+            <label for="availability">
+              Availability
+              <VisibilityHint kind="public" />
+            </label>
             <select id="availability" v-model="form.availability">
               <option value="">Not specified</option>
               <option value="weekends">Weekends</option>
@@ -90,7 +104,10 @@
         </div>
 
         <div class="field">
-          <label for="whatToGrow">What do you want to do?</label>
+          <label for="whatToGrow">
+            What do you want to do?
+            <VisibilityHint kind="public" />
+          </label>
           <textarea
             id="whatToGrow"
             v-model="form.whatToGrow"
@@ -107,12 +124,14 @@
               class="honesty-check"
             />
             <span>I confirm I am not on any offender's register</span>
+            <VisibilityHint kind="private" />
           </label>
         </div>
 
         <div class="field">
           <label>
             Photos
+            <VisibilityHint kind="public" />
             <span class="field-hint">(optional — show your previous work)</span>
           </label>
           <PhotoUploader
@@ -148,6 +167,7 @@ import api from '~/api'
 import { useMessageStore } from '~/stores/message'
 import PaymentModal from '~/components/lat/PaymentModal.vue'
 import GardenLocationPicker from '~/components/lat/GardenLocationPicker.vue'
+import VisibilityHint from '~/components/lat/VisibilityHint.vue'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Find a garden to tend — Lend & Tend' })

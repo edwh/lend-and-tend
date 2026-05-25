@@ -26,6 +26,7 @@
         <div class="field">
           <label for="subject">
             Garden title <span class="field-required">*</span>
+            <VisibilityHint kind="public" />
           </label>
           <input
             id="subject"
@@ -37,13 +38,17 @@
         </div>
 
         <div class="field">
-          <label>Full address <span class="field-required">*</span></label>
+          <label>
+            Full address <span class="field-required">*</span>
+            <VisibilityHint kind="approximate" />
+          </label>
           <GardenLocationPicker v-model="location" />
         </div>
 
         <div class="field">
           <label for="phone">
             Contact phone number <span class="field-required">*</span>
+            <VisibilityHint kind="private" />
           </label>
           <input
             id="phone"
@@ -55,7 +60,10 @@
         </div>
 
         <div class="field">
-          <label for="about">About your garden</label>
+          <label for="about">
+            About your garden
+            <VisibilityHint kind="public" />
+          </label>
           <textarea
             id="about"
             v-model="form.about"
@@ -66,7 +74,10 @@
 
         <div class="field-row">
           <div class="field">
-            <label for="gardenSize">Garden size</label>
+            <label for="gardenSize">
+              Garden size
+              <VisibilityHint kind="public" />
+            </label>
             <select id="gardenSize" v-model="form.gardenSize">
               <option value="">Not specified</option>
               <option value="small">Small (up to 50 m²)</option>
@@ -76,7 +87,10 @@
           </div>
 
           <div class="field">
-            <label for="sunExposure">Sun exposure</label>
+            <label for="sunExposure">
+              Sun exposure
+              <VisibilityHint kind="public" />
+            </label>
             <select id="sunExposure" v-model="form.sunExposure">
               <option value="">Not specified</option>
               <option value="full">Full sun</option>
@@ -88,7 +102,10 @@
 
         <div class="field-row">
           <div class="field">
-            <label for="waterAccess">Water access</label>
+            <label for="waterAccess">
+              Water access
+              <VisibilityHint kind="public" />
+            </label>
             <select id="waterAccess" v-model="form.waterAccess">
               <option value="">Not specified</option>
               <option value="yes">Yes — tap or water butt available</option>
@@ -97,7 +114,10 @@
           </div>
 
           <div class="field">
-            <label for="accessRoute">Access route</label>
+            <label for="accessRoute">
+              Access route
+              <VisibilityHint kind="public" />
+            </label>
             <select id="accessRoute" v-model="form.accessRoute">
               <option value="">Not specified</option>
               <option value="gate">
@@ -110,7 +130,10 @@
         </div>
 
         <div class="field">
-          <label for="arrangement">What are you hoping for?</label>
+          <label for="arrangement">
+            What are you hoping for?
+            <VisibilityHint kind="public" />
+          </label>
           <textarea
             id="arrangement"
             v-model="form.arrangement"
@@ -120,7 +143,10 @@
         </div>
 
         <div class="field">
-          <label for="restrictions">Any restrictions?</label>
+          <label for="restrictions">
+            Any restrictions?
+            <VisibilityHint kind="public" />
+          </label>
           <textarea
             id="restrictions"
             v-model="form.restrictions"
@@ -132,6 +158,7 @@
         <div class="field">
           <label>
             Photos
+            <VisibilityHint kind="public" />
             <span class="field-hint"
               >(optional — helps tenders see your garden)</span
             >
@@ -169,6 +196,7 @@ import api from '~/api'
 import { useMessageStore } from '~/stores/message'
 import PaymentModal from '~/components/lat/PaymentModal.vue'
 import GardenLocationPicker from '~/components/lat/GardenLocationPicker.vue'
+import VisibilityHint from '~/components/lat/VisibilityHint.vue'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Share your garden — Lend & Tend' })

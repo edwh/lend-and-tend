@@ -64,6 +64,11 @@
 
         <!-- Other admin items -->
         <ModMenuItemLeft
+          link="/admin/moderation"
+          name="Review queue"
+          @mobilehidemenu="mobilehidemenu"
+        />
+        <ModMenuItemLeft
           link="/admin/chats"
           name="Chats"
           @mobilehidemenu="mobilehidemenu"
@@ -143,10 +148,11 @@ onMounted(async () => {
   if (!authStore.user) {
     await authStore.fetchUser().catch(() => {})
   }
-
-  if (!isAdmin.value && loggedIn.value) {
-    router.push('/')
-  }
+  // No redirect for non-admins: the template above already shows
+  // a "You need admin or support role to access this area." notice.
+  // Booting them to the homepage on mount is jarring and inconsistent
+  // with the message you can see in the layout, so we let the notice
+  // take effect instead.
 })
 
 function logOut(e) {

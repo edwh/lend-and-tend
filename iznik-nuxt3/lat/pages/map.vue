@@ -1,15 +1,17 @@
 <template>
   <div class="map-page">
-    <section v-if="!loggedIn" class="welcome-overlay">
-      <div class="welcome-card">
-        <h2>Find your garden match</h2>
-        <p>{{ branding.description }}</p>
-        <div class="welcome-ctas">
-          <button class="btn btn-primary btn-lg" @click="requestLogin()">Join to connect</button>
-          <NuxtLink to="/about" class="btn btn-secondary btn-lg">Learn more</NuxtLink>
+    <ClientOnly fallback="">
+      <section v-if="!loggedIn" class="welcome-overlay">
+        <div class="welcome-card">
+          <h2>Find your garden match</h2>
+          <p>{{ branding.description }}</p>
+          <div class="welcome-ctas">
+            <button class="btn btn-primary btn-lg" @click="requestLogin()">Join to connect</button>
+            <NuxtLink to="/about" class="btn btn-secondary btn-lg">Learn more</NuxtLink>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </ClientOnly>
 
     <div class="map-layout">
       <!-- Tab bar -->
@@ -117,6 +119,11 @@ import { useLatMapStore } from '~/stores/latMap'
 import MapView from '~/components/lat/MapView.vue'
 import branding from '~/branding.config'
 import Api from '~/api'
+import {
+  haversineKm,
+  distanceMilesFromUser,
+  parsedDescription,
+} from '../composables/useLatGeo.js'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: branding.siteName, meta: [{ name: 'description', content: branding.description }] })
@@ -238,24 +245,15 @@ function acquireUserLocation() {
   }
 }
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
+// haversineKm + parsedDescription imported from ~/lat/composables/useLatGeo.js
+// (see that file for unit tests).
 
 function distanceMiles(pin: any): string | null {
-  if (userLat.value === null || userLng.value === null || !pin.lat || !pin.lng) return null
-  const km = haversineKm(userLat.value, userLng.value, pin.lat, pin.lng)
-  const miles = km * 0.621371
-  return miles < 10 ? miles.toFixed(1) : Math.round(miles).toString()
+  return distanceMilesFromUser(userLat.value, userLng.value, pin)
 }
 
 function hasActiveAgreement(pin: any): boolean {
-  return pin.promises && pin.promises.length > 0 && pin.promises[0].Acceptedat
+  return pin.promises && pin.promises.length > 0 && pin.promises[0].acceptedat
 }
 
 const filteredPins = computed(() => {
@@ -284,15 +282,7 @@ const sortedPins = computed(() => {
   })
 })
 
-function parsedDescription(pin) {
-  if (!pin.textbody) return ''
-  try {
-    const body = JSON.parse(pin.textbody)
-    return body.description ? body.description.substring(0, 120) + (body.description.length > 120 ? '…' : '') : ''
-  } catch {
-    return pin.textbody.substring(0, 120)
-  }
-}
+// parsedDescription imported from ~/lat/composables/useLatGeo.js
 </script>
 
 <style scoped>
@@ -321,9 +311,10 @@ function parsedDescription(pin) {
   display: flex;
   align-items: center;
   gap: 4px;
+  /* Stretch full width — the geocoder needs to land flush against the
+     right edge (with a small inset from the `padding: 0 16px`). */
   padding: 0 16px;
   width: 100%;
-  max-width: 1200px;
 }
 
 .tab {
@@ -484,12 +475,20 @@ function parsedDescription(pin) {
 
 .welcome-overlay {
   position: absolute;
-  inset: 0;
+  /* Don't cover the filter/tab bar (~60px tall) or the rest of the page chrome
+     above the map — only overlay the map itself. */
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  /* Leaflet's default pane z-indexes go up to 700, and its zoom controls sit
+     at 800, so the welcome card needs to clear those to be visible at all. */
+  z-index: 1100;
+  pointer-events: auto;
 }
 
 .welcome-card {

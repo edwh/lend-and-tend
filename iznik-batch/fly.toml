@@ -17,7 +17,9 @@ primary_region = "lhr"
   LOG_CHANNEL = "stderr"
   LAT_BATCH_ONLY = "true"
   DB_CONNECTION = "mysql"
-  DB_HOST = "lat-mysql.internal"
+  # `.flycast` wakes a suspended MySQL machine on connection (vs `.internal`
+  # which is just DNS and won't wake anything).
+  DB_HOST = "lat-mysql.flycast"
   DB_PORT = "3306"
   DB_DATABASE = "iznik"
   DB_USERNAME = "iznik"
@@ -30,8 +32,11 @@ primary_region = "lhr"
 # No `[[services]]` block — pure worker, no listener.
 
 # Always keep the worker alive — scheduler must run.
+# Cap at 1 machine: the Laravel scheduler is a singleton; running two
+# in parallel would duplicate every cron job (digests, alerts, …).
 [scale]
   min_machines_running = 1
+  max_per_region = 1
   memory_mb = 2048
   cpu_kind = "performance"
   cpus = 1

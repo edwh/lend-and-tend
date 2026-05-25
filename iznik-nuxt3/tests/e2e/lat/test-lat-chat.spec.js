@@ -432,13 +432,15 @@ test.describe('Chat: tender messages lender about a garden', () => {
     }
     expect(chatId).toBeTruthy()
 
-    // 3) Lender opens the chat and clicks Send address. Wait for the chat to
-    //    appear in the lender's list (batch worker).
-    await page.goto('/chats')
-    await expect(page.locator('a[href*="/chats/"]').first()).toBeVisible({
-      timeout: 60_000,
-    })
+    // 3) Lender opens the chat directly — we already know chatId from the
+    //    tender side. (We used to wait for the chat to appear in the
+    //    lender's chat-list view via the batch worker, but the chat list
+    //    rendering uses non-link markup and the wait was unreliable. The
+    //    chat itself exists immediately; only the tender's MESSAGE needs
+    //    batch processing to be visible — and we don't need to see it for
+    //    this test, we just need the chat room to send an address into.)
     await page.goto(`/chats/${chatId}`)
+    await expect(page.locator('#chatmessage')).toBeVisible({ timeout: 15_000 })
 
     // Capture POST /apiv2/address if it happens, AND the chat send PATCH/POST.
     const addressPostPromise = page
