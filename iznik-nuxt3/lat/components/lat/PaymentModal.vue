@@ -4,7 +4,7 @@
       <button class="modal-close" @click="$emit('close')">✕</button>
 
       <div class="modal-header">
-        <img src="/images/lat/logo.png" alt="Lend & Tend" class="modal-logo" />
+        <img src="/images/lat/logo.png?v=2" alt="Lend & Tend" class="modal-logo" />
         <h2>Support Lend & Tend</h2>
         <p class="modal-subtitle">
           A one-off fee of <strong>£{{ feeFormatted }}</strong> lets you post gardens and send messages.

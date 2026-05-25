@@ -8,7 +8,7 @@
         fixed="top"
       >
         <nuxt-link to="/" class="navbar-brand p-0">
-          <img src="/images/lat/logo.png" alt="Lend & Tend" class="lat-logo" />
+          <img src="/images/lat/logo.png?v=2" alt="Lend & Tend" class="lat-logo" />
         </nuxt-link>
 
         <div v-if="!loggedIn" class="d-flex align-items-center">

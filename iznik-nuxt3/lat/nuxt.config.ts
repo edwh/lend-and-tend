@@ -94,12 +94,35 @@ export default defineNuxtConfig({
     port: 4002,
   },
 
+  // Override @nuxt/image's weserv provider baseURL.
+  //
+  // The upstream Freegle config sets baseURL to TUS_UPLOADER (the public
+  // hostname). For L&T with prefix routing on 443, that URL contains the
+  // public hostname (e.g. https://lat.lend-and-tend.katapult.cloud/lat-uploads/
+  // files/<id>) — which nginx-inside-lat-delivery can't reliably resolve.
+  // (Docker DNS at 127.0.0.11 returns container names but NOT /etc/hosts
+  // entries; public DNS returns the host's external IP whose hairpin path
+  // back through Caddy is fragile.)
+  //
+  // baseURL is consumed ONLY inside lat-delivery's weserv when it fetches
+  // the source bytes — the browser never resolves this hostname directly.
+  // So we can safely point it at the docker-network alias, which Docker
+  // DNS resolves cleanly and routes container-to-container.
+  image: {
+    weserv: {
+      provider: 'weserv',
+      baseURL: 'http://lat-tusd:8080/files/',
+      // weservURL stays as the public-hostname IMAGE_DELIVERY env from
+      // the upstream config; the browser does need to reach this one.
+    },
+  },
+
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
       title: 'Lend & Tend — Share a garden, grow good things',
       link: [
-        { rel: 'icon', type: 'image/png', href: '/images/lat/logo.png' },
+        { rel: 'icon', type: 'image/png', href: '/images/lat/logo.png?v=2' },
       ],
       meta: [
         { charset: 'utf-8' },

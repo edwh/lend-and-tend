@@ -4,7 +4,7 @@
       <div class="join-card">
         <!-- Header -->
         <div class="join-header">
-          <img src="/images/lat/logo.png" :alt="branding.siteName" class="join-logo" />
+          <img src="/images/lat/logo.png?v=2" :alt="branding.siteName" class="join-logo" />
           <h1 class="join-title">Support {{ branding.siteName }}</h1>
           <p class="join-subtitle">
             Browsing the map is free. To send and receive messages you need a one-off joining fee of

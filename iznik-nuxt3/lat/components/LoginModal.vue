@@ -3,7 +3,7 @@
     <div v-if="showModal" class="lat-modal-overlay" @click.self="onBackdropClick">
       <div class="lat-modal-dialog" role="dialog" aria-modal="true" :aria-label="signUp ? 'Join Lend & Tend' : 'Sign in'">
         <div class="lat-modal-header">
-          <img src="/images/lat/logo.png" class="lat-modal-logo" alt="Lend & Tend" />
+          <img src="/images/lat/logo.png?v=2" class="lat-modal-logo" alt="Lend & Tend" />
           <h2 class="lat-modal-title">{{ signUp ? 'Join Lend & Tend' : 'Welcome back' }}</h2>
           <button class="lat-modal-close" aria-label="Close" @click="hide">✕</button>
         </div>

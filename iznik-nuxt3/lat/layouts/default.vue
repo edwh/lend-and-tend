@@ -43,7 +43,7 @@ useHead({
     { key: 'og:title', property: 'og:title', content: 'Lend and Tend' },
     { key: 'og:site_name', property: 'og:site_name', content: 'Lend and Tend' },
     { key: 'og:description', property: 'og:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
-    { key: 'og:image', property: 'og:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png' },
+    { key: 'og:image', property: 'og:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png?v=2' },
     // Explicit type + dimensions help crawlers (FB especially) skip the HEAD-
     // probe step and render the card without an extra round-trip. 1024x1024
     // is square (1:1) — FB will crop to its preferred 1.91:1 but still shows
@@ -54,7 +54,7 @@ useHead({
     { key: 'og:url', property: 'og:url', content: 'https://lat.lend-and-tend.katapult.cloud' },
     { key: 'twitter:title', name: 'twitter:title', content: 'Lend and Tend' },
     { key: 'twitter:description', name: 'twitter:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
-    { key: 'twitter:image', name: 'twitter:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png' },
+    { key: 'twitter:image', name: 'twitter:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png?v=2' },
     { key: 'twitter:image:alt', name: 'twitter:image:alt', content: 'The Lend and Tend logo' },
     // twitter:site is the @handle for site attribution on the card.
     // Mirroring the instagram handle from branding.config.ts — if L&T's
