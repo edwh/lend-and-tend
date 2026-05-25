@@ -622,7 +622,28 @@ const sortedPins = computed(() => {
 }
 
 @media (max-width: 600px) {
-  .tab-filters { display: none; }
+  /* Wrap onto two rows so filters stay reachable on mobile:
+     row 1 = Map/List tabs + geocoder pushed right
+     row 2 = the filter chips (All / Lenders / Tenders / Active)
+     Previously .tab-filters was set to display:none, which removed
+     filtering entirely from mobile — making the map page unusable
+     for narrowing down the listings on a phone. */
+  .tab-inner {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 6px 12px;
+  }
+  .tab-filters {
+    margin-left: 0;
+    order: 3;
+    flex-basis: 100%;
+    /* Let the chip row scroll horizontally if it ever overflows
+       (e.g. when the chip labels are translated into a longer language). */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
   .geocoder-input { width: 120px; }
 }
 </style>
