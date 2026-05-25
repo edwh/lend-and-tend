@@ -46,6 +46,16 @@ lat.lend-and-tend.katapult.cloud {
                 reverse_proxy 127.0.0.1:14081
         }
 
+        # Maintenance-page static assets — served directly by Caddy from
+        # /var/www/lat-maintenance/. Sits BEFORE the catch-all handle so
+        # /maintenance-asset/* never gets proxied to lat-nuxt. That means
+        # the maintenance.html can <img src="/maintenance-asset/logo.png">
+        # and still resolve when lat-nuxt is the upstream that's down.
+        handle_path /maintenance-asset/* {
+                root * /var/www/lat-maintenance
+                file_server
+        }
+
         # Everything else -> Nuxt SSR frontend
         handle {
                 reverse_proxy 127.0.0.1:4002
@@ -54,11 +64,9 @@ lat.lend-and-tend.katapult.cloud {
         # Maintenance page when any upstream is rebuilding/unreachable.
         # Caddy's handle_errors catches reverse_proxy failures (502/503/504)
         # and serves the static maintenance.html instead of Caddy's default
-        # bare "502 Bad Gateway" body. The page references /images/lat/logo.png
-        # — which is served by lat-nuxt — so if lat-nuxt itself is down the
-        # logo will fail to load. That's acceptable: the textual message
-        # still renders, and once lat-nuxt is back the next reload picks up
-        # both the logo and the real site.
+        # bare "502 Bad Gateway" body. The HTML references its own logo via
+        # /maintenance-asset/logo.png (above), which Caddy serves directly
+        # — so the page renders fully even when lat-nuxt is down.
         handle_errors {
                 @upstream_down `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
                 handle @upstream_down {
