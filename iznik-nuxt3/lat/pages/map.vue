@@ -1,18 +1,5 @@
 <template>
   <div class="map-page">
-    <ClientOnly fallback="">
-      <section v-if="!loggedIn" class="welcome-overlay">
-        <div class="welcome-card">
-          <h2>Find your garden match</h2>
-          <p>{{ branding.description }}</p>
-          <div class="welcome-ctas">
-            <button class="btn btn-primary btn-lg" @click="requestLogin()">Join to connect</button>
-            <NuxtLink to="/about" class="btn btn-secondary btn-lg">Learn more</NuxtLink>
-          </div>
-        </div>
-      </section>
-    </ClientOnly>
-
     <div class="map-layout">
       <!-- Tab bar -->
       <div class="tab-bar">
@@ -114,7 +101,6 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
-import { useNavbar } from '~/composables/useNavbar'
 import { useLatMapStore } from '~/stores/latMap'
 import MapView from '~/components/lat/MapView.vue'
 import branding from '~/branding.config'
@@ -129,7 +115,6 @@ definePageMeta({ layout: 'default' })
 useHead({ title: branding.siteName, meta: [{ name: 'description', content: branding.description }] })
 
 const authStore = useAuthStore()
-const { requestLogin } = useNavbar()
 const latMapStore = useLatMapStore()
 const config = useRuntimeConfig()
 const api = Api(config)
@@ -472,49 +457,6 @@ const sortedPins = computed(() => {
   line-height: 1.5;
   margin: 0;
 }
-
-.welcome-overlay {
-  position: absolute;
-  /* Don't cover the filter/tab bar (~60px tall) or the rest of the page chrome
-     above the map — only overlay the map itself. */
-  top: 60px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Leaflet's default pane z-indexes go up to 700, and its zoom controls sit
-     at 800, so the welcome card needs to clear those to be visible at all. */
-  z-index: 1100;
-  pointer-events: auto;
-}
-
-.welcome-card {
-  background: white;
-  border-radius: 8px;
-  padding: 40px;
-  max-width: 500px;
-  text-align: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  margin: 20px;
-}
-
-.welcome-card h2 {
-  margin: 0 0 16px;
-  font-family: var(--lat-font-heading);
-  font-size: 2rem;
-  color: var(--lat-color-text);
-}
-
-.welcome-card p {
-  margin: 0 0 32px;
-  color: var(--lat-color-text-muted);
-  line-height: 1.5;
-}
-
-.welcome-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
 .btn {
   padding: 10px 20px;
