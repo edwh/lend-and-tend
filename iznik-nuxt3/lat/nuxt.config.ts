@@ -89,14 +89,46 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'color-scheme', content: 'light' },
+        // Use `hid` (not `key`) for dedupe — the upstream Freegle nuxt
+        // config uses `hid` for its og:/twitter:/description meta tags.
+        // Mismatched dedupe keys mean both Freegle's tags AND ours end
+        // up in the final HTML, and Freegle's (registered later in the
+        // layer chain) wins. With hid alignment our values replace
+        // theirs and L&T branding is what social/SEO crawlers see.
         {
-          key: 'description',
+          hid: 'description',
           name: 'description',
-          content: 'Lend & Tend connects garden owners who need help with gardeners who need space.',
+          content:
+            'Lend & Tend connects garden owners who need help with gardeners who need space.',
         },
-        { key: 'og:type', property: 'og:type', content: 'website' },
-        { key: 'og:title', property: 'og:title', content: 'Lend & Tend — Share a garden, grow good things' },
-        { key: 'og:site_name', property: 'og:site_name', content: 'Lend & Tend' },
+        { hid: 'og:type', property: 'og:type', content: 'website' },
+        {
+          hid: 'og:title',
+          property: 'og:title',
+          content: 'Lend & Tend — Share a garden, grow good things',
+        },
+        {
+          hid: 'og:site_name',
+          property: 'og:site_name',
+          content: 'Lend & Tend',
+        },
+        {
+          hid: 'og:description',
+          property: 'og:description',
+          content:
+            'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.',
+        },
+        {
+          hid: 'twitter:title',
+          name: 'twitter:title',
+          content: 'Lend & Tend — Share a garden, grow good things',
+        },
+        {
+          hid: 'twitter:description',
+          name: 'twitter:description',
+          content:
+            'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.',
+        },
       ],
       style: [
         /* Inline critical L&T CSS variables and Bootstrap reset to prevent FOUC */

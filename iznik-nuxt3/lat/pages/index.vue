@@ -48,7 +48,7 @@
             Browse the map →
           </NuxtLink>
         </div>
-        <div class="map-preview-wrapper">
+        <NuxtLink to="/map" class="map-preview-wrapper" aria-label="Open the full map of gardens">
           <ClientOnly>
             <div class="map-preview">
               <!-- Use the same MapView component as /map so members'
@@ -64,10 +64,15 @@
               <div class="map-placeholder">Loading map…</div>
             </template>
           </ClientOnly>
+          <!-- The whole preview is a link to /map; the overlay just
+               keeps the visual "Open full map →" affordance the user
+               expects. pointer-events:none below so clicks fall through
+               to the underlying wrapper-link instead of needing to
+               hit this specific span. -->
           <div class="map-preview-overlay">
-            <NuxtLink to="/map" class="btn-overlay">Open full map →</NuxtLink>
+            <span class="btn-overlay">Open full map →</span>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </section>
 
@@ -323,9 +328,28 @@ useHead({
 
 .map-preview-wrapper {
   position: relative;
+  display: block;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  /* Whole preview is a link to /map — cursor + focus styling reflect that. */
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.map-preview-wrapper:focus-visible {
+  outline: 3px solid var(--lat-color-primary);
+  outline-offset: 2px;
+}
+
+/* The overlay sits ON TOP of the leaflet container; let pointer events
+   fall through to the wrapper link so a click anywhere on the preview
+   navigates instead of just the "Open full map →" pill. */
+.map-preview-wrapper .map-preview-overlay,
+.map-preview-wrapper .btn-overlay,
+.map-preview-wrapper .map-preview {
+  pointer-events: none;
 }
 
 .map-preview { height: 380px; width: 100%; }
