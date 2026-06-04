@@ -1,0 +1,22 @@
+{
+  "How's it going?": {
+    "label": "How's it going?",
+    "arrow": "right",
+    "box": {
+      "x": 0.3227,
+      "y": 0.3071,
+      "w": 0.3547,
+      "h": 0.213
+    }
+  },
+  "Add a note if you like": {
+    "label": "Add a note if you like",
+    "arrow": "up",
+    "box": {
+      "x": 0.3227,
+      "y": 0.5622,
+      "w": 0.3547,
+      "h": 0.0611
+    }
+  }
+}

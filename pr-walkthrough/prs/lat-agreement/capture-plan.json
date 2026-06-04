@@ -1,0 +1,98 @@
+{
+  "_about": "Drive the running Lend & Tend app (localhost:4002) to each screen of the garden-sharing journey and screenshot it, read-only. Seeded ids + tender auth come from seed-states.cjs (iznik-nuxt3/walkthrough-out): ids.json → env vars, .auth-tender{1,2}.json → storageStates. Any paid user can view /lend and /map, so the tender1 state is reused for those. Run: export the ids, then node src/capture.mjs --pr-dir prs/lat-agreement --base-url http://localhost:4002",
+  "baseUrl": "",
+  "defaultViewport": { "width": 1280, "height": 900 },
+  "shots": [
+    {
+      "name": "map.png",
+      "route": "/map",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [{ "waitMs": 3500 }]
+    },
+    {
+      "name": "lend.png",
+      "route": "/lend",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [
+        { "waitFor": "#subject" },
+        { "fill": "#subject", "value": "Sunny back garden, ready for veg" },
+        { "fill": "#about", "value": "A south-facing plot with established beds and a shed. I love it but can't keep on top of it — I'd love someone to grow here." },
+        { "fill": "#arrangement", "value": "Help with the mowing in return for use of the veg patch — or pure goodwill." },
+        { "fill": "#restrictions", "value": "No commercial growing, and please no bonfires." },
+        { "waitMs": 600 }
+      ],
+      "annotate": [
+        { "selector": "#subject", "label": "Name your garden", "arrow": "right" },
+        { "selector": "#about", "label": "Describe what it's like", "arrow": "right" },
+        { "selector": "#arrangement", "label": "What you're hoping for", "arrow": "right" },
+        { "selector": "#restrictions", "label": "Any ground rules", "arrow": "right" }
+      ]
+    },
+    {
+      "name": "garden.png",
+      "route": "/garden/${GARDEN1_ID}",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [{ "waitFor": "button:has-text(\"Send message\")" }, { "waitMs": 900 }],
+      "annotate": [
+        { "selector": "h1", "label": "A garden offered to share", "arrow": "down" },
+        { "selector": "button:has-text(\"Send message\")", "label": "Message the owner to get started", "arrow": "up" }
+      ]
+    },
+    {
+      "name": "chat.png",
+      "route": "/chats/${CHAT1_ID}",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [{ "waitFor": "a.btn-view-agreement" }, { "waitMs": 900 }],
+      "annotate": [
+        { "selector": "#chatmessage", "label": "Chat back and forth", "arrow": "up" },
+        { "selector": "a.btn-view-agreement", "label": "Open the garden-sharing agreement", "arrow": "left" }
+      ]
+    },
+    {
+      "name": "agreement-proposed.png",
+      "route": "/agreement/${GARDEN1_ID}?userId=${LENDER1_ID}",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [{ "waitFor": ".status-banner.proposed" }, { "waitMs": 700 }],
+      "annotate": [
+        { "selector": "#whatToGrow", "label": "What you'll grow", "arrow": "right" },
+        { "selector": "#accessTimes", "label": "When you'll visit", "arrow": "right" },
+        { "selector": ".ground-rule", "label": "A few ground rules, agreed up front", "arrow": "right" },
+        { "selector": "#endDate", "label": "A review date — a season to try it", "arrow": "up" },
+        { "selector": "button:has-text(\"Accept and confirm\")", "label": "Accept when you're happy", "arrow": "up" }
+      ]
+    },
+    {
+      "name": "agreement-confirmed.png",
+      "route": "/agreement/${GARDEN2_ID}?userId=${LENDER2_ID}",
+      "auth": ".auth-tender2.json",
+      "fullPage": true,
+      "steps": [{ "waitFor": ".next-steps" }, { "waitMs": 700 }],
+      "annotate": [
+        { "selector": ".status-banner.confirmed", "label": "Agreed — both of you are set", "arrow": "down" }
+      ]
+    },
+    {
+      "name": "timeline.png",
+      "route": "/agreement/${GARDEN2_ID}?userId=${LENDER2_ID}",
+      "auth": ".auth-tender2.json",
+      "clip": ".next-steps",
+      "steps": [{ "waitFor": ".lat-timeline" }, { "waitMs": 700 }]
+    },
+    {
+      "name": "checkin.png",
+      "route": "/checkin/${GARDEN2_ID}",
+      "auth": ".auth-tender2.json",
+      "fullPage": true,
+      "steps": [{ "waitFor": ".status-options" }, { "waitMs": 700 }],
+      "annotate": [
+        { "selector": ".status-options", "label": "How's it going?", "arrow": "right" },
+        { "selector": "#checkin-note", "label": "Add a note if you like", "arrow": "up" }
+      ]
+    }
+  ]
+}

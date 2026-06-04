@@ -1,0 +1,22 @@
+{
+  "A garden offered to share": {
+    "label": "A garden offered to share",
+    "arrow": "down",
+    "box": {
+      "x": 0.2531,
+      "y": 0.2346,
+      "w": 0.4938,
+      "h": 0.0339
+    }
+  },
+  "Message the owner to get started": {
+    "label": "Message the owner to get started",
+    "arrow": "up",
+    "box": {
+      "x": 0.2531,
+      "y": 0.5517,
+      "w": 0.1394,
+      "h": 0.0472
+    }
+  }
+}

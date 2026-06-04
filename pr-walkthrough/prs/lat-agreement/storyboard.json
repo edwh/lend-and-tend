@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "title": "Lend & Tend — share a garden, grow good things",
+    "subtitle": "From a listed garden to a signed garden-sharing agreement",
+    "brand": "Lend & Tend",
+    "brandSubtitle": "garden sharing",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "_note": "Screenshot scenes position callouts by `ref` (labels measured live into <shot>.boxes.json) with focusAuto. Tall pages are handled per the framework gotcha: the lend form is panned, and the proposed agreement is split into two focused scenes so nothing crops.",
+  "scenes": [
+    {
+      "type": "title",
+      "seconds": 5,
+      "title": "Lend & Tend",
+      "subtitle": "Neighbours share gardens — someone with space, someone who wants to grow.",
+      "showStats": false
+    },
+    {
+      "type": "narration",
+      "seconds": 10,
+      "chapter": "Why",
+      "heading": "An unloved garden, and someone longing to grow.",
+      "bullets": [
+        "Priya has a garden she loves but can no longer manage alone.",
+        "Sam wants space to grow veg, but has none.",
+        "Lend & Tend patch-matches the two — and helps them agree how it'll work.",
+        "Here's the whole journey, from listing a garden to a signed agreement."
+      ],
+      "caption": "Two neighbours, one garden — let's walk through it."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 9,
+      "chapter": "Find a garden",
+      "src": "lat-agreement/map.masked.png",
+      "caption": "Browse gardens shared near you — each pin is a garden looking for a tender."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 16,
+      "chapter": "List a garden",
+      "src": "lat-agreement/lend.masked.png",
+      "pan": "down",
+      "caption": "Listing a garden takes a minute: name it, describe it, and say what you're hoping for in return."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Find a garden",
+      "src": "lat-agreement/garden.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.85,
+      "caption": "Others find Priya's garden and open the listing to get in touch.",
+      "callouts": [
+        { "at": 1.5, "until": 5.5, "ref": "A garden offered to share" },
+        { "at": 5.0, "until": 9.0, "ref": "Message the owner to get started" }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Get in touch",
+      "src": "lat-agreement/chat.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.85,
+      "caption": "Sam messages Priya — they chat, and agree to share the garden.",
+      "callouts": [
+        { "at": 1.5, "until": 5.0, "ref": "Chat back and forth" },
+        { "at": 4.5, "until": 9.0, "ref": "Open the garden-sharing agreement" }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "The agreement",
+      "src": "lat-agreement/agreement-proposed.masked.png",
+      "focusAuto": true,
+      "caption": "A simple agreement sets out what you'll grow and when you'll visit.",
+      "callouts": [
+        { "at": 1.5, "until": 5.5, "ref": "What you'll grow" },
+        { "at": 5.0, "until": 9.0, "ref": "When you'll visit" }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 8,
+      "chapter": "The agreement",
+      "src": "lat-agreement/agreement-proposed.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.8,
+      "caption": "A few ground rules — pets, water, sharing produce — agreed up front.",
+      "callouts": [
+        { "at": 1.5, "until": 7.0, "ref": "A few ground rules, agreed up front" }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "The agreement",
+      "src": "lat-agreement/agreement-proposed.masked.png",
+      "focusAuto": true,
+      "caption": "A gentle review date — a season to try it — then accept when you're happy.",
+      "callouts": [
+        { "at": 1.5, "until": 5.5, "ref": "A review date — a season to try it" },
+        { "at": 5.0, "until": 9.5, "ref": "Accept when you're happy" }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 7,
+      "chapter": "Agreed",
+      "src": "lat-agreement/agreement-confirmed.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.92,
+      "caption": "Agreed — the garden-sharing partnership is on.",
+      "callouts": [{ "at": 1.5, "until": 6.0, "ref": "Agreed — both of you are set" }]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "What to expect",
+      "src": "lat-agreement/timeline.masked.png"
+    },
+    {
+      "type": "narration",
+      "seconds": 7,
+      "chapter": "Keeping it going",
+      "heading": "It doesn't stop at hello.",
+      "bullets": [
+        "A growing season is long — things drift if nobody checks in.",
+        "So Lend & Tend nudges a gentle check-in along the way."
+      ],
+      "caption": "How's it going?"
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Keeping in touch",
+      "src": "lat-agreement/checkin.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.72,
+      "caption": "A quick check-in keeps both of you in touch.",
+      "callouts": [{ "at": 1.5, "until": 8.5, "ref": "How's it going?" }]
+    },
+    {
+      "type": "outro",
+      "seconds": 9,
+      "title": "Share a garden, grow good things.",
+      "bullets": [
+        "List a garden, or find one to tend.",
+        "Get matched, chat, and agree simple terms.",
+        "Review as the season goes — and love unloved gardens together."
+      ]
+    }
+  ]
+}

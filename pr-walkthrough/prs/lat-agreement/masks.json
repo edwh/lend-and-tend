@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "note": "Test data only (seeded demo users / gardens) — no real PII, so no regions to mask. The render still produces identity .masked.png copies that the storyboard references.",
+  "images": [
+    { "src": "map.png", "out": "map.masked.png", "regions": [] },
+    { "src": "lend.png", "out": "lend.masked.png", "regions": [] },
+    { "src": "garden.png", "out": "garden.masked.png", "regions": [] },
+    { "src": "chat.png", "out": "chat.masked.png", "regions": [] },
+    { "src": "agreement-proposed.png", "out": "agreement-proposed.masked.png", "regions": [] },
+    { "src": "agreement-confirmed.png", "out": "agreement-confirmed.masked.png", "regions": [] },
+    { "src": "timeline.png", "out": "timeline.masked.png", "regions": [] },
+    { "src": "checkin.png", "out": "checkin.masked.png", "regions": [] }
+  ]
+}

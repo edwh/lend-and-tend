@@ -1,0 +1,22 @@
+{
+  "Chat back and forth": {
+    "label": "Chat back and forth",
+    "arrow": "up",
+    "box": {
+      "x": 0.25,
+      "y": 0.871,
+      "w": 0.5,
+      "h": 0.0694
+    }
+  },
+  "Open the garden-sharing agreement": {
+    "label": "Open the garden-sharing agreement",
+    "arrow": "left",
+    "box": {
+      "x": 0.5266,
+      "y": 0.7692,
+      "w": 0.0554,
+      "h": 0.0358
+    }
+  }
+}

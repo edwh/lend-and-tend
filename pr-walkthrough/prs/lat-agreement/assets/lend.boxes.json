@@ -1,0 +1,42 @@
+{
+  "Name your garden": {
+    "label": "Name your garden",
+    "arrow": "right",
+    "box": {
+      "x": 0.2891,
+      "y": 0.1765,
+      "w": 0.4219,
+      "h": 0.0249
+    }
+  },
+  "Describe what it's like": {
+    "label": "Describe what it's like",
+    "arrow": "right",
+    "box": {
+      "x": 0.2891,
+      "y": 0.3318,
+      "w": 0.4219,
+      "h": 0.063
+    }
+  },
+  "What you're hoping for": {
+    "label": "What you're hoping for",
+    "arrow": "right",
+    "box": {
+      "x": 0.2891,
+      "y": 0.547,
+      "w": 0.4219,
+      "h": 0.0376
+    }
+  },
+  "Any ground rules": {
+    "label": "Any ground rules",
+    "arrow": "right",
+    "box": {
+      "x": 0.2891,
+      "y": 0.615,
+      "w": 0.4219,
+      "h": 0.0376
+    }
+  }
+}
