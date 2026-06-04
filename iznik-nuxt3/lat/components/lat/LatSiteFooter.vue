@@ -5,7 +5,12 @@
         <span class="footer-site-name">{{ branding.siteName }}</span>
         <p class="footer-tagline">{{ branding.tagline }}</p>
         <div class="footer-social">
-          <a :href="branding.social.instagramUrl" target="_blank" rel="noopener" class="footer-social-link">
+          <a
+            :href="branding.social.instagramUrl"
+            target="_blank"
+            rel="noopener"
+            class="footer-social-link"
+          >
             <VIcon :icon="['fab', 'instagram']" />
             <span>{{ branding.social.instagram }}</span>
           </a>
@@ -17,6 +22,8 @@
         <nav class="footer-links">
           <NuxtLink to="/map">Map</NuxtLink>
           <NuxtLink to="/about">About</NuxtLink>
+          <NuxtLink to="/what-to-expect">What to expect</NuxtLink>
+          <NuxtLink to="/ground-rules">Ground rules</NuxtLink>
           <NuxtLink to="/help">Help & FAQ</NuxtLink>
           <NuxtLink to="/terms">Terms</NuxtLink>
           <NuxtLink to="/privacy">Privacy</NuxtLink>
@@ -25,11 +32,17 @@
 
       <div class="footer-contact-col">
         <h3 class="footer-col-heading">Contact</h3>
-        <p><a :href="`mailto:${branding.email}`" class="footer-email">{{ branding.email }}</a></p>
+        <p>
+          <a :href="`mailto:${branding.email}`" class="footer-email">{{
+            branding.email
+          }}</a>
+        </p>
         <div class="footer-legal">
           <p>{{ branding.companyName }}</p>
           <p>Co. no. {{ branding.companyNumber }}</p>
-          <p class="footer-copy">© {{ new Date().getFullYear() }} {{ branding.companyName }}</p>
+          <p class="footer-copy">
+            © {{ new Date().getFullYear() }} {{ branding.companyName }}
+          </p>
         </div>
       </div>
     </div>
@@ -38,8 +51,6 @@
 
 <script setup lang="ts">
 import branding from '~/branding.config'
-import { useNavbar } from '~/composables/useNavbar'
-const { requestLogin } = useNavbar()
 </script>
 
 <style scoped>

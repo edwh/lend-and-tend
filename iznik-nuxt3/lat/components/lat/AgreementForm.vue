@@ -73,6 +73,22 @@
         </ol>
       </div>
 
+      <!-- Details carried over from the garden listing (lender draft) -->
+      <div
+        v-if="!isProposed && !isConfirmed && isLender && listingDetails.length"
+        class="listing-details"
+      >
+        <h3>From your garden listing</h3>
+        <p class="listing-hint">
+          Carried over so you don’t have to retype it — fold anything relevant
+          into the terms below.
+        </p>
+        <div v-for="row in listingDetails" :key="row.label" class="listing-row">
+          <span class="listing-label">{{ row.label }}:</span>
+          <span class="listing-value">{{ row.value }}</span>
+        </div>
+      </div>
+
       <!-- Terms form -->
       <div class="agreement-terms">
         <h3>{{ isConfirmed ? 'Agreed terms' : 'Terms' }}</h3>
@@ -111,6 +127,63 @@
         </div>
 
         <div class="form-group">
+          <span class="group-label">Ground rules</span>
+          <p class="group-hint">
+            A few things worth agreeing up front. Leave any as “Not set” if they
+            don’t apply.
+          </p>
+          <div
+            v-for="item in groundRuleItems"
+            :key="item.key"
+            class="ground-rule"
+          >
+            <span class="ground-rule-text">
+              <span class="ground-rule-label">{{ item.label }}</span>
+              <span v-if="item.help" class="ground-rule-help">{{
+                item.help
+              }}</span>
+            </span>
+            <select
+              v-model="terms.groundRules[item.key]"
+              class="ground-rule-select"
+              :disabled="isConfirmed"
+              :aria-label="item.label"
+            >
+              <option value="">Not set</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="endDate"
+            >Review date <span class="optional">(optional)</span></label
+          >
+          <p class="group-hint">
+            Many arrangements start with a trial — a growing season is about
+            four months. You can review or end things on this date.
+          </p>
+          <div class="review-date-row">
+            <input
+              id="endDate"
+              v-model="terms.endDate"
+              type="date"
+              class="date-input"
+              :disabled="isConfirmed"
+            />
+            <button
+              v-if="!isConfirmed"
+              type="button"
+              class="btn-link"
+              @click="setReviewDate(4)"
+            >
+              Suggest 4 months
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label for="otherTerms">Other terms</label>
           <textarea
             id="otherTerms"
@@ -120,6 +193,30 @@
             :disabled="isConfirmed"
           />
         </div>
+      </div>
+
+      <!-- What happens next (confirmed only) -->
+      <div v-if="isConfirmed" class="next-steps">
+        <h3>What happens next</h3>
+        <p v-if="checkinDue" class="checkin-due">
+          ⏰ A check-in is due — let your
+          {{ isLender ? 'tender' : 'lender' }} know how it's going.
+        </p>
+        <p v-if="reviewDateFormatted" class="next-review">
+          📅 You agreed to review this around
+          <strong>{{ reviewDateFormatted }}</strong
+          >.
+        </p>
+        <LatTimeline />
+        <NuxtLink
+          :to="checkInLink"
+          class="btn checkin-btn"
+          :class="checkinDue ? 'btn-primary' : 'btn-secondary'"
+        >
+          {{
+            checkinDue ? 'Log your check-in' : 'How’s it going? Log a check-in'
+          }}
+        </NuxtLink>
       </div>
 
       <!-- Actions -->
@@ -186,6 +283,8 @@
 import { useMessageStore } from '~/stores/message'
 import { useAuthStore } from '~/stores/auth'
 import { useChatStore } from '~/stores/chat'
+import { GROUND_RULE_ITEMS } from '~/constants/agreement'
+import { useAgreementTimeline } from '~/composables/useAgreementTimeline'
 import Api from '~/api'
 
 const props = defineProps({
@@ -199,12 +298,35 @@ const chatStore = useChatStore()
 const config = useRuntimeConfig()
 const api = Api(config)
 
+const groundRuleItems = GROUND_RULE_ITEMS
+
+function emptyGroundRules() {
+  return Object.fromEntries(GROUND_RULE_ITEMS.map((i) => [i.key, '']))
+}
+
 const loading = ref(true)
 const saving = ref(false)
 const error = ref(null)
 const saveSuccess = ref(null)
-const terms = reactive({ whatToGrow: '', accessTimes: '', otherTerms: '' })
-const originalTerms = ref({ whatToGrow: '', accessTimes: '', otherTerms: '' })
+const terms = reactive({
+  whatToGrow: '',
+  accessTimes: '',
+  endDate: '',
+  groundRules: emptyGroundRules(),
+  otherTerms: '',
+})
+
+function snapshotTerms() {
+  return {
+    whatToGrow: terms.whatToGrow,
+    accessTimes: terms.accessTimes,
+    endDate: terms.endDate,
+    groundRules: { ...terms.groundRules },
+    otherTerms: terms.otherTerms,
+  }
+}
+
+const originalTerms = ref(snapshotTerms())
 
 const me = computed(() => authStore.user)
 const message = computed(() => messageStore.byId(props.messageId))
@@ -275,15 +397,38 @@ const currentPromise = computed(() => {
   return promises?.length ? promises[0] : null
 })
 
-const isProposed = computed(
-  () => !!currentPromise.value && !currentPromise.value.acceptedat
+/* The Freegle API privacy-filters `promises` out of a message for non-lender
+ * viewers, so the tender can't rely on it to see agreement state. The lender
+ * (message owner) therefore also records the status in the message textbody
+ * (readable by both), and the tender records their own acceptance in their
+ * user settings (writable by them). State is derived from all three sources. */
+const agreementState = computed(() => listingBody.value.agreement || null)
+const myAgreementRecord = computed(
+  () => me.value?.settings?.lat_agreements?.[props.messageId] || null
 )
-const isConfirmed = computed(() => !!currentPromise.value?.acceptedat)
+
+const isConfirmed = computed(
+  () =>
+    !!currentPromise.value?.acceptedat ||
+    agreementState.value?.status === 'confirmed' ||
+    !!myAgreementRecord.value?.acceptedAt
+)
+
+const isProposed = computed(() => {
+  if (isConfirmed.value) return false
+  if (currentPromise.value) return !currentPromise.value.acceptedat
+  return agreementState.value?.status === 'proposed'
+})
 
 const confirmedDate = computed(() => {
-  const d = currentPromise.value?.acceptedat
+  const d =
+    currentPromise.value?.acceptedat ||
+    agreementState.value?.confirmedAt ||
+    myAgreementRecord.value?.acceptedAt
   if (!d) return ''
-  return new Date(d).toLocaleDateString('en-GB', {
+  const parsed = new Date(d)
+  if (isNaN(parsed.getTime())) return ''
+  return parsed.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -291,12 +436,81 @@ const confirmedDate = computed(() => {
 })
 
 const termsChanged = computed(() => {
-  return (
-    terms.whatToGrow !== originalTerms.value.whatToGrow ||
-    terms.accessTimes !== originalTerms.value.accessTimes ||
-    terms.otherTerms !== originalTerms.value.otherTerms
+  const o = originalTerms.value
+  if (terms.whatToGrow !== o.whatToGrow) return true
+  if (terms.accessTimes !== o.accessTimes) return true
+  if (terms.endDate !== o.endDate) return true
+  if (terms.otherTerms !== o.otherTerms) return true
+  return groundRuleItems.some(
+    (i) => terms.groundRules[i.key] !== (o.groundRules?.[i.key] ?? '')
   )
 })
+
+/* Parsed garden-listing body, used to prefill the draft and show details so
+ * the lender doesn't have to retype what's already on the listing. */
+const listingBody = computed(() => {
+  if (!message.value?.textbody) return {}
+  try {
+    return typeof message.value.textbody === 'string'
+      ? JSON.parse(message.value.textbody)
+      : message.value.textbody
+  } catch {
+    return {}
+  }
+})
+
+const listingDetails = computed(() => {
+  const b = listingBody.value
+  const rows = []
+  if (b.waterAccess) rows.push({ label: 'Water access', value: b.waterAccess })
+  if (b.accessRoute) rows.push({ label: 'Access route', value: b.accessRoute })
+  if (b.arrangement) rows.push({ label: 'Arrangement', value: b.arrangement })
+  if (b.restrictions)
+    rows.push({ label: 'Restrictions', value: b.restrictions })
+  return rows
+})
+
+const reviewDateFormatted = computed(() => {
+  if (!terms.endDate) return ''
+  const d = new Date(terms.endDate)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+})
+
+const checkInLink = computed(() => `/checkin/${props.messageId}`)
+
+/* When the agreement was confirmed + when I last checked in → is one due? */
+const confirmedAt = computed(
+  () =>
+    currentPromise.value?.acceptedat ||
+    agreementState.value?.confirmedAt ||
+    myAgreementRecord.value?.acceptedAt ||
+    null
+)
+const lastCheckinAt = computed(
+  () => me.value?.settings?.lat_checkins?.[props.messageId]?.date || null
+)
+const { checkinDue } = useAgreementTimeline(confirmedAt, lastCheckinAt)
+
+/* Suggest a review date a few months out — the template's growing-season
+ * trial. The lender can change or clear it. */
+function setReviewDate(months = 4) {
+  const d = new Date()
+  d.setMonth(d.getMonth() + months)
+  terms.endDate = d.toISOString().slice(0, 10)
+}
+
+function prefillFromListing() {
+  /* Only carry the listing's restrictions across as a starting point for the
+   * "other terms" box; never overwrite anything already typed. */
+  if (!terms.otherTerms && listingBody.value.restrictions) {
+    terms.otherTerms = listingBody.value.restrictions
+  }
+}
 
 function loadTermsFromMessage() {
   if (!message.value?.textbody) return
@@ -305,11 +519,22 @@ function loadTermsFromMessage() {
       typeof message.value.textbody === 'string'
         ? JSON.parse(message.value.textbody)
         : message.value.textbody
-    const t = body.proposedTerms || {}
-    terms.whatToGrow = t.whatToGrow || ''
-    terms.accessTimes = t.accessTimes || ''
-    terms.otherTerms = t.otherTerms || ''
-    originalTerms.value = { ...terms }
+    const t = body.proposedTerms
+    if (t) {
+      terms.whatToGrow = t.whatToGrow || ''
+      terms.accessTimes = t.accessTimes || ''
+      terms.endDate = t.endDate || ''
+      terms.otherTerms = t.otherTerms || ''
+      const gr = emptyGroundRules()
+      if (t.groundRules) {
+        for (const k of Object.keys(gr)) gr[k] = t.groundRules[k] || ''
+      }
+      terms.groundRules = gr
+    } else if (isLender.value) {
+      /* Fresh draft — prefill from the listing. */
+      prefillFromListing()
+    }
+    originalTerms.value = snapshotTerms()
   } catch {
     /* ignore parse errors */
   }
@@ -321,7 +546,7 @@ onMounted(async () => {
   loading.value = false
 })
 
-function buildUpdatedTextbody() {
+function buildUpdatedTextbody(agreementStatus) {
   let body = {}
   if (message.value?.textbody) {
     try {
@@ -336,7 +561,18 @@ function buildUpdatedTextbody() {
   body.proposedTerms = {
     whatToGrow: terms.whatToGrow,
     accessTimes: terms.accessTimes,
+    endDate: terms.endDate,
+    groundRules: { ...terms.groundRules },
     otherTerms: terms.otherTerms,
+  }
+  // The lender stamps the status into the textbody so the tender (who can't
+  // see the privacy-filtered promise) can tell the agreement was sent.
+  if (agreementStatus === 'proposed') {
+    body.agreement = {
+      ...(body.agreement || {}),
+      status: 'proposed',
+      proposedAt: new Date().toISOString(),
+    }
   }
   return JSON.stringify(body)
 }
@@ -360,15 +596,15 @@ async function propose() {
   error.value = null
   saveSuccess.value = null
   try {
-    // Save terms into the message body first
+    // Save terms + a 'proposed' status the tender can read into the message body
     await api.message.save({
       id: props.messageId,
-      textbody: buildUpdatedTextbody(),
+      textbody: buildUpdatedTextbody('proposed'),
     })
     // Create the promise (sends the Promised chat message as notification)
     await messageStore.promise(props.messageId, props.otherUserId)
     await messageStore.fetch(props.messageId, true)
-    originalTerms.value = { ...terms }
+    originalTerms.value = snapshotTerms()
     // Navigate back to chat so they can see the Promised card
     await goToChat()
   } catch (e) {
@@ -389,7 +625,7 @@ async function saveTerms() {
       textbody: buildUpdatedTextbody(),
     })
     await messageStore.fetch(props.messageId, true)
-    originalTerms.value = { ...terms }
+    originalTerms.value = snapshotTerms()
     saveSuccess.value = 'Terms updated.'
   } catch (e) {
     error.value = e?.message || 'Failed to save terms.'
@@ -409,7 +645,7 @@ async function suggestChanges() {
       textbody: buildUpdatedTextbody(),
     })
     await messageStore.fetch(props.messageId, true)
-    originalTerms.value = { ...terms }
+    originalTerms.value = snapshotTerms()
     // Let lender know via chat
     const chatId = await chatStore.openChat({ userid: props.otherUserId })
     if (chatId)
@@ -431,8 +667,25 @@ async function accept() {
   error.value = null
   saveSuccess.value = null
   try {
-    await api.message.update({ id: props.messageId, action: 'AcceptAgreement' })
-    await messageStore.fetch(props.messageId, true)
+    // Record the tender's acceptance in their own settings FIRST — this is
+    // what surfaces the confirmed view + timeline for them, and it works
+    // regardless of the privacy-filtered promise. (The tender can't write the
+    // lender's message, and can't see the promise.)
+    const existing = me.value?.settings?.lat_agreements || {}
+    await api.session.save({
+      settings: {
+        lat_agreements: {
+          ...existing,
+          [props.messageId]: { acceptedAt: new Date().toISOString() },
+        },
+      },
+    })
+    await authStore.fetchUser().catch(() => {})
+    // Best-effort: also tell the server/lender via the promise acceptance.
+    await api.message
+      .update({ id: props.messageId, action: 'AcceptAgreement' })
+      .catch(() => {})
+    await messageStore.fetch(props.messageId, true).catch(() => {})
     saveSuccess.value = 'Agreement confirmed! 🌱'
   } catch (e) {
     error.value = e?.message || 'Failed to confirm agreement.'
@@ -585,6 +838,170 @@ async function withdraw() {
 .form-group textarea:disabled {
   background: #f5f5f5;
   color: var(--lat-color-text-muted);
+}
+
+.group-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--lat-color-text);
+  font-size: 0.9rem;
+}
+
+.group-hint {
+  font-size: 0.82rem;
+  color: var(--lat-color-text-muted);
+  margin: 0 0 10px;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--lat-color-text-muted);
+}
+
+.ground-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ground-rule:last-child {
+  border-bottom: none;
+}
+
+.ground-rule-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ground-rule-label {
+  font-size: 0.9rem;
+  color: var(--lat-color-text);
+}
+
+.ground-rule-help {
+  font-size: 0.78rem;
+  color: var(--lat-color-text-muted);
+}
+
+.ground-rule-select {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  background: white;
+}
+
+.ground-rule-select:disabled {
+  background: #f5f5f5;
+  color: var(--lat-color-text-muted);
+}
+
+.review-date-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.date-input:disabled {
+  background: #f5f5f5;
+  color: var(--lat-color-text-muted);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--lat-color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.listing-details {
+  background: var(--lat-color-secondaryLight, #f3e8f7);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.listing-details h3 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--lat-color-text);
+}
+
+.listing-hint {
+  font-size: 0.82rem;
+  color: var(--lat-color-text-muted);
+  margin: 0 0 10px;
+}
+
+.listing-row {
+  display: flex;
+  gap: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.listing-label {
+  font-weight: 600;
+  color: var(--lat-color-text);
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.listing-value {
+  color: var(--lat-color-text-muted);
+}
+
+.next-steps {
+  background: #f0f7e8;
+  border-radius: 8px;
+  padding: 20px 18px;
+  margin-top: 8px;
+}
+
+.next-steps h3 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  color: var(--lat-color-text);
+}
+
+.next-review {
+  font-size: 0.9rem;
+  color: var(--lat-color-text);
+  margin: 0 0 16px;
+}
+
+.checkin-due {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--lat-color-text);
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0 0 16px;
+}
+
+.checkin-btn {
+  margin-top: 16px;
 }
 
 .actions {

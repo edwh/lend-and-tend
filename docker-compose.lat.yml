@@ -173,6 +173,7 @@ services:
     volumes:
       - ./iznik-nuxt3/lat/components:/app/lat/components:rw
       - ./iznik-nuxt3/lat/composables:/app/lat/composables:rw
+      - ./iznik-nuxt3/lat/constants:/app/lat/constants:rw
       - ./iznik-nuxt3/lat/pages:/app/lat/pages:rw
       - ./iznik-nuxt3/lat/stores:/app/lat/stores:rw
       - ./iznik-nuxt3/lat/layouts:/app/lat/layouts:rw

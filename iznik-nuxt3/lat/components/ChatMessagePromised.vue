@@ -22,12 +22,11 @@
         <div class="promised-body">
           <div class="promised-title">Garden agreement</div>
           <div class="promised-garden">{{ gardenName }}</div>
-          <div class="promised-status" :class="statusClass">{{ statusLabel }}</div>
+          <div class="promised-status" :class="statusClass">
+            {{ statusLabel }}
+          </div>
         </div>
-        <NuxtLink
-          :to="agreementUrl"
-          class="btn-view-agreement"
-        >
+        <NuxtLink :to="agreementUrl" class="btn-view-agreement">
           {{ isConfirmed ? 'View ✓' : 'View →' }}
         </NuxtLink>
       </div>
@@ -36,7 +35,11 @@
 </template>
 
 <script setup>
-import { fetchReferencedMessage, useChatMessageBase } from '~/composables/useChat'
+import {
+  fetchReferencedMessage,
+  useChatMessageBase,
+} from '~/composables/useChat'
+import { useAuthStore } from '~/stores/auth'
 import ProfileImage from '~/components/ProfileImage.vue'
 
 const props = defineProps({
@@ -49,15 +52,45 @@ const props = defineProps({
 
 await fetchReferencedMessage(props.chatid, props.id)
 
-const { refmsgid, refmsg, otheruser, messageIsFromCurrentUser } = useChatMessageBase(props.chatid, props.id, props.pov)
+const { refmsgid, refmsg, otheruser, messageIsFromCurrentUser } =
+  useChatMessageBase(props.chatid, props.id, props.pov)
 
-const gardenName = computed(() =>
-  refmsg.value?.subject?.replace(/^(Offer|Wanted):\s*/i, '') || 'Garden'
+const gardenName = computed(
+  () => refmsg.value?.subject?.replace(/^(Offer|Wanted):\s*/i, '') || 'Garden'
+)
+
+const authStore = useAuthStore()
+
+/* The Freegle API privacy-filters `promises` out of a message for non-lender
+ * viewers, so the tender's card can't rely on it. Mirror AgreementForm: derive
+ * status from the promise OR the lender-stamped textbody OR the viewer's own
+ * acceptance record (settings). Keeps the card correct for both parties. */
+const refBody = computed(() => {
+  const tb = refmsg.value?.textbody
+  if (!tb) return {}
+  try {
+    return typeof tb === 'string' ? JSON.parse(tb) : tb
+  } catch {
+    return {}
+  }
+})
+const agreementState = computed(() => refBody.value.agreement || null)
+const myAgreementRecord = computed(
+  () => authStore.user?.settings?.lat_agreements?.[refmsgid.value] || null
 )
 
 const currentPromise = computed(() => refmsg.value?.promises?.[0] || null)
-const isConfirmed = computed(() => !!currentPromise.value?.acceptedat)
-const isProposed = computed(() => !!currentPromise.value && !currentPromise.value.acceptedat)
+const isConfirmed = computed(
+  () =>
+    !!currentPromise.value?.acceptedat ||
+    agreementState.value?.status === 'confirmed' ||
+    !!myAgreementRecord.value?.acceptedAt
+)
+const isProposed = computed(() => {
+  if (isConfirmed.value) return false
+  if (currentPromise.value) return !currentPromise.value.acceptedat
+  return agreementState.value?.status === 'proposed'
+})
 
 const statusLabel = computed(() => {
   if (isConfirmed.value) return 'Both parties agreed'
@@ -89,7 +122,7 @@ const agreementUrl = computed(() => {
   border: 1px solid #dde8d0;
   border-radius: 10px;
   padding: 12px 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .promised-icon {
@@ -126,8 +159,12 @@ const agreementUrl = computed(() => {
   white-space: nowrap;
 }
 
-.status--confirmed { color: #155724; }
-.status--pending { color: #856404; }
+.status--confirmed {
+  color: #155724;
+}
+.status--pending {
+  color: #856404;
+}
 
 .btn-view-agreement {
   flex-shrink: 0;

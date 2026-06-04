@@ -79,3 +79,9 @@ lat.db
 scraped/
 .env.bak.*
 .env
+
+# Walkthrough video media (large; regenerate via walkthrough-out scripts)
+iznik-nuxt3/walkthrough-out/raw/
+iznik-nuxt3/walkthrough-out/clean/
+iznik-nuxt3/walkthrough-out/*.mp4
+iznik-nuxt3/walkthrough-out/*.webm

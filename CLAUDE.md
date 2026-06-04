@@ -71,10 +71,24 @@ There will also be a `modtools-lat/` layer that extends `modtools/` in the same 
 - Notifications = `users_notifications` — use Freegle's `stores/notification.js`
 - Agreements = `promises` — use Freegle's `stores/tryst.js`
 
-**The only schema addition:** One Laravel migration auto-creates a world-spanning Freegle group (`nameshort=lendandtend-world`) used to filter L&T listings.
+**L&T migrations (in `iznik-batch/database/migrations/`) — none add tables or columns; all reuse Freegle's schema by inserting data / setting `settings` / adding a trigger:**
+- `2026_05_21_000001_add_lat_columns_to_users.php` — **misnamed**; it adds NO columns. It inserts the world-spanning group (`nameshort=lendandtend-world`) used to filter all L&T listings.
+- `2026_05_24_000001_create_lat_demo_users.php` — seeds demo users `lend@test.com` / `tend@test.com` / `admin@test.com` (password `lendandtend`) via existing `users`, `users_emails`, `users_logins`.
+- `2026_05_25_000001_lat_world_auto_unmoderated.php` — the auto-approve mechanism: sets `groups.settings.defaultpostingstatus = 'UNMODERATED'` on the world group + a `BEFORE INSERT` trigger on `memberships`. (Frontend posting gate is `LAT_MODERATION_ENABLED`, a `lat/nuxt.config.ts` runtimeConfig flag.)
+
+The "never add tables/columns without approval" rule still holds — keep it that way.
 
 **LAT Nuxt dev server:** port 4002. API at `IZNIK_API_V2` (default `http://localhost:4001/apiv2`).
 **LAT Playwright tests:** `LAT_BASE_URL=http://localhost:4002 npx playwright test tests/e2e/lat/` from `iznik-nuxt3/`.
+
+## Lend & Tend Deployment & Infrastructure
+
+L&T is a **separate deployment** from Freegle — different host, different database, different containers. It does NOT share Freegle's running infrastructure in production.
+
+- **Stack:** `docker-compose.lat.yml` defines the L&T stack: `lat-nuxt` (frontend), `lat-api` (Go apiv2), `batch` + `batch-worker` (Laravel), `lat-percona` (MySQL — the prod DB), `lat-admin` (modtools-lat), `lat-tusd` (uploads), `lat-delivery` (weserv image resize/cache), `lat-mailpit` (mail catcher). Network `lat-network`; volumes `lat-db`, `lat-tusd-data`.
+- **Self-hosted media — do not point at Freegle:** L&T runs its OWN `lat-tusd` upload + `lat-delivery` image servers (and would do the same for map tiles). Never let uploads/delivery/tiles resolve to Freegle infra in production (commit `cc00c11a7`). Configs: `delivery-nginx.conf`, `delivery-imagesweserv.conf`.
+- **Target host:** deployed via Docker Compose on a **Katapult VM** (e.g. `lat.lend-and-tend.katapult.cloud`), reached over SSH. Reverse proxy is **Caddy** (`deploy/caddy/Caddyfile`) with Let's Encrypt; a 502 maintenance page is served when `lat-nuxt` is down.
+- **ABANDONED — do not use or follow:** Fly.io (`DEPLOY-FLY.md`, `fly.toml`, `lat-mysql/`) was dropped in favour of the Katapult VM. SQLite (`lat.db` in the repo root) was an early dead-end — production uses MySQL/Percona exactly like Freegle. These stale files remain in the tree; ignore them.
 
 ## Critical Rules
 

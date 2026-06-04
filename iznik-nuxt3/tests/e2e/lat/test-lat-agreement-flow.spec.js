@@ -83,7 +83,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       await unauthorizedPage.goto(`/agreement/${gardenMessageId}?userId=999999`)
 
       // Wait for the component to load and show authorization error
-      await unauthorizedPage.waitForSelector('.empty-state', { timeout: 15_000 })
+      await unauthorizedPage.waitForSelector('.empty-state', {
+        timeout: 15_000,
+      })
 
       // Should show "You don't have access to this agreement."
       await expect(unauthorizedPage.locator('.empty-state')).toBeVisible({
@@ -160,7 +162,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       await tenderPage
         .locator('#chatmessage')
         .fill(messageText, { timeout: 30_000 })
-      await tenderPage.getByRole('button', { name: 'Send', exact: true }).click()
+      await tenderPage
+        .getByRole('button', { name: 'Send', exact: true })
+        .click()
       await expect(tenderPage.getByText(messageText).first()).toBeVisible({
         timeout: 10_000,
       })
@@ -196,7 +200,10 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
   })
 
-  test('agreement terms persist after page reload', async ({ page, browser }) => {
+  test('agreement terms persist after page reload', async ({
+    page,
+    browser,
+  }) => {
     // We need a real tender userId — Send to tender calls promise/chat
     // APIs that require a valid counter-party.
     const gardenMessageId = await signUpAndPostGarden(page)
@@ -219,7 +226,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
         try {
           const a = JSON.parse(localStorage.auth || '{}')
           return a?.auth?.persistent?.userid ?? null
-        } catch { return null }
+        } catch {
+          return null
+        }
       })
       expect(tenderId, 'tender userid from localStorage').toBeTruthy()
 
@@ -282,7 +291,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       await tenderPage
         .locator('#chatmessage')
         .fill(messageText, { timeout: 30_000 })
-      await tenderPage.getByRole('button', { name: 'Send', exact: true }).click()
+      await tenderPage
+        .getByRole('button', { name: 'Send', exact: true })
+        .click()
       await expect(tenderPage.getByText(messageText).first()).toBeVisible({
         timeout: 10_000,
       })
@@ -323,14 +334,14 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await expect(viewAgreementBtn).toBeVisible()
   })
 
-  // SKIPPED — blocked on a Freegle Go API privacy filter that strips
-  // `promises` from GET /apiv2/message/{id} for non-lender viewers
-  // (iznik-server-go/message/message.go:502 → `message.MessagePromises = nil`).
-  // For L&T the tender IS the agreement counter-party and must see the
-  // terms + accept controls. Three fix paths documented in
-  // plans/active/lat-adversarial-review.md → "Tender can't see Garden
-  // Sharing Agreement via /message API". Un-skip once one of those lands.
-  test.skip('tender can accept agreement', async ({ page, browser }) => {
+  // The Go API privacy-filters `promises` out of GET /apiv2/message/{id} for
+  // non-lender viewers, so the tender couldn't previously see proposed/accept
+  // state. Worked around entirely in the lat layer (AgreementForm.vue +
+  // ChatMessagePromised.vue): the lender stamps the agreement status into the
+  // message textbody (readable by both parties) and the tender records their
+  // acceptance in their own user settings — so neither relies on the
+  // privacy-filtered promise.
+  test('tender can accept agreement', async ({ page, browser }) => {
     // Read the lender's userid from localStorage so the tender can address
     // the agreement page directly — avoids a 60s+ wait on chat-promise
     // batch propagation, which is verified separately by the
@@ -342,7 +353,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       try {
         const a = JSON.parse(localStorage.auth || '{}')
         return a?.auth?.persistent?.userid ?? null
-      } catch { return null }
+      } catch {
+        return null
+      }
     })
     expect(lenderId, 'lender userid from localStorage').toBeTruthy()
 
@@ -361,7 +374,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
         try {
           const a = JSON.parse(localStorage.auth || '{}')
           return a?.auth?.persistent?.userid ?? null
-        } catch { return null }
+        } catch {
+          return null
+        }
       })
       expect(tenderId, 'tender userid from localStorage').toBeTruthy()
 
@@ -377,9 +392,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
 
       // Tender goes straight to the agreement page (skipping the chat-
       // navigation step that depends on batch propagation).
-      await tenderPage.goto(
-        `/agreement/${gardenMessageId}?userId=${lenderId}`
-      )
+      await tenderPage.goto(`/agreement/${gardenMessageId}?userId=${lenderId}`)
       await expect(tenderPage.locator('.status-banner.proposed')).toBeVisible({
         timeout: 10_000,
       })
@@ -395,7 +408,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
         .getByRole('button', { name: 'Accept and confirm' })
         .click()
 
-      await expect(tenderPage.getByText(/Agreement confirmed/)).toBeVisible({
+      await expect(
+        tenderPage.getByText(/Agreement confirmed/).first()
+      ).toBeVisible({
         timeout: 10_000,
       })
       await expect(tenderPage.locator('.status-banner.confirmed')).toBeVisible()
@@ -431,7 +446,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
 
       const msg = `Hello! (${Date.now()})`
       await tenderPage.locator('#chatmessage').fill(msg)
-      await tenderPage.getByRole('button', { name: 'Send', exact: true }).click()
+      await tenderPage
+        .getByRole('button', { name: 'Send', exact: true })
+        .click()
     } finally {
       await tenderCtx.close()
     }
@@ -471,7 +488,10 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
 
   // SKIPPED — same Go API privacy filter as "tender can accept agreement"
   // above. See plans/active/lat-adversarial-review.md.
-  test.skip('tender can suggest changes to agreement', async ({ page, browser }) => {
+  test.skip('tender can suggest changes to agreement', async ({
+    page,
+    browser,
+  }) => {
     // Direct-nav pattern (same as "tender can accept agreement"):
     // sign up both parties, propose from lender, navigate tender straight
     // to the agreement page. Avoids fragile chat batch propagation.
@@ -481,7 +501,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       try {
         const a = JSON.parse(localStorage.auth || '{}')
         return a?.auth?.persistent?.userid ?? null
-      } catch { return null }
+      } catch {
+        return null
+      }
     })
     expect(lenderId).toBeTruthy()
 
@@ -500,7 +522,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
         try {
           const a = JSON.parse(localStorage.auth || '{}')
           return a?.auth?.persistent?.userid ?? null
-        } catch { return null }
+        } catch {
+          return null
+        }
       })
       expect(tenderId).toBeTruthy()
 
@@ -515,9 +539,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
 
       // Tender views & modifies
-      await tenderPage.goto(
-        `/agreement/${gardenMessageId}?userId=${lenderId}`
-      )
+      await tenderPage.goto(`/agreement/${gardenMessageId}?userId=${lenderId}`)
       await expect(tenderPage.locator('#whatToGrow')).toHaveValue(
         'Tomatoes only',
         { timeout: 10_000 }
@@ -528,9 +550,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       await expect(
         tenderPage.getByRole('button', { name: 'Suggest changes' })
       ).toBeVisible()
-      await tenderPage
-        .getByRole('button', { name: 'Suggest changes' })
-        .click()
+      await tenderPage.getByRole('button', { name: 'Suggest changes' }).click()
 
       await expect(tenderPage.getByText(/Changes sent/)).toBeVisible({
         timeout: 10_000,
@@ -560,7 +580,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
 
       const msg = `Hi! (${Date.now()})`
       await tenderPage.locator('#chatmessage').fill(msg)
-      await tenderPage.getByRole('button', { name: 'Send', exact: true }).click()
+      await tenderPage
+        .getByRole('button', { name: 'Send', exact: true })
+        .click()
     } finally {
       await tenderCtx.close()
     }
@@ -636,7 +658,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
 
       const msg = `Message (${Date.now()})`
       await tenderPage.locator('#chatmessage').fill(msg)
-      await tenderPage.getByRole('button', { name: 'Send', exact: true }).click()
+      await tenderPage
+        .getByRole('button', { name: 'Send', exact: true })
+        .click()
     } finally {
       await tenderCtx.close()
     }
@@ -649,14 +673,18 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.locator('#whatToGrow').fill('Confirmed test terms')
     await page.getByRole('button', { name: 'Send to tender' }).click()
 
-    // Tender accepts
-    await tenderPage.reload()
-    const agreementLink = tenderPage
-      .getByRole('link', { name: /View agreement/ })
-      .first()
+    // Tender accepts. The promised card (ChatMessagePromised) renders "View →"
+    // as a.btn-view-agreement; wait for it to propagate into the tender's chat.
+    const agreementLink = tenderPage.locator('a.btn-view-agreement').first()
+    await expect(async () => {
+      await tenderPage.reload()
+      await expect(agreementLink).toBeVisible({ timeout: 8_000 })
+    }).toPass({ timeout: 120_000 })
     await agreementLink.click()
     await tenderPage.getByRole('button', { name: 'Accept and confirm' }).click()
-    await expect(tenderPage.getByText(/Agreement confirmed/)).toBeVisible({
+    await expect(
+      tenderPage.getByText(/Agreement confirmed/).first()
+    ).toBeVisible({
       timeout: 10_000,
     })
 
@@ -664,9 +692,161 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await tenderPage.getByRole('button', { name: /Back to chat/ }).click()
     await expect(tenderPage).toHaveURL(/\/chats/, { timeout: 10_000 })
 
-    // The Promised card should show "Both parties have agreed" and "View agreement ✓"
-    await expect(tenderPage.getByText('Both parties have agreed')).toBeVisible()
-    const viewBtn = tenderPage.getByRole('link', { name: /View agreement ✓/ })
+    // The Promised card should now show the confirmed status and "View ✓".
+    await expect(tenderPage.getByText('Both parties agreed')).toBeVisible()
+    const viewBtn = tenderPage.locator('a.btn-view-agreement', {
+      hasText: 'View ✓',
+    })
     await expect(viewBtn).toBeVisible()
+  })
+
+  test('agreement draft shows structured ground-rule toggles and a review date', async ({
+    page,
+  }) => {
+    const gardenMessageId = await signUpAndPostGarden(page)
+    expect(gardenMessageId).not.toBeNull()
+
+    await page.goto(`/agreement/${gardenMessageId}?userId=0`)
+    await expect(page.locator('.status-banner.draft')).toBeVisible({
+      timeout: 10_000,
+    })
+
+    // Three ground-rule toggles (addressed by aria-label) are present.
+    await expect(page.getByLabel('Pets allowed in the garden')).toBeVisible()
+    await expect(
+      page.getByLabel('Tender may use the water supply')
+    ).toBeVisible()
+    await expect(
+      page.getByLabel('Some produce shared with the lender')
+    ).toBeVisible()
+
+    // The review date can be set with the quick-suggest button.
+    await expect(page.locator('#endDate')).toHaveValue('')
+    await page.getByRole('button', { name: 'Suggest 4 months' }).click()
+    await expect(page.locator('#endDate')).not.toHaveValue('')
+  })
+
+  test("agreement draft prefills 'other terms' from the listing restrictions", async ({
+    page,
+  }) => {
+    const restrictions = 'No commercial growing, no bonfires, no dogs.'
+
+    await page.goto('/')
+    await signUpViaModal(page)
+    await markUserAsPaid(page)
+    await page.goto('/lend')
+    await expect(logoutLink(page)).toBeVisible({ timeout: 10_000 })
+
+    await page.locator('#subject').fill('Prefill Test Garden')
+    await page.locator('#about').fill('Garden for prefill testing.')
+    await fillLocationPicker(page)
+    await page.locator('#phone').fill('07700 900011')
+    await page.locator('#restrictions').fill(restrictions)
+
+    const messageResponsePromise = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/apiv2/message') &&
+        resp.request().method() === 'PUT'
+    )
+    await page.getByRole('button', { name: 'Post my garden' }).click()
+    const messageResp = await messageResponsePromise
+    const gardenMessageId = (await messageResp.json())?.id ?? null
+    expect(gardenMessageId).not.toBeNull()
+    await expect(page).toHaveURL(/\/profile/, { timeout: 20_000 })
+
+    // Opening a fresh draft should carry the listing restrictions into "other terms".
+    await page.goto(`/agreement/${gardenMessageId}?userId=0`)
+    await expect(page.locator('#otherTerms')).toHaveValue(restrictions, {
+      timeout: 10_000,
+    })
+  })
+
+  test('review date and ground rules persist after reload', async ({
+    page,
+    browser,
+  }) => {
+    const gardenMessageId = await signUpAndPostGarden(page)
+    expect(gardenMessageId).not.toBeNull()
+
+    const tenderCtx = await browser.newContext({
+      baseURL: process.env.LAT_BASE_URL || 'http://localhost:4002',
+      storageState: { cookies: [], origins: [] },
+      viewport: { width: 1280, height: 720 },
+    })
+    try {
+      const tenderPage = await tenderCtx.newPage()
+      await tenderPage.goto('/')
+      await signUpViaModal(tenderPage)
+      await markUserAsPaid(tenderPage)
+      const tenderId = await tenderPage.evaluate(() => {
+        try {
+          const a = JSON.parse(localStorage.auth || '{}')
+          return a?.auth?.persistent?.userid ?? null
+        } catch {
+          return null
+        }
+      })
+      expect(tenderId, 'tender userid from localStorage').toBeTruthy()
+
+      await page.goto(`/agreement/${gardenMessageId}?userId=${tenderId}`)
+      await expect(page.locator('.status-banner.draft')).toBeVisible({
+        timeout: 10_000,
+      })
+
+      await page.locator('#whatToGrow').fill('Beans and squash')
+      await page.locator('#endDate').fill('2026-10-01')
+      await page.getByLabel('Pets allowed in the garden').selectOption('yes')
+      await page
+        .getByLabel('Some produce shared with the lender')
+        .selectOption('no')
+
+      await page.getByRole('button', { name: 'Send to tender' }).click()
+      await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
+
+      await page.goto(`/agreement/${gardenMessageId}?userId=${tenderId}`)
+      await expect(page.locator('#endDate')).toHaveValue('2026-10-01', {
+        timeout: 10_000,
+      })
+      await expect(page.getByLabel('Pets allowed in the garden')).toHaveValue(
+        'yes'
+      )
+      await expect(
+        page.getByLabel('Some produce shared with the lender')
+      ).toHaveValue('no')
+    } finally {
+      await tenderCtx.close()
+    }
+  })
+})
+
+test.describe('Agreement guidance pages', () => {
+  test('/what-to-expect renders the arrangement guide and timeline', async ({
+    page,
+  }) => {
+    await page.goto('/what-to-expect')
+    await expect(
+      page.getByRole('heading', { name: 'What to expect', level: 1 })
+    ).toBeVisible({ timeout: 10_000 })
+    // Arrangement guide card + a timeline milestone heading.
+    await expect(page.getByText('Introductions')).toBeVisible()
+    await expect(page.getByText('Begin garden-sharing')).toBeVisible()
+    await expect(page.getByText('Review & reflect')).toBeVisible()
+  })
+
+  test('/ground-rules renders the conditions of use', async ({ page }) => {
+    await page.goto('/ground-rules')
+    await expect(
+      page.getByRole('heading', {
+        name: 'Garden-sharing ground rules',
+        level: 1,
+      })
+    ).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Conditions of use')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'No excessive noise' })
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Unauthorised persons' })
+    ).toBeVisible()
   })
 })
