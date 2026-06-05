@@ -9,10 +9,11 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Envelope;
 
 /**
- * Milestone check-in for both parties of a garden-sharing agreement
- * (14d / 30d / 90d / 180d after it was made). One tap records how it's going.
+ * Post-agreement prompt for the LENDER: your garden's found a tender — do you
+ * have other gardens to share, or is this it? Routes to the /share-another
+ * landing page which either starts a new listing or marks them as done.
  */
-class CheckinReminderMail extends MjmlMailable
+class OtherGardensMail extends MjmlMailable
 {
     use LoggableEmail, TrackableEmail;
 
@@ -21,14 +22,12 @@ class CheckinReminderMail extends MjmlMailable
         public string $recipientName,
         public ?int $userId,
         public string $otherName,
-        public int $agreementId,
-        public string $intervalLabel,
     ) {
         parent::__construct();
 
         if (config('freegle.email_tracking_enabled', true)) {
             $this->initTracking(
-                'LatCheckinReminder',
+                'LatOtherGardens',
                 $this->recipientEmail,
                 $this->userId,
                 null,
@@ -52,29 +51,26 @@ class CheckinReminderMail extends MjmlMailable
 
     protected function getSubject(): string
     {
-        return "How's it growing? Your {$this->intervalLabel} " . config('freegle.branding.name') . ' check-in';
+        return '🌿 Your garden has found a tender — got another to share?';
     }
 
     public function build(): static
     {
         $site = rtrim(config('freegle.sites.user'), '/');
-        $base = $site . '/checkin/' . $this->agreementId;
 
         return $this->mjmlView(
-            'emails.mjml.lat.checkin-reminder',
+            'emails.mjml.lat.other-gardens',
             array_merge([
                 'email' => $this->recipientEmail,
                 'firstName' => LatNames::first($this->recipientName),
                 'otherName' => $this->otherName,
-                'intervalLabel' => $this->intervalLabel,
-                'growingUrl' => $this->trackedUrl($base . '?status=growing', 'checkin_growing', 'cta'),
-                'okUrl' => $this->trackedUrl($base . '?status=ok', 'checkin_ok', 'cta'),
-                'notWorkingUrl' => $this->trackedUrl($base . '?status=not_working', 'checkin_not_working', 'cta'),
+                'moreUrl' => $this->trackedUrl($site . '/share-another?choice=more', 'other_gardens_yes', 'cta'),
+                'doneUrl' => $this->trackedUrl($site . '/share-another?choice=done', 'other_gardens_no', 'cta'),
                 'settingsUrl' => $this->trackedUrl($site . '/settings', 'footer_settings', 'settings'),
                 'unsubscribeUrl' => $site . '/settings',
             ], $this->getTrackingData()),
-            'emails.text.lat.checkin-reminder',
+            'emails.text.lat.other-gardens',
         )->to($this->recipientEmail)
-            ->applyLogging('LatCheckinReminder');
+            ->applyLogging('LatOtherGardens');
     }
 }

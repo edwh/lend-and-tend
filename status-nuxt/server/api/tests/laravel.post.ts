@@ -2,6 +2,12 @@ import { spawn, execSync } from 'child_process'
 import { getTestState, setTestState, appendTestLogs, isTestRunning } from '../../utils/testState'
 
 const prefix = process.env.COMPOSE_PROJECT_NAME || 'freegle'
+// Deployments that don't follow Freegle's exact conventions (e.g. Lend & Tend,
+// whose persistent batch container is `*-batch-worker`, DB host `lat-percona`,
+// root password `lat`) override these. Defaults preserve Freegle behaviour.
+const batchContainer = process.env.LARAVEL_TEST_CONTAINER || `${prefix}-batch`
+const testDbHost = process.env.TEST_DB_HOST || 'percona'
+const testDbPassword = process.env.TEST_DB_PASSWORD || 'iznik'
 
 export default defineEventHandler(async (event) => {
   console.log('Starting Laravel tests...')
@@ -38,17 +44,17 @@ export default defineEventHandler(async (event) => {
     set -e
     echo "Setting up Laravel test environment..."
 
-    # Stop supervisor workers before running tests
+    # Stop supervisor workers before running tests (no-op where supervisor isn't used).
     echo "Stopping supervisor workers..."
-    docker exec ${prefix}-batch supervisorctl stop all 2>&1 || true
+    docker exec ${batchContainer} supervisorctl stop all 2>&1 || true
 
     # Set up fresh test database
     echo "Setting up fresh test database..."
-    docker exec ${prefix}-batch mysql -h percona -u root -piznik --skip-ssl -e "CREATE DATABASE IF NOT EXISTS iznik_batch_test" 2>&1
-    docker exec -e DB_DATABASE=iznik_batch_test ${prefix}-batch php artisan migrate:fresh --database=mysql --force 2>&1
+    docker exec ${batchContainer} mysql -h ${testDbHost} -u root -p${testDbPassword} --skip-ssl -e "CREATE DATABASE IF NOT EXISTS iznik_batch_test" 2>&1
+    docker exec -e DB_DATABASE=iznik_batch_test ${batchContainer} php artisan migrate:fresh --database=mysql --force 2>&1
 
     echo "Running Laravel tests with coverage..."
-    docker exec -e VIA_STATUS_CONTAINER=1 -e DB_DATABASE=iznik_batch_test ${prefix}-batch vendor/bin/phpunit --testsuite=${testsuite}${filter ? ` --filter="${filter}"` : ''} --coverage-clover=/tmp/laravel-coverage.xml 2>&1
+    docker exec -e VIA_STATUS_CONTAINER=1 -e DB_DATABASE=iznik_batch_test ${batchContainer} vendor/bin/phpunit --testsuite=${testsuite}${filter ? ` --filter="${filter}"` : ''} --coverage-clover=/tmp/laravel-coverage.xml 2>&1
   `], { stdio: 'pipe' })
 
   testProcess.stdout.on('data', (data) => {
@@ -79,7 +85,7 @@ export default defineEventHandler(async (event) => {
 
     // Restart supervisor workers
     try {
-      execSync(`docker exec ${prefix}-batch supervisorctl start all 2>&1 || true`, {
+      execSync(`docker exec ${batchContainer} supervisorctl start all 2>&1 || true`, {
         encoding: 'utf8',
         timeout: 30000,
       })

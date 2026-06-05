@@ -9,10 +9,12 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Envelope;
 
 /**
- * Milestone check-in for both parties of a garden-sharing agreement
- * (14d / 30d / 90d / 180d after it was made). One tap records how it's going.
+ * "Good news — a garden's being shared near you." Sent to nearby L&T members
+ * when a new agreement is confirmed, to share the good news and nudge them to
+ * list or find a garden themselves. Deliberately general — it never names the
+ * garden or the people involved.
  */
-class CheckinReminderMail extends MjmlMailable
+class MatchGoodNewsMail extends MjmlMailable
 {
     use LoggableEmail, TrackableEmail;
 
@@ -20,15 +22,13 @@ class CheckinReminderMail extends MjmlMailable
         public string $recipientEmail,
         public string $recipientName,
         public ?int $userId,
-        public string $otherName,
-        public int $agreementId,
-        public string $intervalLabel,
+        public ?float $distanceKm = null,
     ) {
         parent::__construct();
 
         if (config('freegle.email_tracking_enabled', true)) {
             $this->initTracking(
-                'LatCheckinReminder',
+                'LatMatchGoodNews',
                 $this->recipientEmail,
                 $this->userId,
                 null,
@@ -52,29 +52,27 @@ class CheckinReminderMail extends MjmlMailable
 
     protected function getSubject(): string
     {
-        return "How's it growing? Your {$this->intervalLabel} " . config('freegle.branding.name') . ' check-in';
+        return '🌱 Good news — a garden is being shared near you';
     }
 
     public function build(): static
     {
         $site = rtrim(config('freegle.sites.user'), '/');
-        $base = $site . '/checkin/' . $this->agreementId;
 
         return $this->mjmlView(
-            'emails.mjml.lat.checkin-reminder',
+            'emails.mjml.lat.match-good-news',
             array_merge([
                 'email' => $this->recipientEmail,
                 'firstName' => LatNames::first($this->recipientName),
-                'otherName' => $this->otherName,
-                'intervalLabel' => $this->intervalLabel,
-                'growingUrl' => $this->trackedUrl($base . '?status=growing', 'checkin_growing', 'cta'),
-                'okUrl' => $this->trackedUrl($base . '?status=ok', 'checkin_ok', 'cta'),
-                'notWorkingUrl' => $this->trackedUrl($base . '?status=not_working', 'checkin_not_working', 'cta'),
+                'distanceKm' => $this->distanceKm,
+                'lendUrl' => $this->trackedUrl($site . '/lend', 'cta_lend', 'cta'),
+                'tendUrl' => $this->trackedUrl($site . '/tend', 'cta_tend', 'cta'),
+                'mapUrl' => $this->trackedUrl($site . '/map', 'cta_map', 'cta'),
                 'settingsUrl' => $this->trackedUrl($site . '/settings', 'footer_settings', 'settings'),
                 'unsubscribeUrl' => $site . '/settings',
             ], $this->getTrackingData()),
-            'emails.text.lat.checkin-reminder',
+            'emails.text.lat.match-good-news',
         )->to($this->recipientEmail)
-            ->applyLogging('LatCheckinReminder');
+            ->applyLogging('LatMatchGoodNews');
     }
 }

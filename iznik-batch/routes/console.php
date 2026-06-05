@@ -64,6 +64,37 @@ if (getenv('LAT_BATCH_ONLY') === 'true') {
         ->sendOutputTo(cronLog('lat:send-checkin-reminders'))
         ->runInBackground();
 
+    // Just after an agreement is confirmed, ask the tender if they're still
+    // looking and the lender if they have other gardens.
+    Schedule::command('lat:send-post-agreement-prompts')
+        ->dailyAt('09:30')
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('lat:send-post-agreement-prompts'))
+        ->runInBackground();
+
+    // Tell nearby members the good news when a garden gets matched.
+    Schedule::command('lat:send-match-news')
+        ->hourly()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('lat:send-match-news'))
+        ->runInBackground();
+
+    // Monthly nudge to active but unmatched users (still-looking tenders /
+    // unmatched lenders).
+    Schedule::command('lat:send-monthly-checkin')
+        ->monthlyOn(1, '10:00')
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('lat:send-monthly-checkin'))
+        ->runInBackground();
+
+    // Drain the email spool to the SMTP smart host (Mailpit in dev, Mailgun
+    // relay in prod). All Lat mail commands spool by default for resilience.
+    Schedule::command('mail:spool:process')
+        ->everyMinute()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('mail:spool:process'))
+        ->runInBackground();
+
     return;
 }
 

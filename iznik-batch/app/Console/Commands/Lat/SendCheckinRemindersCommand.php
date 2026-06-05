@@ -3,6 +3,9 @@
 namespace App\Console\Commands\Lat;
 
 use App\Mail\Lat\CheckinReminderMail;
+use App\Mail\Traits\FeatureFlags;
+use App\Services\EmailSpoolerService;
+use App\Services\Lat\LatMailService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -10,56 +13,70 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Sends check-in reminder emails to both parties of a garden-sharing agreement.
+ * Milestone check-in reminders to both parties of a CONFIRMED garden-sharing
+ * agreement, at 14d / 30d / 90d / 180d after acceptance.
  *
- * Intervals: 14d / 30d / 90d / 180d after promisedat.
- * Each interval is sent at most once per agreement (tracked in checkin_reminders_sent).
+ * The agreement is a messages_promises row: the lender is the Offer's owner
+ * (messages.fromuser) and the tender is the party promised to
+ * (messages_promises.userid). Each interval is sent at most once, tracked in
+ * messages_promises.checkin_reminders_sent.
  */
 class SendCheckinRemindersCommand extends Command
 {
-    protected $signature = 'lat:send-checkin-reminders
-                            {--dry-run : Preview without sending}';
+    use FeatureFlags;
 
-    protected $description = 'Send check-in reminder emails to garden-sharing agreement parties';
+    public const EMAIL_TYPE = 'LatCheckinReminder';
 
-    /** Days after promisedat → label shown in email */
+    /** Days after acceptance → label shown in the email. */
     private const INTERVALS = [
-        14  => '2 weeks',
-        30  => '1 month',
-        90  => '3 months',
-        180 => '6 months',
+        14 => '2-week',
+        30 => '1-month',
+        90 => '3-month',
+        180 => '6-month',
     ];
 
-    public function handle(): int
+    protected $signature = 'lat:send-checkin-reminders
+                            {--dry-run : Preview without sending}
+                            {--no-spool : Send directly instead of spooling}';
+
+    protected $description = 'Send milestone check-in emails to both parties of a confirmed garden-sharing agreement';
+
+    public function handle(LatMailService $lat, EmailSpoolerService $spooler): int
     {
+        if (!self::isEmailTypeEnabled(self::EMAIL_TYPE)) {
+            $this->info(self::EMAIL_TYPE . ' disabled via FREEGLE_MAIL_ENABLED_TYPES.');
+            return self::SUCCESS;
+        }
+
         $dryRun = (bool) $this->option('dry-run');
-        $userSite = rtrim(env('FREEGLE_USER_SITE', 'http://localhost:4002'), '/');
+        $spool = !$this->option('no-spool');
+        $groupId = $lat->worldGroupId();
         $sent = 0;
 
         foreach (self::INTERVALS as $days => $label) {
             $key = "{$days}d";
             $windowStart = Carbon::now()->subDays($days + 1);
-            $windowEnd   = Carbon::now()->subDays($days);
+            $windowEnd = Carbon::now()->subDays($days);
 
-            $agreements = DB::table('messages_promises')
-                ->whereNotNull('promisedat')
-                ->whereBetween('promisedat', [$windowStart, $windowEnd])
+            // Confirmed agreements (acceptedat set) in the L&T world group whose
+            // acceptance falls in this interval's window.
+            $agreements = DB::table('messages_promises as mp')
+                ->join('messages_groups as mg', 'mg.msgid', '=', 'mp.msgid')
+                ->where('mg.groupid', $groupId)
+                ->whereNotNull('mp.acceptedat')
+                ->whereBetween('mp.acceptedat', [$windowStart, $windowEnd])
+                ->select('mp.id', 'mp.msgid', 'mp.userid', 'mp.checkin_reminders_sent')
                 ->get();
 
             foreach ($agreements as $agreement) {
-                $remindersSent = json_decode($agreement->checkin_reminders_sent ?? '{}', true);
+                $remindersSent = json_decode($agreement->checkin_reminders_sent ?? '{}', true) ?: [];
                 if (!empty($remindersSent[$key])) {
                     continue;
                 }
 
-                $users = DB::table('users')
-                    ->whereIn('id', [$agreement->userid])
-                    ->get()
-                    ->keyBy('id');
-
-                // The agreement msgid links to the lender's message; find the other party via chat.
-                $lender = $this->getUserById($agreement->userid);
-                $tender = $this->getOtherPartyFromChat($agreement->msgid, $agreement->userid);
+                $parties = $lat->agreementParties((int) $agreement->msgid, (int) $agreement->userid);
+                $lender = $this->party($lat, $parties['lender']);
+                $tender = $this->party($lat, $parties['tender']);
 
                 if (!$lender || !$tender) {
                     continue;
@@ -71,68 +88,54 @@ class SendCheckinRemindersCommand extends Command
                     continue;
                 }
 
-                foreach ([
-                    [$lender, $tender->fullname],
-                    [$tender, $lender->fullname],
-                ] as [$recipient, $otherName]) {
-                    $email = $recipient->email_preferred ?? null;
-                    if (!$email) continue;
-
+                foreach ([[$lender, $tender->fullname], [$tender, $lender->fullname]] as [$recipient, $otherName]) {
+                    if (empty($recipient->email)) {
+                        continue;
+                    }
+                    $mailable = new CheckinReminderMail(
+                        recipientEmail: $recipient->email,
+                        recipientName: $recipient->fullname,
+                        userId: $recipient->id,
+                        otherName: $otherName,
+                        agreementId: (int) $agreement->id,
+                        intervalLabel: $label,
+                    );
                     try {
-                        Mail::to($email)->send(new CheckinReminderMail(
-                            recipientName: $recipient->fullname,
-                            otherName: $otherName,
-                            agreementId: $agreement->id,
-                            intervalLabel: $label,
-                            userSite: $userSite,
-                        ));
+                        if ($spool) {
+                            $spooler->spool($mailable, $recipient->email, self::EMAIL_TYPE);
+                        } else {
+                            Mail::to($recipient->email)->send($mailable);
+                        }
                         $sent++;
                     } catch (\Throwable $e) {
-                        Log::warning('lat:send-checkin-reminders — mail failed', [
-                            'agreement' => $agreement->id,
-                            'userid' => $recipient->id,
-                            'error' => $e->getMessage(),
-                        ]);
+                        Log::warning('lat:send-checkin-reminders — mail failed', ['agreement' => $agreement->id, 'userid' => $recipient->id, 'error' => $e->getMessage()]);
                     }
                 }
 
-                // Mark this interval as sent so we don't re-send.
                 $remindersSent[$key] = Carbon::now()->toIso8601String();
-                DB::table('messages_promises')
-                    ->where('id', $agreement->id)
+                DB::table('messages_promises')->where('id', $agreement->id)
                     ->update(['checkin_reminders_sent' => json_encode($remindersSent)]);
             }
         }
 
         $prefix = $dryRun ? '[DRY RUN] Would send' : 'Sent';
         $this->info("{$prefix} {$sent} check-in reminder email(s).");
-        Log::info('lat:send-checkin-reminders', ['sent' => $sent, 'dry_run' => $dryRun]);
+        Log::info('lat:send-checkin-reminders', ['sent' => $sent, 'dry_run' => $dryRun, 'spool' => $spool]);
 
         return self::SUCCESS;
     }
 
-    private function getUserById(int $id): ?object
+    /**
+     * A party row: { id, fullname, email } or null.
+     */
+    private function party(LatMailService $lat, int $userId): ?object
     {
-        $user = DB::table('users')->where('id', $id)->first();
-        if (!$user) return null;
-        $emails = DB::table('users_emails')
-            ->where('userid', $id)
-            ->orderBy('preferred', 'desc')
-            ->get();
-        $user->email_preferred = $emails->first()?->email;
+        $user = DB::table('users')->where('id', $userId)->first(['id', 'fullname']);
+        if (!$user) {
+            return null;
+        }
+        $user->email = $lat->preferredEmail($userId);
+
         return $user;
-    }
-
-    private function getOtherPartyFromChat(int $msgid, int $knownUserId): ?object
-    {
-        // Find a chat room that references this message and involves knownUserId.
-        $room = DB::table('chat_rooms')
-            ->where('refmsgid', $msgid)
-            ->first();
-
-        if (!$room) return null;
-
-        $otherId = $room->user1 === $knownUserId ? $room->user2 : $room->user1;
-        return $this->getUserById($otherId);
     }
 }

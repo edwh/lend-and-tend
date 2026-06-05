@@ -21,6 +21,12 @@ return [
         'v2_url' => env('FREEGLE_API_V2_URL', 'https://api.ilovefreegle.org/apiv2'),
     ],
 
+    // Email open/click tracking via the api redirect+pixel endpoints. Off for
+    // deployments (like L&T) whose API doesn't implement those endpoints —
+    // otherwise tracked links would route through, and break against, the
+    // wrong host. When off, links point straight at their destination.
+    'email_tracking_enabled' => filter_var(env('FREEGLE_EMAIL_TRACKING_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
     'branding' => [
         'name' => env('FREEGLE_SITE_NAME', 'Freegle'),
         'logo_url' => env('FREEGLE_LOGO_URL', 'https://www.ilovefreegle.org/icon.png'),
@@ -333,6 +339,11 @@ return [
 
     'lat' => [
         'world_groupid' => (int) env('LAT_WORLD_GROUPID', 1000000),
+        // Radius (km) around a newly-matched garden within which other L&T
+        // members are told the good news. Garden-sharing is hyper-local, so
+        // this is deliberately small. Configurable so it can be widened if
+        // notification volume turns out to be low.
+        'match_radius_km' => (float) env('LAT_MATCH_RADIUS_KM', 5),
     ],
 
     'whatjobs' => [

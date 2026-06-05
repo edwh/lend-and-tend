@@ -9,26 +9,29 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Envelope;
 
 /**
- * Milestone check-in for both parties of a garden-sharing agreement
- * (14d / 30d / 90d / 180d after it was made). One tap records how it's going.
+ * Monthly nudge to active but unmatched L&T users — still-looking tenders and
+ * lenders whose garden hasn't found anyone yet. Gentle "still keen?" with a
+ * count of what's new nearby. Gated per user by lat_waitlist_reminders.
  */
-class CheckinReminderMail extends MjmlMailable
+class MonthlyCheckinMail extends MjmlMailable
 {
     use LoggableEmail, TrackableEmail;
 
+    /**
+     * @param string $role 'lender' | 'tender' | 'both'
+     */
     public function __construct(
         public string $recipientEmail,
         public string $recipientName,
         public ?int $userId,
-        public string $otherName,
-        public int $agreementId,
-        public string $intervalLabel,
+        public string $role,
+        public int $newNearbyCount = 0,
     ) {
         parent::__construct();
 
         if (config('freegle.email_tracking_enabled', true)) {
             $this->initTracking(
-                'LatCheckinReminder',
+                'LatMonthlyCheckin',
                 $this->recipientEmail,
                 $this->userId,
                 null,
@@ -52,29 +55,30 @@ class CheckinReminderMail extends MjmlMailable
 
     protected function getSubject(): string
     {
-        return "How's it growing? Your {$this->intervalLabel} " . config('freegle.branding.name') . ' check-in';
+        return '🌱 Still keen to grow? Your ' . config('freegle.branding.name') . ' check-in';
     }
 
     public function build(): static
     {
         $site = rtrim(config('freegle.sites.user'), '/');
-        $base = $site . '/checkin/' . $this->agreementId;
 
         return $this->mjmlView(
-            'emails.mjml.lat.checkin-reminder',
+            'emails.mjml.lat.monthly-checkin',
             array_merge([
                 'email' => $this->recipientEmail,
                 'firstName' => LatNames::first($this->recipientName),
-                'otherName' => $this->otherName,
-                'intervalLabel' => $this->intervalLabel,
-                'growingUrl' => $this->trackedUrl($base . '?status=growing', 'checkin_growing', 'cta'),
-                'okUrl' => $this->trackedUrl($base . '?status=ok', 'checkin_ok', 'cta'),
-                'notWorkingUrl' => $this->trackedUrl($base . '?status=not_working', 'checkin_not_working', 'cta'),
+                'role' => $this->role,
+                'newNearbyCount' => $this->newNearbyCount,
+                'mapUrl' => $this->trackedUrl($site . '/map', 'cta_map', 'cta'),
+                'lendUrl' => $this->trackedUrl($site . '/lend', 'cta_lend', 'cta'),
+                'tendUrl' => $this->trackedUrl($site . '/tend', 'cta_tend', 'cta'),
+                'stillLookingUrl' => $this->trackedUrl($site . '/still-looking?choice=looking', 'monthly_still_looking', 'cta'),
+                'doneUrl' => $this->trackedUrl($site . '/still-looking?choice=done', 'monthly_done', 'cta'),
                 'settingsUrl' => $this->trackedUrl($site . '/settings', 'footer_settings', 'settings'),
                 'unsubscribeUrl' => $site . '/settings',
             ], $this->getTrackingData()),
-            'emails.text.lat.checkin-reminder',
+            'emails.text.lat.monthly-checkin',
         )->to($this->recipientEmail)
-            ->applyLogging('LatCheckinReminder');
+            ->applyLogging('LatMonthlyCheckin');
     }
 }
