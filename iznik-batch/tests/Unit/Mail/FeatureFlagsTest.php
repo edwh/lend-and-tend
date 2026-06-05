@@ -10,19 +10,11 @@ class FeatureFlagsTest extends TestCase
 
     private const ALL_EMAIL_TYPES = 'Welcome,ChatNotification,ChatNotificationUser2Mod,ChatNotificationMod2Mod,Digest,UnifiedDigest,DonationThank,DonationAsk,StoriesNewsletter';
 
-    public function test_email_type_enabled_when_in_config(): void
-    {
-        // The phpunit.xml sets FREEGLE_MAIL_ENABLED_TYPES with all email types.
-        $this->assertTrue(self::isEmailTypeEnabled('Welcome'));
-        $this->assertTrue(self::isEmailTypeEnabled('ChatNotification'));
-        $this->assertTrue(self::isEmailTypeEnabled('ChatNotificationUser2Mod'));
-        $this->assertTrue(self::isEmailTypeEnabled('ChatNotificationMod2Mod'));
-        $this->assertTrue(self::isEmailTypeEnabled('Digest'));
-        $this->assertTrue(self::isEmailTypeEnabled('UnifiedDigest'));
-        $this->assertTrue(self::isEmailTypeEnabled('DonationThank'));
-        $this->assertTrue(self::isEmailTypeEnabled('DonationAsk'));
-        $this->assertTrue(self::isEmailTypeEnabled('StoriesNewsletter'));
-    }
+    // (Removed test_email_type_enabled_when_in_config: it asserted the Freegle
+    // email types are enabled, which isn't true in the L&T fork — L&T sets
+    // FREEGLE_MAIL_ENABLED_TYPES to its own Lat* types. The trait itself is
+    // still covered by the generic enable/disable/whitespace tests below, and
+    // the L&T types are exercised by tests/Unit/Mail/Lat + tests/Feature/Lat.)
 
     public function test_email_type_disabled_when_not_in_config(): void
     {

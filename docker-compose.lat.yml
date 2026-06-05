@@ -394,11 +394,6 @@ services:
       LARAVEL_TEST_CONTAINER: "${COMPOSE_PROJECT_NAME:-lend-and-tend}-batch-worker"
       TEST_DB_HOST: lat-percona
       TEST_DB_PASSWORD: lat
-      # A bare POST /api/tests/laravel runs the L&T suite by default. The full
-      # Freegle suite can't pass in this container (L&T branding/mail env + no
-      # Redis/Postgres), so it's not the L&T CI target — pass an explicit
-      # {"filter":"..."} to override.
-      LARAVEL_TEST_DEFAULT_FILTER: "LatEmails|LatMailCommands|LatEmailIntegration"
     networks:
       - lat-network
 
