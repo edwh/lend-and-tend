@@ -12,8 +12,12 @@ const testDbPassword = process.env.TEST_DB_PASSWORD || 'iznik'
 export default defineEventHandler(async (event) => {
   console.log('Starting Laravel tests...')
 
-  // Read optional filter/testsuite params from request body
-  let filter = ''
+  // Read optional filter/testsuite params from request body.
+  // LARAVEL_TEST_DEFAULT_FILTER lets a deployment scope the default run — e.g.
+  // L&T sets it to its own test classes so a bare POST runs the L&T suite, not
+  // the whole Freegle suite (which can't pass in the L&T container's env).
+  // Unset (Freegle) → empty → full suite, unchanged.
+  let filter = process.env.LARAVEL_TEST_DEFAULT_FILTER || ''
   let testsuite = 'Unit,Feature'
   try {
     const body = await readBody(event)
