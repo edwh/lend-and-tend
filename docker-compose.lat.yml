@@ -9,6 +9,21 @@ services:
     networks:
       - lat-network
 
+  # Redis — worker-pool semaphores (MJML compile back-pressure) + cache.
+  # Without it the BoundedPool degrades to no-back-pressure and logs a warning
+  # on every render. Same image as the Freegle batch stack.
+  lat-redis:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lat-network
+
   # MJML compilation Sidecar — renders MJML email templates to HTML.
   # Same image/endpoint as the Freegle production batch stack
   # (iznik-batch/docker/docker-compose.batch.yml). MjmlMailable POSTs raw
@@ -76,6 +91,8 @@ services:
       # MJML Sidecar — so `mail:test` / ad-hoc renders work from this container too.
       MJML_URL: "http://lat-mjml/"
       MJML_HTTP_TIMEOUT: "30"
+      REDIS_HOST: lat-redis
+      REDIS_PORT: "6379"
     depends_on:
       lat-percona:
         condition: service_healthy
@@ -145,6 +162,9 @@ services:
       # MJML Sidecar (renders all MJML emails).
       MJML_URL: "http://lat-mjml/"
       MJML_HTTP_TIMEOUT: "30"
+      # Redis — back-pressure semaphore for the MJML compile pool.
+      REDIS_HOST: lat-redis
+      REDIS_PORT: "6379"
       # Feature flags — which email types may send. The LAT worker is already
       # gated by LAT_BATCH_ONLY, but the Lat mail commands also honour this so
       # a single type can be turned off without a redeploy.
@@ -158,6 +178,8 @@ services:
       lat-mailpit:
         condition: service_started
       lat-mjml:
+        condition: service_started
+      lat-redis:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "test -f /tmp/laravel-ready || exit 1"]
