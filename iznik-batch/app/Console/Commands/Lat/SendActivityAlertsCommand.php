@@ -66,7 +66,7 @@ class SendActivityAlertsCommand extends Command
             ->whereNull('messages.deleted')
             ->whereNotNull('messages.lat')
             ->whereNotNull('messages.lng')
-            ->select('messages.id', 'messages.subject', 'messages.type', 'messages.lat', 'messages.lng', 'messages.fromuser')
+            ->select('messages.id', 'messages.subject', 'messages.type', 'messages.textbody', 'messages.lat', 'messages.lng', 'messages.fromuser')
             ->get();
 
         if ($newMessages->isEmpty()) {
@@ -108,6 +108,8 @@ class SendActivityAlertsCommand extends Command
                         'id' => $msg->id,
                         'subject' => $msg->subject,
                         'type' => $msg->type,
+                        'text' => $msg->textbody,
+                        'imageUrl' => $lat->messageImageUrl((int) $msg->id),
                         'distance_km' => round($dist, 1),
                     ];
                 }

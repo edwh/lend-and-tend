@@ -344,6 +344,9 @@ return [
         // this is deliberately small. Configurable so it can be widened if
         // notification volume turns out to be low.
         'match_radius_km' => (float) env('LAT_MATCH_RADIUS_KM', 5),
+        // Public host for L&T email assets (logo, listing placeholders). Must be
+        // reachable from real email clients — never a localhost dev URL.
+        'asset_base_url' => rtrim(env('LAT_ASSET_BASE_URL', 'https://lat.lend-and-tend.katapult.cloud'), '/'),
     ],
 
     'whatjobs' => [

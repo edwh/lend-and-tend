@@ -9,10 +9,16 @@ You're part of {{ config('freegle.branding.name') }} — sharing a garden or loo
 @endif
 
 @if($newNearbyCount > 0)
-{{ $newNearbyCount }} new {{ $newNearbyCount === 1 ? 'listing has' : 'listings have' }} appeared near you recently.
+{{ $newNearbyCount }} new {{ $newNearbyCount === 1 ? 'listing has' : 'listings have' }} appeared near you recently{{ !empty($listings) ? ' — here are a few:' : '.' }}
 
+@foreach ($listings as $listing)
+* {{ $listing['isOffer'] ? 'Garden to share' : 'Wants to grow' }}@if(!is_null($listing['distance_km'])) ({{ $listing['distance_km'] }} km away)@endif
+  {!! $listing['itemName'] !!}
+  {!! $listing['url'] !!}
+
+@endforeach
 @endif
-See what's near you: {!! $mapUrl !!}
+See everything near you: {!! $mapUrl !!}
 @if($role === 'lender')
 Share another garden: {!! $lendUrl !!}
 @else

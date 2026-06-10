@@ -95,6 +95,61 @@ class LatMailService
     }
 
     /**
+     * Public image URL for a message's first photo, via the delivery service,
+     * or null if it has none. Guarded so it degrades to null where the
+     * messages_attachments table is absent (e.g. the seed dev DB).
+     */
+    public function messageImageUrl(int $msgid): ?string
+    {
+        try {
+            $att = DB::table('messages_attachments')->where('msgid', $msgid)->orderBy('id')->first();
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if (!$att) {
+            return null;
+        }
+        $base = rtrim((string) config('freegle.delivery.base_url'), '/');
+        if (!empty($att->externalurl)) {
+            return $base . '?url=' . urlencode($att->externalurl) . '&w=300';
+        }
+        if (!empty($att->id)) {
+            $imagesDomain = rtrim((string) config('freegle.images.domain'), '/');
+            return $base . '?url=' . urlencode("{$imagesDomain}/timg_{$att->id}.jpg") . '&w=300';
+        }
+
+        return null;
+    }
+
+    /**
+     * New, visible Offer/Wanted listings in the world group within $since,
+     * as card-ready rows: id, subject, type, text (snippet source), lat, lng,
+     * fromuser, imageUrl (or null). Shared by the activity-alert and monthly
+     * check-in emails so both show real listings like the Freegle digest.
+     */
+    public function recentListings(\Illuminate\Support\Carbon $since): Collection
+    {
+        $rows = DB::table('messages')
+            ->join('messages_groups', 'messages.id', '=', 'messages_groups.msgid')
+            ->where('messages_groups.groupid', $this->worldGroupId())
+            ->where('messages_groups.collection', 'Approved')
+            ->where('messages.arrival', '>=', $since)
+            ->whereIn('messages.type', ['Offer', 'Wanted'])
+            ->whereNull('messages.deleted')
+            ->whereNotNull('messages.lat')
+            ->whereNotNull('messages.lng')
+            ->select('messages.id', 'messages.subject', 'messages.type', 'messages.textbody', 'messages.lat', 'messages.lng', 'messages.fromuser')
+            ->orderByDesc('messages.arrival')
+            ->get();
+
+        foreach ($rows as $r) {
+            $r->imageUrl = $this->messageImageUrl((int) $r->id);
+        }
+
+        return $rows;
+    }
+
+    /**
      * The lender (Offer owner) and tender (promised-to) of an agreement.
      *
      * @return array{lender: int, tender: int}

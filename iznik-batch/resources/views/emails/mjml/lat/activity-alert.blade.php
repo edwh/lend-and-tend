@@ -16,19 +16,7 @@
       </mj-section>
 
       @foreach ($listings as $listing)
-      <mj-section background-color="#ffffff" padding="6px 24px">
-        <mj-column mj-class="{{ $listing['isOffer'] ? 'bg-green-light' : 'bg-purple-light' }}" border-radius="10px" padding="16px">
-          <mj-text font-size="12px" font-weight="bold" mj-class="{{ $listing['isOffer'] ? 'text-success' : 'text-secondary' }}" text-transform="uppercase" letter-spacing="0.5px">
-            {{ $listing['isOffer'] ? '🌷 Garden to share' : '🌻 Someone wants to grow' }}@if(!is_null($listing['distance_km'])) &bull; {{ $listing['distance_km'] }} km away @endif
-          </mj-text>
-          <mj-text font-size="18px" font-weight="bold" color="#333322" padding-top="4px">
-            {{ $listing['subject'] }}
-          </mj-text>
-          <mj-button href="{{ $listing['url'] }}" mj-class="{{ $listing['isOffer'] ? 'btn-success' : 'btn-secondary' }}" align="left" font-size="14px" padding="12px 0 0 0" inner-padding="10px 22px">
-            Take a look
-          </mj-button>
-        </mj-column>
-      </mj-section>
+        @include('emails.mjml.lat.partials.listing-card', ['listing' => $listing])
       @endforeach
 
       <mj-section background-color="#ffffff" padding="20px 24px 30px 24px">

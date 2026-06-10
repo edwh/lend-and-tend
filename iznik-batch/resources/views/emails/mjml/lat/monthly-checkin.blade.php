@@ -20,16 +20,20 @@
           </mj-text>
           @if($newNearbyCount > 0)
           <mj-text font-size="16px" mj-class="text-success" font-weight="bold" line-height="1.6" padding-top="10px">
-            🎉 {{ $newNearbyCount }} new {{ $newNearbyCount === 1 ? 'listing has' : 'listings have' }} appeared near you recently.
+            🎉 {{ $newNearbyCount }} new {{ $newNearbyCount === 1 ? 'listing has' : 'listings have' }} appeared near you recently{{ !empty($listings) ? ' — here are a few:' : '.' }}
           </mj-text>
           @endif
         </mj-column>
       </mj-section>
 
-      <mj-section background-color="#ffffff" padding="10px 24px 4px 24px">
+      @foreach ($listings as $listing)
+        @include('emails.mjml.lat.partials.listing-card', ['listing' => $listing])
+      @endforeach
+
+      <mj-section background-color="#ffffff" padding="14px 24px 4px 24px">
         <mj-column>
           <mj-button href="{{ $mapUrl }}" mj-class="btn-success" font-size="16px" width="100%" inner-padding="14px 20px">
-            See what's near you
+            See everything near you
           </mj-button>
         </mj-column>
       </mj-section>

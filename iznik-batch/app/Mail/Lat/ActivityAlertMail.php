@@ -62,12 +62,18 @@ class ActivityAlertMail extends MjmlMailable
     public function build(): static
     {
         $site = rtrim(config('freegle.sites.user'), '/');
+        $assetBase = rtrim(config('freegle.lat.asset_base_url'), '/');
 
-        $listings = array_map(function ($l) use ($site) {
+        $listings = array_map(function ($l) use ($site, $assetBase) {
+            $isOffer = ($l['type'] ?? 'Offer') === 'Offer';
+            $placeholder = $assetBase . ($isOffer ? '/images/lat/lend.png' : '/images/lat/tend.png');
+
             return [
-                'subject' => $l['subject'] ?? 'A garden',
-                'isOffer' => ($l['type'] ?? 'Offer') === 'Offer',
+                'itemName' => $l['subject'] ?? 'A garden',
+                'isOffer' => $isOffer,
                 'distance_km' => $l['distance_km'] ?? null,
+                'text' => $l['text'] ?? null,
+                'imageUrl' => $l['imageUrl'] ?? $placeholder,
                 'url' => $this->trackedUrl($site . '/garden/' . ($l['id'] ?? ''), 'cta_listing', 'cta'),
             ];
         }, $this->newListings);

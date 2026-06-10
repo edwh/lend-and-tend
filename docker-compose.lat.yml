@@ -154,7 +154,10 @@ services:
       # L&T branding for emails (flows through MjmlMailable::getDefaultData()).
       FREEGLE_NOREPLY_ADDR: "noreply@lendandtend.com"
       FREEGLE_SUPPORT_ADDR: "hello@lendandtend.com"
-      FREEGLE_LOGO_URL: "http://localhost:4002/images/lat/logo.png"
+      # Public logo URL — emails are viewed in external clients, so this can't
+      # be the localhost dev server. Points at the deployed L&T site.
+      LAT_ASSET_BASE_URL: "${LAT_ASSET_BASE_URL:-https://lat.lend-and-tend.katapult.cloud}"
+      FREEGLE_LOGO_URL: "${LAT_ASSET_BASE_URL:-https://lat.lend-and-tend.katapult.cloud}/images/lat/logo.png?v=2"
       FREEGLE_REGISTERED_ADDRESS: "Lend & Tend, c/o Freegle, 64a North Road, Ormesby, Great Yarmouth, Norfolk NR29 3LE"
       # L&T's Go API has no email tracking redirect/pixel endpoints, so send
       # links straight to their destination rather than via Freegle's tracker.

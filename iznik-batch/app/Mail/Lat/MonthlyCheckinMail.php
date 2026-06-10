@@ -20,12 +20,16 @@ class MonthlyCheckinMail extends MjmlMailable
     /**
      * @param string $role 'lender' | 'tender' | 'both'
      */
+    /**
+     * @param array<int,array{id:int,subject:string,type:string,text:?string,distance_km:?float,imageUrl:?string}> $newListings
+     */
     public function __construct(
         public string $recipientEmail,
         public string $recipientName,
         public ?int $userId,
         public string $role,
         public int $newNearbyCount = 0,
+        public array $newListings = [],
     ) {
         parent::__construct();
 
@@ -61,6 +65,21 @@ class MonthlyCheckinMail extends MjmlMailable
     public function build(): static
     {
         $site = rtrim(config('freegle.sites.user'), '/');
+        $assetBase = rtrim(config('freegle.lat.asset_base_url'), '/');
+
+        $listings = array_map(function ($l) use ($site, $assetBase) {
+            $isOffer = ($l['type'] ?? 'Offer') === 'Offer';
+            $placeholder = $assetBase . ($isOffer ? '/images/lat/lend.png' : '/images/lat/tend.png');
+
+            return [
+                'itemName' => $l['subject'] ?? 'A garden',
+                'isOffer' => $isOffer,
+                'distance_km' => $l['distance_km'] ?? null,
+                'text' => $l['text'] ?? null,
+                'imageUrl' => $l['imageUrl'] ?? $placeholder,
+                'url' => $this->trackedUrl($site . '/garden/' . ($l['id'] ?? ''), 'cta_listing', 'cta'),
+            ];
+        }, $this->newListings);
 
         return $this->mjmlView(
             'emails.mjml.lat.monthly-checkin',
@@ -69,6 +88,7 @@ class MonthlyCheckinMail extends MjmlMailable
                 'firstName' => LatNames::first($this->recipientName),
                 'role' => $this->role,
                 'newNearbyCount' => $this->newNearbyCount,
+                'listings' => $listings,
                 'mapUrl' => $this->trackedUrl($site . '/map', 'cta_map', 'cta'),
                 'lendUrl' => $this->trackedUrl($site . '/lend', 'cta_lend', 'cta'),
                 'tendUrl' => $this->trackedUrl($site . '/tend', 'cta_tend', 'cta'),

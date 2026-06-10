@@ -47,17 +47,9 @@ class SendMonthlyCheckinCommand extends Command
         $lenders = array_flip($lat->activeLenderIds());
         $tenders = array_flip($lat->stillLookingTenderIds());
 
-        // Recent listings (30 days) for the "what's new nearby" count.
-        $recent = DB::table('messages')
-            ->join('messages_groups', 'messages.id', '=', 'messages_groups.msgid')
-            ->where('messages_groups.groupid', $lat->worldGroupId())
-            ->where('messages_groups.collection', 'Approved')
-            ->where('messages.arrival', '>=', Carbon::now()->subDays(30))
-            ->whereIn('messages.type', ['Offer', 'Wanted'])
-            ->whereNull('messages.deleted')
-            ->whereNotNull('messages.lat')
-            ->whereNotNull('messages.lng')
-            ->get(['messages.lat', 'messages.lng', 'messages.fromuser']);
+        // Recent listings (30 days), card-ready (incl. image) so the email can
+        // SHOW what's new nearby, not just count it.
+        $recent = $lat->recentListings(Carbon::now()->subDays(30));
 
         foreach ($lat->membersWithLocation() as $user) {
             $isLender = isset($lenders[$user->id]);
@@ -77,15 +69,24 @@ class SendMonthlyCheckinCommand extends Command
 
             $role = $isLender && $isTender ? 'both' : ($isLender ? 'lender' : 'tender');
             $radiusKm = (float) ($user->settings['lat_travelRadius'] ?? 10);
-            $newNearby = 0;
+            $nearbyCards = [];
             foreach ($recent as $msg) {
                 if ((int) $msg->fromuser === $user->id) {
                     continue;
                 }
-                if ($lat->haversineKm($user->lat, $user->lng, (float) $msg->lat, (float) $msg->lng) <= $radiusKm) {
-                    $newNearby++;
+                $dist = $lat->haversineKm($user->lat, $user->lng, (float) $msg->lat, (float) $msg->lng);
+                if ($dist <= $radiusKm) {
+                    $nearbyCards[] = [
+                        'id' => (int) $msg->id,
+                        'subject' => $msg->subject,
+                        'type' => $msg->type,
+                        'text' => $msg->textbody,
+                        'imageUrl' => $msg->imageUrl,
+                        'distance_km' => round($dist, 1),
+                    ];
                 }
             }
+            $newNearby = count($nearbyCards);
 
             if ($dryRun) {
                 $this->info("[DRY RUN] Would send monthly check-in to user {$user->id} ({$role}, {$newNearby} nearby)");
@@ -99,6 +100,7 @@ class SendMonthlyCheckinCommand extends Command
                 userId: $user->id,
                 role: $role,
                 newNearbyCount: $newNearby,
+                newListings: array_slice($nearbyCards, 0, 4),
             );
             try {
                 if ($spool) {
