@@ -85,3 +85,6 @@ iznik-nuxt3/walkthrough-out/raw/
 iznik-nuxt3/walkthrough-out/clean/
 iznik-nuxt3/walkthrough-out/*.mp4
 iznik-nuxt3/walkthrough-out/*.webm
+
+# Local migration data dump (not part of the app; created out-of-band)
+migration-data/

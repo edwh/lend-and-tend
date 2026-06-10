@@ -45,6 +45,7 @@ save
 /playwright-report/
 /test-results/.last-run.json
 /test-results/
+/test-results-lat/
 /.npmrc
 /test-emails.json
 
