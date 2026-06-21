@@ -16,6 +16,19 @@
 lat.lend-and-tend.katapult.cloud {
         encode zstd gzip
 
+        # Pre-launch gate: keep the beta private and hide Mailpit, but challenge
+        # ONLY document navigations (Accept: text/html). Gating every request
+        # makes the browser re-prompt on each anonymous subresource — Nuxt's
+        # crossorigin /_nuxt chunks and the SPA's /apiv2 XHRs are fetched without
+        # the cached creds, so each one 401s and pops a fresh auth dialog. Scoping
+        # to documents means a single prompt on navigation; assets + API then load
+        # unchallenged. Creds: lendandtend / beta — rotate the bcrypt hash with
+        # `caddy hash-password --plaintext <pw>`.
+        @browserpage header Accept *text/html*
+        basicauth @browserpage {
+                lendandtend $2a$14$rgq/ED3EWkz9YG3NvwEmZ.8yIXspKjZ3zQQOQ3hGQ8CXdIrQBo9BS
+        }
+
         # Go API (Freegle apiv2) — handles /apiv2/* and /api/*
         @api path /apiv2* /api*
         handle @api {
