@@ -10,16 +10,23 @@
       </div>
 
       <div v-if="authStore.user && !hasPaid" class="pay-gate">
-        <p>A one-off joining fee is needed to post a listing.</p>
+        <VIcon :icon="['fas', 'lock']" class="pay-gate-icon" />
+        <div class="pay-gate-body">
+          <strong>One-time £{{ feeFormatted }} membership required</strong>
+          <p>
+            A single joining fee — not a subscription — lets you post your
+            listing and message lenders. You'll be asked to pay when you post.
+          </p>
+        </div>
         <button class="btn btn-primary" @click="showPayModal = true">
-          Join now
+          Pay £{{ feeFormatted }}
         </button>
       </div>
 
       <PaymentModal
         :show="showPayModal"
         @close="showPayModal = false"
-        @paid="showPayModal = false"
+        @paid="onPaid"
       />
 
       <form @submit.prevent="submit">
@@ -150,9 +157,9 @@
           <button
             type="submit"
             class="btn btn-primary btn-lg"
-            :disabled="submitting || !location || !hasPaid"
+            :disabled="submitting || !location"
           >
-            {{ submitting ? 'Posting…' : 'Post my interest' }}
+            {{ submitLabel }}
           </button>
         </div>
       </form>
@@ -168,6 +175,7 @@ import { useMessageStore } from '~/stores/message'
 import PaymentModal from '~/components/lat/PaymentModal.vue'
 import GardenLocationPicker from '~/components/lat/GardenLocationPicker.vue'
 import VisibilityHint from '~/components/lat/VisibilityHint.vue'
+import branding from '~/branding.config'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Find a garden to tend — Lend & Tend' })
@@ -181,7 +189,23 @@ const hasPaid = computed(() => {
   return status === 'paid' || status === 'concession'
 })
 
+const feeFormatted = computed(() => (branding.fee.amountPence / 100).toFixed(2))
+
+// Print the price on the button so the one-time requirement is unmissable and
+// the payment request lands at the end of the form, not as a dead submit.
+const submitLabel = computed(() => {
+  if (submitting.value) return 'Posting…'
+  if (!hasPaid.value) return `Pay £${feeFormatted.value} to post my interest`
+  return 'Post my interest'
+})
+
 const showPayModal = ref(false)
+
+// Continue posting automatically once the fee is paid (modal refreshed the user).
+function onPaid() {
+  showPayModal.value = false
+  if (hasPaid.value) submit()
+}
 
 onMounted(() => {
   if (!authStore.user) requestLogin()
@@ -220,6 +244,11 @@ async function submit() {
   }
   if (!location.value) {
     error.value = 'Please enter your full address.'
+    return
+  }
+  if (!hasPaid.value) {
+    // Raise the payment request at the end of the form; onPaid() resumes posting.
+    showPayModal.value = true
     return
   }
   submitting.value = true
@@ -277,18 +306,35 @@ async function submit() {
 
 .pay-gate {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
-  background: #e3f2fd;
-  color: #1565c0;
+  background: #fff4ec;
+  border: 1px solid #f3c9b0;
+  border-left: 4px solid #cc3f00;
+  color: #7a2e00;
   padding: 14px 16px;
   border-radius: 6px;
   margin-bottom: 20px;
   font-size: 0.9rem;
 }
+.pay-gate-icon {
+  margin-top: 2px;
+  color: #cc3f00;
+  flex-shrink: 0;
+}
+.pay-gate-body {
+  flex: 1;
+}
+.pay-gate-body strong {
+  display: block;
+  margin-bottom: 2px;
+}
 .pay-gate p {
   margin: 0;
+}
+.pay-gate .btn {
+  align-self: center;
+  white-space: nowrap;
 }
 
 .page-header {
