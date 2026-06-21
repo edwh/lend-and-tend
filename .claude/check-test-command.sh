@@ -41,6 +41,13 @@ fi
 if echo "$COMMAND" | grep -qE 'knn-server'; then
   IS_DATA_COMMAND=true
 fi
+# Allow the Lend & Tend frontend e2e suite — it runs directly against the lat
+# dev server (LAT_BASE_URL, port 4002). The status API's playwright runner is
+# Freegle-shaped (needs *-prod-local / *-playwright containers that the L&T
+# stack does not have), so these tests have no status-API path.
+if echo "$COMMAND" | grep -qE 'tests/e2e/lat'; then
+  IS_DATA_COMMAND=true
+fi
 if echo "$COMMAND" | grep -qE '\bcurl\b.*localhost:[0-9]+/api/tests.*/status'; then
   IS_DATA_COMMAND=true
 fi

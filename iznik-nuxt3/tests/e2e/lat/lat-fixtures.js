@@ -1,6 +1,6 @@
 // @ts-check
-const { test: base, expect } = require('@playwright/test')
 const crypto = require('crypto')
+const { test: base, expect } = require('@playwright/test')
 
 const LAT_BASE_URL = process.env.LAT_BASE_URL || 'http://localhost:4002'
 
@@ -26,14 +26,29 @@ const test = base.extend({
 })
 
 /**
+ * Clicks a server-rendered control and waits for its effect, retrying the click
+ * until it lands. SSR markup is visible/enabled before Vue hydrates and attaches
+ * the @click handler, so the first click is often swallowed (a no-op) and the
+ * expected effect never happens — the classic Nuxt hydration race. Re-clicking
+ * until the effect appears is the robust cure (idempotent clicks only).
+ *
+ * @param {import('@playwright/test').Locator} control  element to click
+ * @param {import('@playwright/test').Locator} effect   element that proves the click landed
+ */
+async function clickUntilHydrated(control, effect, timeout = 15_000) {
+  await expect(async () => {
+    await control.click()
+    await expect(effect).toBeVisible({ timeout: 1_000 })
+  }).toPass({ timeout })
+}
+
+/**
  * Opens the login modal by clicking the "Sign in" button in the navbar.
  */
 async function openLoginModal(page) {
   const signInBtn = page.getByRole('button', { name: 'Sign in' }).first()
   await expect(signInBtn).toBeVisible({ timeout: 10_000 })
-  await expect(signInBtn).toBeEnabled({ timeout: 10_000 })
-  await signInBtn.click()
-  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10_000 })
+  await clickUntilHydrated(signInBtn, page.getByRole('dialog'))
 }
 
 /**
@@ -54,7 +69,9 @@ async function signUpViaModal(page, opts = {}) {
     await joinBtn.click()
   }
 
-  await expect(dialog.getByRole('heading', { name: 'Join Lend & Tend' })).toBeVisible()
+  await expect(
+    dialog.getByRole('heading', { name: 'Join Lend & Tend' })
+  ).toBeVisible()
 
   await dialog.locator('#lat-fullname').fill(fullname)
   await dialog.locator('#lat-email').fill(email)
@@ -96,12 +113,17 @@ async function loginViaModal(page, email, password) {
   const dialog = page.getByRole('dialog')
 
   // If shown in sign-up view, switch to login via footer link
-  const isSignUp = await dialog.getByRole('heading', { name: 'Join Lend & Tend' }).isVisible({ timeout: 2_000 }).catch(() => false)
+  const isSignUp = await dialog
+    .getByRole('heading', { name: 'Join Lend & Tend' })
+    .isVisible({ timeout: 2_000 })
+    .catch(() => false)
   if (isSignUp) {
     await dialog.locator('.link-btn', { hasText: 'Log in' }).click()
   }
 
-  await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+  await expect(
+    dialog.getByRole('heading', { name: 'Welcome back' })
+  ).toBeVisible()
 
   await dialog.locator('#lat-email').fill(email)
   await dialog.locator('#lat-password').fill(password)
@@ -116,18 +138,24 @@ async function loginViaModal(page, email, password) {
  */
 async function markUserAsPaid(page) {
   await page.goto('/join')
-  await page.waitForLoadState('domcontentloaded')
-  // Wait for the tab to be visible and active (confirms Vue has hydrated)
   const concessionTab = page.locator('.join-tab', { hasText: 'Concession' })
   await expect(concessionTab).toBeVisible({ timeout: 15_000 })
-  await expect(concessionTab).toBeEnabled({ timeout: 5_000 })
-  await concessionTab.click()
-  // Verify the tab became active (reactive state update)
-  await expect(page.locator('.join-tab--active', { hasText: 'Concession' })).toBeVisible({ timeout: 5_000 })
-  await expect(page.locator('#concessionReason')).toBeVisible({ timeout: 10_000 })
-  await page.locator('#concessionReason').fill('E2E test user — automated concession')
+  // Click the tab until it actually activates — it's server-rendered, so it's
+  // clickable before Vue hydrates and the first click can be a no-op.
+  await clickUntilHydrated(
+    concessionTab,
+    page.locator('.join-tab--active', { hasText: 'Concession' })
+  )
+  await expect(page.locator('#concessionReason')).toBeVisible({
+    timeout: 10_000,
+  })
+  await page
+    .locator('#concessionReason')
+    .fill('E2E test user — automated concession')
   await page.getByRole('button', { name: 'Apply for concession' }).click()
-  await expect(page.getByText(/Request received/)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/Request received/)).toBeVisible({
+    timeout: 10_000,
+  })
 }
 
 /**
@@ -143,7 +171,9 @@ async function waitForChatEntry(page, textContent, maxAttempts = 10) {
     await page.goto('/chats')
     await expect(logoutLink(page)).toBeVisible({ timeout: 10_000 })
     try {
-      await expect(page.getByText(textContent).first()).toBeVisible({ timeout: 10_000 })
+      await expect(page.getByText(textContent).first()).toBeVisible({
+        timeout: 10_000,
+      })
       return
     } catch (e) {
       if (attempt === maxAttempts) throw e
@@ -155,11 +185,17 @@ async function waitForChatEntry(page, textContent, maxAttempts = 10) {
  * Fills the GardenLocationPicker component: enters postcode, confirms it,
  * then fills the manual address field (dev environment has no PAF data).
  */
-async function fillLocationPicker(page, postcode = 'SW1A 1AA', address = '10 Test Street') {
+async function fillLocationPicker(
+  page,
+  postcode = 'SW1A 1AA',
+  address = '10 Test Street'
+) {
   await page.locator('#lat-postcode-input').fill(postcode)
   await page.getByRole('button', { name: 'Find →' }).click()
   // Wait for Step 2: either PAF property dropdown or manual address input
-  await expect(page.locator('#lat-address-manual')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('#lat-address-manual')).toBeVisible({
+    timeout: 15_000,
+  })
   await page.locator('#lat-address-manual').fill(address)
   await expect(page.locator('.status-ok')).toBeVisible({ timeout: 5_000 })
 }
@@ -170,6 +206,7 @@ module.exports = {
   signUpViaModal,
   loginViaModal,
   openLoginModal,
+  clickUntilHydrated,
   logoutLink,
   generateTestEmail,
   waitForChatEntry,
