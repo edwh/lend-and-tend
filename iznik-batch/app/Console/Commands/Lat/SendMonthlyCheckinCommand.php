@@ -80,7 +80,7 @@ class SendMonthlyCheckinCommand extends Command
                         'id' => (int) $msg->id,
                         'subject' => $msg->subject,
                         'type' => $msg->type,
-                        'text' => $msg->textbody,
+                        'text' => $lat->listingSnippet($msg->textbody),
                         'imageUrl' => $msg->imageUrl,
                         'distance_km' => round($dist, 1),
                     ];

@@ -122,6 +122,33 @@ class LatMailService
     }
 
     /**
+     * Safe, human-readable snippet from a listing's textbody for use in emails.
+     *
+     * L&T listings store the body as JSON (built by the lend/tend form:
+     * {description, address, postcode, phone, ...}). Only the free-text
+     * `description` is safe to broadcast — the address and phone are PRIVATE
+     * and must never appear in an alert sent to nearby users. Returns null when
+     * there's nothing safe to show. Non-JSON (legacy/plain) bodies pass through.
+     */
+    public function listingSnippet(?string $textbody): ?string
+    {
+        $textbody = trim((string) $textbody);
+        if ($textbody === '') {
+            return null;
+        }
+
+        $data = json_decode($textbody, true);
+        if (is_array($data)) {
+            // Structured L&T body — expose the description only, never PII.
+            $desc = trim((string) ($data['description'] ?? ''));
+            return $desc !== '' ? $desc : null;
+        }
+
+        // Plain-text body (not the structured form) — safe to show as-is.
+        return $textbody;
+    }
+
+    /**
      * New, visible Offer/Wanted listings in the world group within $since,
      * as card-ready rows: id, subject, type, text (snippet source), lat, lng,
      * fromuser, imageUrl (or null). Shared by the activity-alert and monthly

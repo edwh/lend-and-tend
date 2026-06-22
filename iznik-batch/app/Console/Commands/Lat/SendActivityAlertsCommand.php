@@ -108,7 +108,7 @@ class SendActivityAlertsCommand extends Command
                         'id' => $msg->id,
                         'subject' => $msg->subject,
                         'type' => $msg->type,
-                        'text' => $msg->textbody,
+                        'text' => $lat->listingSnippet($msg->textbody),
                         'imageUrl' => $lat->messageImageUrl((int) $msg->id),
                         'distance_km' => round($dist, 1),
                     ];

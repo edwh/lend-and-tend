@@ -171,7 +171,7 @@ services:
       # Feature flags — which email types may send. The LAT worker is already
       # gated by LAT_BATCH_ONLY, but the Lat mail commands also honour this so
       # a single type can be turned off without a redeploy.
-      FREEGLE_MAIL_ENABLED_TYPES: "LatActivityAlert,LatCheckinReminder,LatMatchGoodNews,LatStillLooking,LatOtherGardens,LatMonthlyCheckin"
+      FREEGLE_MAIL_ENABLED_TYPES: "LatActivityAlert,LatCheckinReminder,LatMatchGoodNews,LatStillLooking,LatOtherGardens,LatMonthlyCheckin,LatWelcome"
       LAT_WORLD_GROUPID: "1000000"
     depends_on:
       lat-percona:

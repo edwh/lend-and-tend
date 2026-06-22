@@ -8,6 +8,7 @@ use App\Mail\Lat\MatchGoodNewsMail;
 use App\Mail\Lat\MonthlyCheckinMail;
 use App\Mail\Lat\OtherGardensMail;
 use App\Mail\Lat\StillLookingMail;
+use App\Mail\Lat\WelcomeMail;
 use Tests\TestCase;
 
 /**
@@ -35,6 +36,7 @@ class LatEmailsTest extends TestCase
             'stilllooking' => new StillLookingMail($email, 'Sam Tender', 4085, 'Priya'),
             'othergardens' => new OtherGardensMail($email, 'Priya Lender', 4084, 'Sam'),
             'monthly' => new MonthlyCheckinMail($email, 'Sam Tender', 4085, 'tender', 3),
+            'welcome' => new WelcomeMail($email, 'Sam Tender', 4085, 'lender'),
         ];
     }
 
@@ -57,6 +59,16 @@ class LatEmailsTest extends TestCase
         $this->assertStringContainsString('Still looking', $mails['stilllooking']->envelope()->subject);
         $this->assertStringContainsString('tender', $mails['othergardens']->envelope()->subject);
         $this->assertStringContainsString('keen', $mails['monthly']->envelope()->subject);
+        $this->assertStringContainsString('Welcome', $mails['welcome']->envelope()->subject);
+    }
+
+    public function test_welcome_is_role_aware(): void
+    {
+        $email = $this->uniqueEmail('lat');
+        $lenderHtml = (new WelcomeMail($email, 'Sam', 1, 'lender'))->build()->render();
+        $tenderHtml = (new WelcomeMail($email, 'Sam', 1, 'tender'))->build()->render();
+        $this->assertStringContainsString('Share your garden', $lenderHtml);
+        $this->assertStringContainsString('Find a garden to tend', $tenderHtml);
     }
 
     public function test_recipient_user_id_is_exposed_for_headers(): void
@@ -81,5 +93,28 @@ class LatEmailsTest extends TestCase
             $this->assertStringNotContainsString('{{', $html, "$key leaked Blade");
             $this->assertStringContainsString('unsubscribe', strtolower($html), "$key missing unsubscribe");
         }
+    }
+
+    public function test_listing_snippet_never_leaks_address_or_phone(): void
+    {
+        $svc = app(\App\Services\Lat\LatMailService::class);
+        $body = json_encode([
+            'description' => 'A sunny veg patch, novice-friendly.',
+            'address' => '34 Alexandra Gardens, S1 2AB',
+            'postcode' => 'S1 2AB',
+            'phone' => '07700 900123',
+        ]);
+
+        $snippet = $svc->listingSnippet($body);
+
+        $this->assertStringContainsString('sunny veg patch', $snippet);
+        $this->assertStringNotContainsString('Alexandra Gardens', $snippet, 'snippet leaked the address');
+        $this->assertStringNotContainsString('07700', $snippet, 'snippet leaked the phone');
+        $this->assertStringNotContainsString('{', $snippet, 'snippet leaked raw JSON');
+
+        // A body with no description yields nothing rather than dumping JSON.
+        $this->assertNull($svc->listingSnippet(json_encode(['address' => '1 Private Road'])));
+        // Plain-text (non-JSON) bodies pass through unchanged.
+        $this->assertEquals('Just some plain text', $svc->listingSnippet('Just some plain text'));
     }
 }
