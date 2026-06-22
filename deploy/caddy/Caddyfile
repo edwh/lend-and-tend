@@ -16,18 +16,18 @@
 lat.lend-and-tend.katapult.cloud {
         encode zstd gzip
 
-        # Pre-launch gate: keep the beta private and hide Mailpit, but challenge
-        # ONLY document navigations (Accept: text/html). Gating every request
-        # makes the browser re-prompt on each anonymous subresource — Nuxt's
-        # crossorigin /_nuxt chunks and the SPA's /apiv2 XHRs are fetched without
-        # the cached creds, so each one 401s and pops a fresh auth dialog. Scoping
-        # to documents means a single prompt on navigation; assets + API then load
-        # unchallenged. Creds: lendandtend / beta — rotate the bcrypt hash with
-        # `caddy hash-password --plaintext <pw>`.
-        @browserpage header Accept *text/html*
-        basicauth @browserpage {
-                lendandtend $2a$14$rgq/ED3EWkz9YG3NvwEmZ.8yIXspKjZ3zQQOQ3hGQ8CXdIrQBo9BS
-        }
+        # NO site-wide basic auth. HTTP Basic auth is fundamentally incompatible
+        # with this app: the app authenticates every /apiv2 call with its own
+        # `Authorization: <jwt>` header, and Safari/WebKit, once a Basic credential
+        # is cached for the origin, REPLACES that JWT with `Authorization: Basic …`
+        # on same-origin requests — so the API 401s every call and the SPA breaks
+        # (blank/grey map, lost session, client crashes). Chromium happened to
+        # preserve the JWT, which masked it. Confirmed 2026-06-22.
+        #
+        # Crawl protection is via X-Robots-Tag (below); Mailpit is the only thing
+        # that genuinely needs hiding, so basic auth lives ONLY on /mail (testers
+        # never visit it, so the origin is never poisoned for them).
+        header X-Robots-Tag "noindex, nofollow"
 
         # Go API (Freegle apiv2) — handles /apiv2/* and /api/*
         @api path /apiv2* /api*
@@ -40,9 +40,15 @@ lat.lend-and-tend.katapult.cloud {
                 reverse_proxy 127.0.0.1:4003
         }
 
-        # Mailpit web UI (dev convenience — outbound is disabled
-        # for now, but if any mail does get spooled we can inspect it)
+        # Mailpit web UI — behind basic auth (lendandtend / beta) since it's the
+        # one thing that must not be public. Safe here because Mailpit uses no
+        # `Authorization`-header app auth of its own, and testers never hit /mail
+        # (so the Safari JWT-clobber above can't be triggered by normal use).
+        # Mailpit serves under /mail via MP_WEBROOT (set in the VM prod override).
         handle /mail* {
+                basicauth {
+                        lendandtend $2a$14$5I8UjUyWbWYLhBwHVfGIt.X4Lmd5HH1zAk9GIdRHoe1VS6gSxBZIS
+                }
                 reverse_proxy 127.0.0.1:4025
         }
 
