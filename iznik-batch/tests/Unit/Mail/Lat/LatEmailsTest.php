@@ -4,6 +4,7 @@ namespace Tests\Unit\Mail\Lat;
 
 use App\Mail\Lat\ActivityAlertMail;
 use App\Mail\Lat\CheckinReminderMail;
+use App\Mail\Lat\LoginLinkMail;
 use App\Mail\Lat\MatchGoodNewsMail;
 use App\Mail\Lat\MonthlyCheckinMail;
 use App\Mail\Lat\OtherGardensMail;
@@ -37,6 +38,7 @@ class LatEmailsTest extends TestCase
             'othergardens' => new OtherGardensMail($email, 'Priya Lender', 4084, 'Sam'),
             'monthly' => new MonthlyCheckinMail($email, 'Sam Tender', 4085, 'tender', 3),
             'welcome' => new WelcomeMail($email, 'Sam Tender', 4085, 'lender'),
+            'loginlink' => new LoginLinkMail(4085, $email, 'https://lat.example.test/?u=4085&k=demokey123'),
         ];
     }
 
@@ -60,6 +62,16 @@ class LatEmailsTest extends TestCase
         $this->assertStringContainsString('tender', $mails['othergardens']->envelope()->subject);
         $this->assertStringContainsString('keen', $mails['monthly']->envelope()->subject);
         $this->assertStringContainsString('Welcome', $mails['welcome']->envelope()->subject);
+        $this->assertStringContainsString('sign-in link', $mails['loginlink']->envelope()->subject);
+    }
+
+    public function test_login_link_url_is_not_wrapped_in_click_tracking(): void
+    {
+        // The magic link carries an auth token (?u=&k=) and must reach the site
+        // untouched — never rewritten through a click-tracking redirect.
+        $loginUrl = 'https://lat.example.test/?u=4085&k=demokey123';
+        $html = (new LoginLinkMail(4085, $this->uniqueEmail('lat'), $loginUrl))->build()->render();
+        $this->assertStringContainsString($loginUrl, $html, 'login link was altered/wrapped');
     }
 
     public function test_welcome_is_role_aware(): void

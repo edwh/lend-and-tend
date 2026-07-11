@@ -6,6 +6,7 @@ use App\Console\Concerns\PreventsOverlapping;
 use App\Mail\Charity\CharitySignupMail;
 use App\Mail\Chat\ReferToSupportMail;
 use App\Mail\Donation\DonateExternalMail;
+use App\Mail\Lat\LoginLinkMail;
 use App\Mail\Newsfeed\ChitchatReportMail;
 use App\Mail\Session\ForgotPasswordMail;
 use App\Mail\Session\MergeOfferMail;
@@ -379,10 +380,14 @@ class ProcessBackgroundTasksCommand extends Command
             }
         }
 
-        $mail = new ForgotPasswordMail(
+        // L&T is passwordless: turn the Go-generated reset link
+        // (…/settings?u=&k=&src=forgotpass) into a clean magic sign-in link
+        // (…/?u=&k=) and send the L&T-branded "sign-in link" email instead of
+        // the forgot-password one.
+        $mail = new LoginLinkMail(
             userId: (int) $data['user_id'],
             email: $data['email'],
-            resetUrl: $data['reset_url'],
+            loginUrl: $this->magicLinkFromResetUrl($data['reset_url']),
         );
 
         if ($shouldSpool) {
@@ -391,9 +396,34 @@ class ProcessBackgroundTasksCommand extends Command
             Mail::send($mail);
         }
 
-        Log::info('Sent forgot password email', [
+        Log::info('Sent sign-in link email', [
             'user_id' => $data['user_id'],
         ]);
+    }
+
+    /**
+     * Convert the Go-generated reset URL (…/settings?u=&k=&src=forgotpass) into
+     * a clean passwordless sign-in link (…/?u=&k=) landing on the home page,
+     * which app.vue auto-consumes to authenticate the member.
+     */
+    protected function magicLinkFromResetUrl(string $resetUrl): string
+    {
+        $parts = parse_url($resetUrl);
+        parse_str($parts['query'] ?? '', $query);
+
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? parse_url((string) config('freegle.sites.user'), PHP_URL_HOST);
+        if (!empty($parts['port'])) {
+            $host .= ':' . $parts['port'];
+        }
+
+        return sprintf(
+            '%s://%s/?u=%s&k=%s',
+            $scheme,
+            $host,
+            rawurlencode((string) ($query['u'] ?? '')),
+            rawurlencode((string) ($query['k'] ?? '')),
+        );
     }
 
     /**
