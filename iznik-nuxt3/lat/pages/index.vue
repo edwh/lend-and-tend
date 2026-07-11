@@ -1,28 +1,32 @@
 <template>
   <div class="home">
-
-    <!-- Hero: dark green bg → white text 17:1 ✓ -->
+    <!-- Hero: white bg, centred — mirrors the existing lendandtend.com -->
     <section class="hero">
       <div class="hero-inner">
-        <div class="hero-text">
-          <h1>Get Patch Matched.</h1>
-          <p class="hero-tagline">Share a garden, grow good things.</p>
-          <p class="hero-sub">
-            With a little kindness — to nature and our neighbours — we can grow gardens
-            that are beautiful, bountiful and biodiverse, buzzing with life when we share.
-          </p>
-          <p class="hero-hook">
-            <strong>Good for the planet, good for people — and it feels great. Sound good?</strong>
-          </p>
-          <div class="hero-ctas">
-            <button class="btn-hero" @click="ctaClick('join')">
-              {{ hasPaid ? 'Browse gardens' : 'Join to garden share' }}
-            </button>
-            <a href="#how" class="btn-hero-ghost">How it works ↓</a>
-          </div>
-        </div>
+        <h1>Get Patch Matched.</h1>
+        <p class="hero-tagline">Share a garden, grow good things.</p>
+        <p class="hero-sub">
+          With a little kindness — to nature and our neighbours — we can grow
+          gardens that are beautiful, bountiful and biodiverse, buzzing with
+          life when we share.
+        </p>
+        <p class="hero-hook">
+          <strong
+            >Good for the planet, good for people — and it feels great. Sound
+            good?</strong
+          >
+        </p>
         <div class="hero-image">
-          <img src="/images/lat/hero.png" alt="Join to garden share — Cultivating care, one garden at a time" />
+          <img
+            src="/images/lat/hero.png"
+            alt="Join to garden share — Cultivating care, one garden at a time"
+          />
+        </div>
+        <div class="hero-ctas">
+          <button class="btn-hero" @click="ctaClick('join')">
+            {{ hasPaid ? 'Browse gardens' : 'Join to garden share' }}
+          </button>
+          <a href="#how" class="btn-hero-ghost">How it works ↓</a>
         </div>
       </div>
     </section>
@@ -39,18 +43,20 @@
         <div class="map-text">
           <h2>Lenders and Tenders near you</h2>
           <p>
-            Members' pins appear on the map once they join.
-            Locations are blurred for privacy. Your exact address is only
-            ever shared directly between matched members.
+            Members' pins appear on the map once they join. Locations are
+            blurred for privacy. Your exact address is only ever shared directly
+            between matched members.
           </p>
           <button class="btn-primary" @click="ctaClick('browse')">
             {{ hasPaid ? 'Browse the map' : 'Get Patch Matched' }}
           </button>
-          <NuxtLink to="/map" class="btn-ghost">
-            Browse the map →
-          </NuxtLink>
+          <NuxtLink to="/map" class="btn-ghost"> Browse the map → </NuxtLink>
         </div>
-        <NuxtLink to="/map" class="map-preview-wrapper" aria-label="Open the full map of gardens">
+        <NuxtLink
+          to="/map"
+          class="map-preview-wrapper"
+          aria-label="Open the full map of gardens"
+        >
           <ClientOnly>
             <div class="map-preview">
               <!-- Use the same MapView component as /map so members'
@@ -97,22 +103,21 @@
 
     <!-- Footer -->
     <LatSiteFooter />
-
   </div>
 </template>
 
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
-import branding from '~/branding.config'
 import { useLatAuth } from '../composables/useLatAuth.js'
+import branding from '~/branding.config'
 
 // MapView pulls in Leaflet, which touches `window` at module load.
 // Deferring the import via defineAsyncComponent means the module is
 // only evaluated when ClientOnly renders the component on the client.
 // The /map page sidesteps this by being marked ssr:false in
 // routeRules, but the landing page is SSR'd for SEO.
-const MapView = defineAsyncComponent(() =>
-  import('~/components/lat/MapView.vue')
+const MapView = defineAsyncComponent(
+  () => import('~/components/lat/MapView.vue')
 )
 const { hasPaid, ctaClick } = useLatAuth()
 
@@ -141,117 +146,134 @@ useHead({
 /* On narrow viewports the 24px side padding eats into a substantial
    fraction of the visible width — tighten it so cards aren't squeezed. */
 @media (max-width: 640px) {
-  .container { padding: 0 12px; }
+  .container {
+    padding: 0 12px;
+  }
 }
 
-/* ── Hero ─────────────────────────────────────────────────────────────────── */
-/* #1A2210 bg + white text → 17:1 ✓ */
+/* ── Hero — white, centred (mirrors the existing lendandtend.com) ─────────── */
 .hero {
-  background: var(--lat-color-text);
-  color: #fff;
-  padding: 72px 24px 64px;
+  background: #fff;
+  color: var(--lat-color-text);
+  padding: 64px 24px 88px;
+  text-align: center;
 }
 
 .hero-inner {
-  max-width: 1100px;
+  max-width: 820px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 56px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
-@media (max-width: 768px) {
-  .hero-inner { grid-template-columns: 1fr; }
-  .hero-image { display: none; }
-}
-
 @media (max-width: 640px) {
-  .hero { padding: 48px 12px 40px; }
+  .hero {
+    padding: 40px 16px 60px;
+  }
 }
 
 .hero h1 {
   font-family: var(--lat-font-heading);
-  font-size: clamp(2.4rem, 5vw, 4rem);
-  font-weight: 700;
-  line-height: 1.1;
-  margin: 0 0 12px;
-  color: #fff !important;
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--lat-color-text) !important;
 }
 
 .hero-tagline {
   font-family: var(--lat-font-heading);
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 20px;
-  font-style: italic;
+  font-size: clamp(1.5rem, 3.6vw, 2.4rem);
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--lat-color-primary-dark);
+  margin: 0 0 24px;
 }
 
 .hero-sub {
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0 0 16px;
+  color: var(--lat-color-text-muted);
+  margin: 0 0 18px;
+  max-width: 40rem;
 }
 
 .hero-hook {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: 1.1rem;
+  color: var(--lat-color-text);
   margin: 0 0 32px;
+}
+
+.hero-image {
+  width: 100%;
+  max-width: 660px;
+  margin: 0 0 36px;
+}
+
+.hero-image img {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
 }
 
 .hero-ctas {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
-/* White bg + #1A2210 text → 17:1 ✓ */
+/* Filled brand-green primary on white */
 .btn-hero {
-  background: #fff;
-  color: var(--lat-color-text);
-  text-decoration: none;
-  padding: 14px 28px;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 1rem;
-  display: inline-block;
-  transition: background 0.2s;
-}
-
-.btn-hero:hover { background: #e8f0de; }
-
-/* White border + white text on dark → 17:1 ✓ */
-.btn-hero-ghost {
-  background: transparent;
+  background: var(--lat-color-primary);
   color: #fff;
   text-decoration: none;
-  padding: 14px 28px;
-  border-radius: 4px;
+  padding: 14px 32px;
+  border-radius: 0.2rem;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.05rem;
   display: inline-block;
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  transition: border-color 0.2s;
+  border: 2px solid var(--lat-color-primary);
+  cursor: pointer;
+  transition: all 150ms ease-in-out;
 }
 
-.btn-hero-ghost:hover { border-color: #fff; }
+.btn-hero:hover {
+  background: var(--lat-color-primary-dark);
+  border-color: var(--lat-color-primary-dark);
+}
 
-.hero-image img {
-  width: 100%;
-  border-radius: 8px;
-  display: block;
+/* Green outline secondary on white */
+.btn-hero-ghost {
+  background: transparent;
+  color: var(--lat-color-primary-dark);
+  text-decoration: none;
+  padding: 14px 32px;
+  border-radius: 0.2rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  display: inline-block;
+  border: 2px solid var(--lat-color-primary);
+  cursor: pointer;
+  transition: all 150ms ease-in-out;
+}
+
+.btn-hero-ghost:hover {
+  background: var(--lat-color-surface);
+  color: var(--lat-color-text);
 }
 
 /* ── Shared section ────────────────────────────────────────────────────────── */
 .section-light {
   background: #fff;
-  padding: 80px 24px;
+  padding: 96px 24px;
 }
 
 .section-tinted {
   background: var(--lat-color-surface);
-  padding: 80px 24px;
+  padding: 96px 24px;
 }
 
 /* Tighten section gutters on small viewports so content cards aren't
@@ -260,7 +282,7 @@ useHead({
   .section-light,
   .section-tinted,
   .cta-section {
-    padding: 48px 12px;
+    padding: 60px 12px;
   }
 }
 
@@ -282,7 +304,11 @@ useHead({
   align-items: center;
 }
 
-@media (max-width: 768px) { .map-section { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+  .map-section {
+    grid-template-columns: 1fr;
+  }
+}
 
 .map-text h2 {
   font-family: var(--lat-font-heading);
@@ -305,28 +331,32 @@ useHead({
   color: #fff;
   text-decoration: none;
   padding: 12px 24px;
-  border-radius: 4px;
-  font-weight: 700;
+  border-radius: 0.2rem;
+  font-weight: 500;
   font-size: 0.95rem;
   display: inline-block;
   margin-right: 12px;
   margin-bottom: 8px;
-  transition: background 0.2s;
+  transition: all 150ms ease-in-out;
 }
 
-.btn-primary:hover { background: var(--lat-color-primary-dark); }
+.btn-primary:hover {
+  background: var(--lat-color-primary-dark);
+}
 
 .btn-ghost {
   color: var(--lat-color-text);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.95rem;
   display: inline-block;
   padding: 12px 0;
   border-bottom: 2px solid var(--lat-color-primary);
 }
 
-.btn-ghost:hover { border-bottom-color: var(--lat-color-text); }
+.btn-ghost:hover {
+  border-bottom-color: var(--lat-color-text);
+}
 
 .map-preview-wrapper {
   position: relative;
@@ -354,7 +384,10 @@ useHead({
   pointer-events: none;
 }
 
-.map-preview { height: 380px; width: 100%; }
+.map-preview {
+  height: 380px;
+  width: 100%;
+}
 
 .map-placeholder {
   height: 380px;
@@ -372,7 +405,11 @@ useHead({
   left: 0;
   right: 0;
   padding: 32px 24px 20px;
-  background: linear-gradient(to top, rgba(26, 34, 16, 0.7) 0%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(26, 34, 16, 0.7) 0%,
+    transparent 100%
+  );
   display: flex;
   justify-content: flex-end;
 }
@@ -382,19 +419,22 @@ useHead({
   color: var(--lat-color-text);
   text-decoration: none;
   padding: 10px 18px;
-  border-radius: 4px;
-  font-weight: 700;
+  border-radius: 0.2rem;
+  font-weight: 500;
   font-size: 0.9rem;
+  transition: all 150ms ease-in-out;
 }
 
-.btn-overlay:hover { background: #e8f0de; }
+.btn-overlay:hover {
+  background: #e8f0de;
+}
 
 /* ── Bottom CTA ───────────────────────────────────────────────────────────── */
 /* #1A2210 bg + white text → 17:1 ✓ */
 .cta-section {
   background: var(--lat-color-primary);
   color: #fff;
-  padding: 80px 24px;
+  padding: 96px 24px;
   text-align: center;
 }
 
@@ -417,13 +457,14 @@ useHead({
   color: var(--lat-color-primary-dark);
   text-decoration: none;
   padding: 16px 36px;
-  border-radius: 4px;
-  font-weight: 700;
+  border-radius: 0.2rem;
+  font-weight: 500;
   font-size: 1.05rem;
   display: inline-block;
-  transition: background 0.2s;
+  transition: all 150ms ease-in-out;
 }
 
-.btn-cta:hover { background: #e8f0de; }
-
+.btn-cta:hover {
+  background: #e8f0de;
+}
 </style>

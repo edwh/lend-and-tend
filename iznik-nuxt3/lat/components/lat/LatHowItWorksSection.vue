@@ -6,28 +6,33 @@
         <div class="step">
           <div class="step-num">1</div>
           <h3>Join &amp; Register</h3>
-          <p>Sign up for £12, you'll fill in the form to register. We'll pin your location to the map and you'll then be on the waiting list.</p>
+          <p>
+            Sign up for £12, you'll fill in the form to register. We'll pin your
+            location to the map and you'll then be on the waiting list.
+          </p>
         </div>
         <div class="step-arrow">→</div>
         <div class="step">
           <div class="step-num">2</div>
           <h3>Get Matched</h3>
-          <p>Should a potential Patch Match become apparent, you'll be contacted if a suitable person wants to contact you to garden share.</p>
+          <p>
+            Should a potential Patch Match become apparent, you'll be contacted
+            if a suitable person wants to contact you to garden share.
+          </p>
         </div>
         <div class="step-arrow">→</div>
         <div class="step">
           <div class="step-num">3</div>
           <h3>Start Growing</h3>
-          <p>We'll make introductions and can support with arrangements like agreements, then you'll begin your garden sharing journey.</p>
+          <p>
+            We'll make introductions and can support with arrangements like
+            agreements, then you'll begin your garden sharing journey.
+          </p>
         </div>
       </div>
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-import branding from '~/branding.config'
-</script>
 
 <style scoped>
 /* ── How it works ─────────────────────────────────────────────────────────── */
@@ -85,14 +90,22 @@ import branding from '~/branding.config'
 }
 
 @media (max-width: 640px) {
-  .step-arrow { display: none; }
-  .steps { flex-direction: column; align-items: center; gap: 32px; }
-  .step { max-width: 100%; }
+  .step-arrow {
+    display: none;
+  }
+  .steps {
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+  .step {
+    max-width: 100%;
+  }
 }
 
 .section-tinted {
   background: var(--lat-color-surface);
-  padding: 80px 24px;
+  padding: 96px 24px;
 }
 
 .section-heading {
@@ -110,7 +123,12 @@ import branding from '~/branding.config'
   padding: 0 24px;
 }
 @media (max-width: 640px) {
-  .section-light, .section-tinted { padding: 48px 12px; }
-  .container { padding: 0 12px; }
+  .section-light,
+  .section-tinted {
+    padding: 60px 12px;
+  }
+  .container {
+    padding: 0 12px;
+  }
 }
 </style>

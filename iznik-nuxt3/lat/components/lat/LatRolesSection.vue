@@ -3,7 +3,10 @@
     <div class="container roles-grid">
       <div class="role-card role-tender">
         <div class="role-img-wrap">
-          <img :src="'/images/lat/tend.png'" alt="No garden? No problem — join Lend and Tend to garden share" />
+          <img
+            :src="'/images/lat/tend.png'"
+            alt="No garden? No problem — join Lend and Tend to garden share"
+          />
         </div>
         <div class="role-body">
           <span class="role-pill tender-pill">Garden Tender</span>
@@ -14,12 +17,17 @@
             <li>Learn or share gardening skills</li>
             <li>Be part of a kind, supported Patch-Matching process</li>
           </ul>
-          <button class="role-cta tender-cta" @click="ctaClick('tend')">Find a garden →</button>
+          <button class="role-cta tender-cta" @click="ctaClick('tend')">
+            Find a garden →
+          </button>
         </div>
       </div>
       <div class="role-card role-lender">
         <div class="role-img-wrap">
-          <img :src="'/images/lat/lend.png'" alt="Garden a problem? Join Lend and Tend to garden share" />
+          <img
+            :src="'/images/lat/lend.png'"
+            alt="Garden a problem? Join Lend and Tend to garden share"
+          />
         </div>
         <div class="role-body">
           <span class="role-pill lender-pill">Garden Lender</span>
@@ -27,9 +35,13 @@
           <ul>
             <li>Connect with like-minded, green-fingered people</li>
             <li>Enjoy the potential for extra help in the garden</li>
-            <li>Benefit from our supported, thoughtful Patch-Matching process</li>
+            <li>
+              Benefit from our supported, thoughtful Patch-Matching process
+            </li>
           </ul>
-          <button class="role-cta lender-cta" @click="ctaClick('lend')">Share my garden →</button>
+          <button class="role-cta lender-cta" @click="ctaClick('lend')">
+            Share my garden →
+          </button>
         </div>
       </div>
     </div>
@@ -37,14 +49,15 @@
 </template>
 
 <script setup lang="ts">
-import branding from '~/branding.config'
 import { useLatAuth } from '../../composables/useLatAuth.js'
 const { ctaClick } = useLatAuth()
 </script>
 
 <style scoped>
 /* ── Roles ────────────────────────────────────────────────────────────────── */
-.roles-section { padding: 80px 24px; }
+.roles-section {
+  padding: 80px 24px;
+}
 
 .roles-grid {
   display: grid;
@@ -53,12 +66,18 @@ const { ctaClick } = useLatAuth()
 }
 
 @media (max-width: 768px) {
-  .roles-grid { grid-template-columns: 1fr; }
+  .roles-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
-  .roles-section { padding: 48px 12px; }
-  .role-body { padding: 20px 16px; }
+  .roles-section {
+    padding: 60px 12px;
+  }
+  .role-body {
+    padding: 20px 16px;
+  }
 }
 
 .role-card {
@@ -85,12 +104,20 @@ const { ctaClick } = useLatAuth()
 }
 
 /* lenderBg card */
-.role-lender { border-color: #c8e0b8; }
-.role-lender .role-body { background: var(--lat-color-lender-bg); }
+.role-lender {
+  border-color: #c8e0b8;
+}
+.role-lender .role-body {
+  background: var(--lat-color-lender-bg);
+}
 
 /* tenderBg card */
-.role-tender { border-color: #d8c0e8; }
-.role-tender .role-body { background: var(--lat-color-tender-bg); }
+.role-tender {
+  border-color: #d8c0e8;
+}
+.role-tender .role-body {
+  background: var(--lat-color-tender-bg);
+}
 
 .role-pill {
   display: inline-block;
@@ -161,19 +188,21 @@ const { ctaClick } = useLatAuth()
 .role-cta {
   text-decoration: none;
   padding: 12px 20px;
-  border-radius: 4px;
-  font-weight: 700;
+  border-radius: 0.2rem;
+  font-weight: 500;
   font-size: 0.95rem;
   text-align: center;
   display: block;
-  transition: filter 0.2s;
+  transition: all 150ms ease-in-out;
   border: none;
   cursor: pointer;
   width: 100%;
   box-sizing: border-box;
 }
 
-.role-cta:hover { filter: brightness(0.9); }
+.role-cta:hover {
+  filter: brightness(0.9);
+}
 
 /* lenderText on lenderBg border → 5.1:1 ✓ */
 .lender-cta {
@@ -191,7 +220,7 @@ const { ctaClick } = useLatAuth()
 
 .section-light {
   background: #fff;
-  padding: 80px 24px;
+  padding: 96px 24px;
 }
 
 .container {
@@ -201,7 +230,11 @@ const { ctaClick } = useLatAuth()
 }
 
 @media (max-width: 640px) {
-  .section-light { padding: 48px 12px; }
-  .container { padding: 0 12px; }
+  .section-light {
+    padding: 60px 12px;
+  }
+  .container {
+    padding: 0 12px;
+  }
 }
 </style>

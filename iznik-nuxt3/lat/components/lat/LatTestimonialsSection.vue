@@ -4,29 +4,39 @@
       <h2 class="section-heading">What our members say</h2>
       <div class="testimonials">
         <blockquote class="testimonial">
-          <p>"What with the allotment list being never-ending, it's 2 miles away from where I live anyway. I love having somewhere to grow at the end of my road."</p>
+          <p>
+            "What with the allotment list being never-ending, it's 2 miles away
+            from where I live anyway. I love having somewhere to grow at the end
+            of my road."
+          </p>
           <footer>Dan, Garden Tender</footer>
         </blockquote>
         <blockquote class="testimonial">
-          <p>"I have a garden and never have the time or money to make it come in to fruition…what a great idea."</p>
+          <p>
+            "I have a garden and never have the time or money to make it come in
+            to fruition…what a great idea."
+          </p>
           <footer>Sophie, Garden Owner</footer>
         </blockquote>
         <blockquote class="testimonial">
-          <p>"My grandad loves this idea, an avid gardener but he's now in a wheelchair. Now he can enjoy his garden again whilst someone else helps."</p>
+          <p>
+            "My grandad loves this idea, an avid gardener but he's now in a
+            wheelchair. Now he can enjoy his garden again whilst someone else
+            helps."
+          </p>
           <footer>Richie, Garden Tender &amp; Grandson of Garden Owner</footer>
         </blockquote>
         <blockquote class="testimonial">
-          <p>"This is a win win situation! I have a garden that needs doing and there is someone nearby that wants to do it? Be my guest!"</p>
+          <p>
+            "This is a win win situation! I have a garden that needs doing and
+            there is someone nearby that wants to do it? Be my guest!"
+          </p>
           <footer>Sunni, Garden Owner</footer>
         </blockquote>
       </div>
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-import branding from '~/branding.config'
-</script>
 
 <style scoped>
 /* ── Testimonials ─────────────────────────────────────────────────────────── */
@@ -36,7 +46,11 @@ import branding from '~/branding.config'
   gap: 24px;
 }
 
-@media (max-width: 640px) { .testimonials { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .testimonials {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* White card on surface bg */
 .testimonial {
@@ -69,7 +83,7 @@ import branding from '~/branding.config'
 
 .section-tinted {
   background: var(--lat-color-surface);
-  padding: 80px 24px;
+  padding: 96px 24px;
 }
 
 .section-heading {
@@ -87,7 +101,12 @@ import branding from '~/branding.config'
   padding: 0 24px;
 }
 @media (max-width: 640px) {
-  .section-light, .section-tinted { padding: 48px 12px; }
-  .container { padding: 0 12px; }
+  .section-light,
+  .section-tinted {
+    padding: 60px 12px;
+  }
+  .container {
+    padding: 0 12px;
+  }
 }
 </style>

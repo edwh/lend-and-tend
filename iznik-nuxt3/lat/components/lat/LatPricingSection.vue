@@ -4,12 +4,14 @@
       <div class="pricing-text">
         <h2>Simple, fair membership</h2>
         <p>
-          A one-time joining fee of <strong>£12</strong> covers admin, matching, and ongoing
-          community support — for as long as you're a member. No subscriptions, no renewals.
+          A one-time joining fee of <strong>£12</strong> covers admin, matching,
+          and ongoing community support — for as long as you're a member. No
+          subscriptions, no renewals.
         </p>
         <p class="pricing-concession">
-          <strong>Supported registration is free</strong> for those receiving Pension Credit
-          or Universal Credit (subject to availability). Just let us know.
+          <strong>Supported registration is free</strong> for those receiving
+          Pension Credit or Universal Credit (subject to availability). Just let
+          us know.
         </p>
       </div>
       <div class="price-card">
@@ -26,7 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import branding from '~/branding.config'
 import { useLatAuth } from '../../composables/useLatAuth.js'
 const { hasPaid, ctaClick } = useLatAuth()
 </script>
@@ -103,7 +104,10 @@ const { hasPaid, ctaClick } = useLatAuth()
   margin-bottom: 24px;
 }
 
-.price-cta { display: block; margin: 0; }
+.price-cta {
+  display: block;
+  margin: 0;
+}
 
 .price-free-note {
   margin-top: 12px;
@@ -114,7 +118,7 @@ const { hasPaid, ctaClick } = useLatAuth()
 
 .section-light {
   background: #fff;
-  padding: 80px 24px;
+  padding: 96px 24px;
 }
 
 /* #1A2210 bg + white text → 17:1 ✓ */
@@ -123,18 +127,20 @@ const { hasPaid, ctaClick } = useLatAuth()
   color: #fff;
   text-decoration: none;
   padding: 12px 24px;
-  border-radius: 4px;
-  font-weight: 700;
+  border-radius: 0.2rem;
+  font-weight: 500;
   font-size: 0.95rem;
   display: inline-block;
   margin-right: 12px;
   margin-bottom: 8px;
-  transition: background 0.2s;
+  transition: all 150ms ease-in-out;
   border: none;
   cursor: pointer;
 }
 
-.btn-primary:hover { background: var(--lat-color-primary-dark); }
+.btn-primary:hover {
+  background: var(--lat-color-primary-dark);
+}
 
 .container {
   max-width: 1100px;
@@ -142,7 +148,12 @@ const { hasPaid, ctaClick } = useLatAuth()
   padding: 0 24px;
 }
 @media (max-width: 640px) {
-  .section-light, .section-tinted { padding: 48px 12px; }
-  .container { padding: 0 12px; }
+  .section-light,
+  .section-tinted {
+    padding: 60px 12px;
+  }
+  .container {
+    padding: 0 12px;
+  }
 }
 </style>

@@ -123,6 +123,19 @@ export default defineNuxtConfig({
       title: 'Lend & Tend — Share a garden, grow good things',
       link: [
         { rel: 'icon', type: 'image/png', href: '/images/lat/logo.png?v=2' },
+        // Poppins — the typeface used on the existing lendandtend.com site.
+        // OFL-licensed (no restrictions), loaded from Google Fonts exactly as
+        // the legacy site does, so the new platform reads as the same brand.
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        {
+          rel: 'preconnect',
+          href: 'https://fonts.gstatic.com',
+          crossorigin: '',
+        },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap',
+        },
       ],
       meta: [
         { charset: 'utf-8' },
