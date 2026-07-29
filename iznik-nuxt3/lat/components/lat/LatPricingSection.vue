@@ -37,6 +37,10 @@ const { hasPaid, ctaClick } = useLatAuth()
 .pricing {
   display: flex;
   align-items: center;
+  /* Centre the card when it wraps below the text on narrow viewports. On
+     desktop the text has flex:1 and consumes the free space, so this has no
+     effect there (stays a two-column text|card layout). */
+  justify-content: center;
   gap: 64px;
   flex-wrap: wrap;
 }
