@@ -16,13 +16,21 @@ export default defineEventHandler(async (event) => {
 
   const smtpHost = process.env.SMTP_HOST || '127.0.0.1'
   const smtpPort = parseInt(process.env.SMTP_PORT || '1025')
+  const smtpUser = process.env.SMTP_USERNAME || ''
+  const smtpPass = process.env.SMTP_PASSWORD || ''
   const contactEmail = process.env.CONTACT_EMAIL || 'hello@lendandtend.com'
 
+  // Dev sends to Mailpit (1025, plaintext, no auth); prod sends via Mailgun
+  // SMTP, which REQUIRES auth + TLS. Force STARTTLS whenever credentials are
+  // present (Mailgun on 587); port 465 is implicit TLS. Without creds we keep
+  // the plaintext path so the local Mailpit catcher still works.
   const transporter = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: false,
-    ignoreTLS: true,
+    secure: smtpPort === 465,
+    ...(smtpUser
+      ? { requireTLS: true, auth: { user: smtpUser, pass: smtpPass } }
+      : { ignoreTLS: true }),
   })
 
   await transporter.sendMail({

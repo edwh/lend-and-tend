@@ -408,19 +408,16 @@ class ProcessBackgroundTasksCommand extends Command
      */
     protected function magicLinkFromResetUrl(string $resetUrl): string
     {
-        $parts = parse_url($resetUrl);
-        parse_str($parts['query'] ?? '', $query);
+        parse_str((string) parse_url($resetUrl, PHP_URL_QUERY), $query);
 
-        $scheme = $parts['scheme'] ?? 'https';
-        $host = $parts['host'] ?? parse_url((string) config('freegle.sites.user'), PHP_URL_HOST);
-        if (!empty($parts['port'])) {
-            $host .= ':' . $parts['port'];
-        }
+        // Anchor the magic link to OUR configured public site
+        // (FREEGLE_USER_SITE), never the host the Go API baked into reset_url —
+        // that env can lag (e.g. localhost) and would send an unusable link.
+        $base = rtrim((string) config('freegle.sites.user'), '/');
 
         return sprintf(
-            '%s://%s/?u=%s&k=%s',
-            $scheme,
-            $host,
+            '%s/?u=%s&k=%s',
+            $base,
             rawurlencode((string) ($query['u'] ?? '')),
             rawurlencode((string) ($query['k'] ?? '')),
         );

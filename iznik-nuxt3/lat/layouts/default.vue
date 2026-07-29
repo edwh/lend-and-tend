@@ -17,6 +17,15 @@ import { useAuthStore } from '~/stores/auth'
 const authStore = useAuthStore()
 const miscStore = useMiscStore()
 
+// Canonical site URL for social cards — follows USER_SITE so the OG/Twitter
+// tags point at whatever host is serving (new.lendandtend.com in prod, the
+// katapult hostname as a fallback, localhost in dev) rather than a hardcoded
+// literal that goes stale on a domain switch.
+const siteUrl = (
+  useRuntimeConfig().public.USER_SITE ||
+  'https://lat.lend-and-tend.katapult.cloud'
+).replace(/\/$/, '')
+
 if (process.client) {
   miscStore.apiCount = 0
 }
@@ -42,8 +51,17 @@ useHead({
   meta: [
     { key: 'og:title', property: 'og:title', content: 'Lend and Tend' },
     { key: 'og:site_name', property: 'og:site_name', content: 'Lend and Tend' },
-    { key: 'og:description', property: 'og:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
-    { key: 'og:image', property: 'og:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png?v=2' },
+    {
+      key: 'og:description',
+      property: 'og:description',
+      content:
+        "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours.",
+    },
+    {
+      key: 'og:image',
+      property: 'og:image',
+      content: siteUrl + '/images/lat/logo.png?v=2',
+    },
     // Explicit type + dimensions help crawlers (FB especially) skip the HEAD-
     // probe step and render the card without an extra round-trip. 1024x1024
     // is square (1:1) — FB will crop to its preferred 1.91:1 but still shows
@@ -51,11 +69,24 @@ useHead({
     { key: 'og:image:type', property: 'og:image:type', content: 'image/png' },
     { key: 'og:image:width', property: 'og:image:width', content: '1024' },
     { key: 'og:image:height', property: 'og:image:height', content: '1024' },
-    { key: 'og:url', property: 'og:url', content: 'https://lat.lend-and-tend.katapult.cloud' },
+    { key: 'og:url', property: 'og:url', content: siteUrl },
     { key: 'twitter:title', name: 'twitter:title', content: 'Lend and Tend' },
-    { key: 'twitter:description', name: 'twitter:description', content: "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours." },
-    { key: 'twitter:image', name: 'twitter:image', content: 'https://lat.lend-and-tend.katapult.cloud/images/lat/logo.png?v=2' },
-    { key: 'twitter:image:alt', name: 'twitter:image:alt', content: 'The Lend and Tend logo' },
+    {
+      key: 'twitter:description',
+      name: 'twitter:description',
+      content:
+        "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours.",
+    },
+    {
+      key: 'twitter:image',
+      name: 'twitter:image',
+      content: siteUrl + '/images/lat/logo.png?v=2',
+    },
+    {
+      key: 'twitter:image:alt',
+      name: 'twitter:image:alt',
+      content: 'The Lend and Tend logo',
+    },
     // twitter:site is the @handle for site attribution on the card.
     // Mirroring the instagram handle from branding.config.ts — if L&T's
     // Twitter handle differs, update both here and branding.config.social.
@@ -63,7 +94,11 @@ useHead({
     // falls back to whatever the upstream Freegle layer set — "thisisfreegle").
     { key: 'twitter:site', name: 'twitter:site', content: '@LendandTend' },
     { key: 'author', name: 'author', content: 'Lend and Tend' },
-    { key: 'apple-mobile-web-app-title', name: 'apple-mobile-web-app-title', content: 'Lend and Tend' },
+    {
+      key: 'apple-mobile-web-app-title',
+      name: 'apple-mobile-web-app-title',
+      content: 'Lend and Tend',
+    },
   ],
 })
 
@@ -85,9 +120,8 @@ const jwt = authStore.auth.jwt
 const persistent = authStore.auth.persistent
 
 if (jwt || persistent) {
-  let user = null
   try {
-    user = await authStore.fetchUser()
+    await authStore.fetchUser()
   } catch (e) {
     console.log('Error fetching user', e)
   }

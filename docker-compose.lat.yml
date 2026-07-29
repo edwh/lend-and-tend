@@ -149,7 +149,10 @@ services:
       MAIL_SCHEME: "${LAT_MAIL_SCHEME:-}"
       MAIL_FROM_ADDRESS: "${LAT_MAIL_FROM_ADDRESS:-noreply@lendandtend.com}"
       MAIL_FROM_NAME: "${LAT_MAIL_FROM_NAME:-Lend and Tend}"
-      FREEGLE_USER_SITE: "http://localhost:4002"
+      # Base URL for links embedded in emails. Env-indirected (mirrors
+      # lat-nuxt's USER_SITE) so a single LAT_USER_SITE on the deploy host
+      # points both the frontend and emailed links at new.lendandtend.com.
+      FREEGLE_USER_SITE: "${LAT_USER_SITE:-http://localhost:4002}"
       FREEGLE_SITE_NAME: "Lend & Tend"
       # L&T branding for emails (flows through MjmlMailable::getDefaultData()).
       FREEGLE_NOREPLY_ADDR: "noreply@lendandtend.com"
@@ -158,7 +161,7 @@ services:
       # be the localhost dev server. Points at the deployed L&T site.
       LAT_ASSET_BASE_URL: "${LAT_ASSET_BASE_URL:-https://lat.lend-and-tend.katapult.cloud}"
       FREEGLE_LOGO_URL: "${LAT_ASSET_BASE_URL:-https://lat.lend-and-tend.katapult.cloud}/images/lat/logo.png?v=2"
-      FREEGLE_REGISTERED_ADDRESS: "Lend & Tend, c/o Freegle, 64a North Road, Ormesby, Great Yarmouth, Norfolk NR29 3LE"
+      FREEGLE_REGISTERED_ADDRESS: "${LAT_REGISTERED_ADDRESS:-Lend and Tend Limited, 62 Brown Street, Sheffield, S1 2BS}"
       # L&T's Go API has no email tracking redirect/pixel endpoints, so send
       # links straight to their destination rather than via Freegle's tracker.
       FREEGLE_EMAIL_TRACKING_ENABLED: "false"
@@ -171,7 +174,9 @@ services:
       # Feature flags — which email types may send. The LAT worker is already
       # gated by LAT_BATCH_ONLY, but the Lat mail commands also honour this so
       # a single type can be turned off without a redeploy.
-      FREEGLE_MAIL_ENABLED_TYPES: "LatActivityAlert,LatCheckinReminder,LatMatchGoodNews,LatStillLooking,LatOtherGardens,LatMonthlyCheckin,LatWelcome"
+      # LatLoginLink MUST stay enabled: it is the passwordless sign-in email —
+      # the only way members can log in. Dropping it locks everyone out.
+      FREEGLE_MAIL_ENABLED_TYPES: "LatLoginLink,LatActivityAlert,LatCheckinReminder,LatMatchGoodNews,LatStillLooking,LatOtherGardens,LatMonthlyCheckin,LatWelcome"
       LAT_WORLD_GROUPID: "1000000"
     depends_on:
       lat-percona:
@@ -284,8 +289,14 @@ services:
       USER_SITE: "${LAT_USER_SITE:-http://localhost:4002}"
       NODE_ENV: development
       NUXT_DEV_MODE: "true"
-      SMTP_HOST: lat-mailpit
-      SMTP_PORT: "1025"
+      # Contact-form mail (server/api/contact.post.ts, a nodemailer path that is
+      # SEPARATE from the batch-worker's Laravel mailer). Share the same
+      # LAT_MAIL_* creds so one Mailgun secret drives both. Dev defaults →
+      # lat-mailpit (no auth); prod sets LAT_MAIL_* and both paths use Mailgun.
+      SMTP_HOST: "${LAT_MAIL_HOST:-lat-mailpit}"
+      SMTP_PORT: "${LAT_MAIL_PORT:-1025}"
+      SMTP_USERNAME: "${LAT_MAIL_USERNAME:-}"
+      SMTP_PASSWORD: "${LAT_MAIL_PASSWORD:-}"
       CONTACT_EMAIL: "hello@lendandtend.com"
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"

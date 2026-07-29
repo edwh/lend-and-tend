@@ -87,6 +87,16 @@ if (getenv('LAT_BATCH_ONLY') === 'true') {
         ->sendOutputTo(cronLog('lat:send-monthly-checkin'))
         ->runInBackground();
 
+    // Consume tasks the Go API queues in `background_tasks` (magic-link sign-in
+    // emails, push notifications). WITHOUT this the passwordless login never
+    // sends — the task just sits unprocessed. Spools emails; mail:spool:process
+    // (below) then drains the spool to the SMTP smart host.
+    Schedule::command('queue:background-tasks --max-iterations=60 --spool')
+        ->everyMinute()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('queue:background-tasks'))
+        ->runInBackground();
+
     // Drain the email spool to the SMTP smart host (Mailpit in dev, Mailgun
     // relay in prod). All Lat mail commands spool by default for resilience.
     Schedule::command('mail:spool:process')

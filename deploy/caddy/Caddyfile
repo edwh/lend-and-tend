@@ -13,7 +13,11 @@
         email geeks@ilovefreegle.org
 }
 
-lat.lend-and-tend.katapult.cloud {
+# Both hostnames share one config: the Katapult hostname (kept as a stable
+# fallback) and the public beta subdomain new.lendandtend.com. The A record for
+# new.lendandtend.com must resolve to this VM BEFORE reloading Caddy, or the
+# Let's Encrypt cert issuance for it will fail (and retry) on every reload.
+lat.lend-and-tend.katapult.cloud, new.lendandtend.com {
         encode zstd gzip
 
         # NO site-wide basic auth. HTTP Basic auth is fundamentally incompatible
@@ -28,6 +32,14 @@ lat.lend-and-tend.katapult.cloud {
         # that genuinely needs hiding, so basic auth lives ONLY on /mail (testers
         # never visit it, so the origin is never poisoned for them).
         header X-Robots-Tag "noindex, nofollow"
+
+        # Nuxt server API routes (contact form, Stripe) run in lat-nuxt, NOT the
+        # Go API. Caddy uses the first matching handle, so match these BEFORE the
+        # /api* -> Go rule below; otherwise Caddy hands /api/contact to Go -> 404.
+        @nuxtapi path /api/contact /api/checkout /api/stripe-webhook
+        handle @nuxtapi {
+                reverse_proxy 127.0.0.1:4002
+        }
 
         # Go API (Freegle apiv2) — handles /apiv2/* and /api/*
         @api path /apiv2* /api*

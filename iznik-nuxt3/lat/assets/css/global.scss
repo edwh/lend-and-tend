@@ -1,5 +1,9 @@
 /* Lend & Tend global styles */
 
+/* Self-hosted Poppins @font-face (was Google Fonts — now local + preloaded,
+ * so there's no external request and no font-swap flash). */
+@import 'poppins';
+
 /* Bootstrap base — provides reset, utilities (mb-3, w-100, etc.) and form classes */
 @import 'bootstrap/scss/bootstrap';
 

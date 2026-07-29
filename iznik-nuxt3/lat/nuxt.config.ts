@@ -46,14 +46,8 @@ export default defineNuxtConfig({
   // Prerender disabled: the parent Freegle nuxt config crawls links and
   // tries to render UK-authority pages (e.g. /essex), which fail in L&T
   // because the authority data isn't in the L&T database. SSR per-request
-  // still works.
-  nitro: {
-    prerender: {
-      crawlLinks: false,
-      routes: [],
-      failOnError: false,
-    },
-  },
+  // still works. (nitro config is consolidated in the single `nitro` block
+  // below — a duplicate key here would be silently overridden.)
 
   runtimeConfig: {
     public: {
@@ -123,18 +117,26 @@ export default defineNuxtConfig({
       title: 'Lend & Tend — Share a garden, grow good things',
       link: [
         { rel: 'icon', type: 'image/png', href: '/images/lat/logo.png?v=2' },
-        // Poppins — the typeface used on the existing lendandtend.com site.
-        // OFL-licensed (no restrictions), loaded from Google Fonts exactly as
-        // the legacy site does, so the new platform reads as the same brand.
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        // Poppins — the typeface used on the existing lendandtend.com site
+        // (OFL, no restrictions). Self-hosted from /fonts (see
+        // assets/css/poppins.scss) rather than pulled from Google Fonts: it
+        // removes the external request + privacy leak, and — preloaded and
+        // same-origin — the font is ready by first paint so there's no
+        // font-swap flash. Preload the two above-the-fold weights (body 400,
+        // headings/CTAs 600).
         {
-          rel: 'preconnect',
-          href: 'https://fonts.gstatic.com',
+          rel: 'preload',
+          as: 'font',
+          type: 'font/woff2',
+          href: '/fonts/Poppins-400-latin.woff2',
           crossorigin: '',
         },
         {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap',
+          rel: 'preload',
+          as: 'font',
+          type: 'font/woff2',
+          href: '/fonts/Poppins-600-latin.woff2',
+          crossorigin: '',
         },
       ],
       meta: [
@@ -235,10 +237,20 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    prerender: {
+      crawlLinks: false,
+      routes: [],
+      failOnError: false,
+    },
     /* Disable app manifest which can interfere with CSS loading */
     experimental: {
       appManifest: false,
     },
+    // A layer's server/plugins are NOT auto-scanned (only server/api is), so
+    // register the FOUC-fix nitro plugin explicitly.
+    plugins: [
+      fileURLToPath(new URL('./server/plugins/fouc-fix.ts', import.meta.url)),
+    ],
   },
 
   compatibilityDate: '2024-11-29',
