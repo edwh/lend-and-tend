@@ -53,7 +53,12 @@ export default defineNuxtConfig({
     public: {
       APIv2: process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2',
       LAT_WORLD_GROUPID: parseInt(process.env.LAT_WORLD_GROUPID || '0'),
-      LAT_ALLOW_FAKE_PAYMENT: process.env.LAT_ALLOW_FAKE_PAYMENT !== 'false',
+      // Dev-only "pretend to pay" bypass. Fail SAFE: never enabled in
+      // production regardless of the env var, so a forgotten flag can't hand
+      // out free membership on the live site. In dev it defaults on.
+      LAT_ALLOW_FAKE_PAYMENT:
+        process.env.LAT_ALLOW_FAKE_PAYMENT !== 'false' &&
+        process.env.NODE_ENV !== 'production',
       LAT_USE_FREEGLE_GEOCODER: process.env.LAT_USE_FREEGLE_GEOCODER === 'true',
       LAT_MODERATION_ENABLED: process.env.LAT_MODERATION_ENABLED === 'true',
     },
