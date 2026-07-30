@@ -4,16 +4,29 @@
       <div class="join-card">
         <!-- Header -->
         <div class="join-header">
-          <img src="/images/lat/logo.png?v=2" :alt="branding.siteName" class="join-logo" />
+          <img
+            src="/images/lat/logo.png?v=2"
+            :alt="branding.siteName"
+            class="join-logo"
+          />
           <h1 class="join-title">Support {{ branding.siteName }}</h1>
           <p class="join-subtitle">
-            Browsing the map is free. To send and receive messages you need a one-off joining fee of
-            <strong>£{{ feeFormatted }}</strong>.
+            Browsing the map is free. To send and receive messages you need a
+            one-off joining fee of
+            <strong>£{{ feeFormatted }}</strong
+            >.
           </p>
           <p class="join-intent">
             This is a declaration of intent — not a guarantee of a match.
             Refunds are available on request.
           </p>
+        </div>
+
+        <!-- Test-mode banner — only when Stripe is running on a TEST key -->
+        <div v-if="stripeTestMode" class="test-mode-banner">
+          🧪 <strong>Test mode</strong> — no real payment will be taken. Use
+          test card <code>4242 4242 4242 4242</code>, any future expiry &amp;
+          any CVC.
         </div>
 
         <!-- Tabs -->
@@ -22,24 +35,31 @@
             class="join-tab"
             :class="{ 'join-tab--active': activeTab === 'pay' }"
             @click="activeTab = 'pay'"
-          >Pay £{{ feeFormatted }}</button>
+          >
+            Pay £{{ feeFormatted }}
+          </button>
           <button
             class="join-tab"
             :class="{ 'join-tab--active': activeTab === 'concession' }"
             @click="activeTab = 'concession'"
-          >Concession</button>
+          >
+            Concession
+          </button>
         </div>
 
         <!-- Pay panel -->
         <div v-if="activeTab === 'pay'" class="join-panel">
           <p class="panel-desc">
-            Pay securely via Stripe. You'll be able to send and receive messages immediately after payment.
+            Pay securely via Stripe. You'll be able to send and receive messages
+            immediately after payment.
           </p>
           <button class="btn btn-primary btn-lg btn-full" @click="startPayment">
             <VIcon :icon="['fas', 'lock']" class="btn-icon" />
             Pay £{{ feeFormatted }} securely
           </button>
-          <p class="stripe-note">Secured by Stripe. We never store your card details.</p>
+          <p class="stripe-note">
+            Secured by Stripe. We never store your card details.
+          </p>
         </div>
 
         <!-- Concession panel -->
@@ -50,7 +70,9 @@
             Request received — we'll be in touch shortly.
           </div>
           <form v-else @submit.prevent="submitConcession">
-            <label for="concessionReason" class="field-label">Please tell us briefly why you're applying</label>
+            <label for="concessionReason" class="field-label"
+              >Please tell us briefly why you're applying</label
+            >
             <textarea
               id="concessionReason"
               v-model="concessionReason"
@@ -59,7 +81,11 @@
               placeholder="e.g. I receive Universal Credit, or I am in financial difficulty"
               required
             />
-            <button type="submit" class="btn btn-outline btn-full mt-3" :disabled="concessionSubmitting">
+            <button
+              type="submit"
+              class="btn btn-outline btn-full mt-3"
+              :disabled="concessionSubmitting"
+            >
               {{ concessionSubmitting ? 'Sending…' : 'Apply for concession' }}
             </button>
           </form>
@@ -68,7 +94,11 @@
         <!-- Dev bypass: simulate payment without Stripe -->
         <div v-if="allowFakePayment" class="dev-bypass">
           <div class="dev-badge">🛠 Dev mode</div>
-          <button class="btn btn-dev btn-full" :disabled="fakePaying" @click="fakePayment">
+          <button
+            class="btn btn-dev btn-full"
+            :disabled="fakePaying"
+            @click="fakePayment"
+          >
             {{ fakePaying ? 'Activating…' : 'Pretend to pay (dev only)' }}
           </button>
         </div>
@@ -83,7 +113,8 @@
           Skip for now — just browse the map
         </button>
         <p class="skip-note">
-          You can pay later from your profile. Payment is required to send or receive messages.
+          You can pay later from your profile. Payment is required to send or
+          receive messages.
         </p>
       </div>
     </div>
@@ -121,10 +152,14 @@ const alreadyPaid = computed(() => {
 })
 
 const allowFakePayment = computed(() => config.public.LAT_ALLOW_FAKE_PAYMENT)
+const stripeTestMode = computed(() => config.public.LAT_STRIPE_TEST_MODE)
 const fakePaying = ref(false)
 
 async function fakePayment() {
-  if (!authStore.user) { requestLogin(); return }
+  if (!authStore.user) {
+    requestLogin()
+    return
+  }
   fakePaying.value = true
   try {
     await api.session.save({
@@ -139,7 +174,9 @@ async function fakePayment() {
     })
     await authStore.fetchUser()
     navigateTo(returnTo.value)
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
   fakePaying.value = false
 }
 
@@ -149,7 +186,10 @@ const returnTo = computed(() => {
 })
 
 async function startPayment() {
-  if (!authStore.user) { requestLogin(); return }
+  if (!authStore.user) {
+    requestLogin()
+    return
+  }
   checkingOut.value = true
   paymentError.value = ''
   try {
@@ -159,14 +199,18 @@ async function startPayment() {
     })
     if (url) window.location.href = url
   } catch {
-    paymentError.value = 'Payment unavailable right now. Please try again or contact us.'
+    paymentError.value =
+      'Payment unavailable right now. Please try again or contact us.'
   } finally {
     checkingOut.value = false
   }
 }
 
 async function submitConcession() {
-  if (!authStore.user) { requestLogin(); return }
+  if (!authStore.user) {
+    requestLogin()
+    return
+  }
   concessionSubmitting.value = true
   try {
     await api.session.save({
@@ -181,7 +225,9 @@ async function submitConcession() {
     })
     await authStore.fetchUser()
     concessionSent.value = true
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
   concessionSubmitting.value = false
 }
 
@@ -191,6 +237,25 @@ function skip() {
 </script>
 
 <style scoped>
+.test-mode-banner {
+  background: #fff8e1;
+  border: 1px solid #f0c36d;
+  color: #7a5b00;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.45;
+}
+.test-mode-banner code {
+  background: #fff;
+  border: 1px solid #e6d8a8;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
 .join-page {
   background: var(--lat-color-surface);
   min-height: 100vh;
@@ -270,7 +335,9 @@ function skip() {
 }
 
 /* Panel */
-.join-panel { margin-bottom: 8px; }
+.join-panel {
+  margin-bottom: 8px;
+}
 
 .panel-desc {
   color: var(--lat-color-text-muted);
@@ -293,25 +360,44 @@ function skip() {
   transition: all 0.2s;
 }
 
-.btn-lg { padding: 14px 24px; font-size: 1rem; }
-.btn-full { width: 100%; }
-.btn-icon { margin-right: 8px; }
-.mt-3 { margin-top: 12px; }
+.btn-lg {
+  padding: 14px 24px;
+  font-size: 1rem;
+}
+.btn-full {
+  width: 100%;
+}
+.btn-icon {
+  margin-right: 8px;
+}
+.mt-3 {
+  margin-top: 12px;
+}
 
 .btn-primary {
   background: var(--lat-color-primary);
   color: white;
 }
-.btn-primary:hover { background: var(--lat-color-primary-dark); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary:hover {
+  background: var(--lat-color-primary-dark);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .btn-outline {
   background: transparent;
   color: var(--lat-color-primary);
   border: 2px solid var(--lat-color-primary);
 }
-.btn-outline:hover { background: rgba(107, 158, 60, 0.07); }
-.btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-outline:hover {
+  background: rgba(107, 158, 60, 0.07);
+}
+.btn-outline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .stripe-note {
   text-align: center;
@@ -378,8 +464,13 @@ function skip() {
   color: white;
   border: none;
 }
-.btn-dev:hover { background: #d4920b; }
-.btn-dev:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-dev:hover {
+  background: #d4920b;
+}
+.btn-dev:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 /* Skip */
 .skip-divider {
@@ -388,8 +479,15 @@ function skip() {
   gap: 12px;
   margin: 24px 0 12px;
 }
-.skip-line { flex: 1; height: 1px; background: #e0e0e0; }
-.skip-or { font-size: 0.8rem; color: #aaa; }
+.skip-line {
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+.skip-or {
+  font-size: 0.8rem;
+  color: #aaa;
+}
 
 .btn-skip {
   width: 100%;
@@ -402,7 +500,9 @@ function skip() {
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn-skip:hover { background: #f5f5f5; }
+.btn-skip:hover {
+  background: #f5f5f5;
+}
 
 .skip-note {
   text-align: center;
@@ -412,7 +512,11 @@ function skip() {
 }
 
 @media (max-width: 480px) {
-  .join-card { padding: 24px 18px; }
-  .join-title { font-size: 1.4rem; }
+  .join-card {
+    padding: 24px 18px;
+  }
+  .join-title {
+    font-size: 1.4rem;
+  }
 }
 </style>

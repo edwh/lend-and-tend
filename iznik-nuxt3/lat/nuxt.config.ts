@@ -59,6 +59,12 @@ export default defineNuxtConfig({
       LAT_ALLOW_FAKE_PAYMENT:
         process.env.LAT_ALLOW_FAKE_PAYMENT !== 'false' &&
         process.env.NODE_ENV !== 'production',
+      // Surface whether Stripe is in TEST mode (key prefix sk_test_) so the
+      // join/success pages can flag "no real charge" — Stripe's own checkout
+      // shows a TEST banner, but our pages otherwise look identical live vs test.
+      LAT_STRIPE_TEST_MODE: (process.env.STRIPE_SECRET_KEY || '').startsWith(
+        'sk_test_'
+      ),
       LAT_USE_FREEGLE_GEOCODER: process.env.LAT_USE_FREEGLE_GEOCODER === 'true',
       LAT_MODERATION_ENABLED: process.env.LAT_MODERATION_ENABLED === 'true',
     },
