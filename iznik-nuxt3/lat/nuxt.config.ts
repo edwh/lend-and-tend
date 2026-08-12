@@ -67,6 +67,18 @@ export default defineNuxtConfig({
       ),
       LAT_USE_FREEGLE_GEOCODER: process.env.LAT_USE_FREEGLE_GEOCODER === 'true',
       LAT_MODERATION_ENABLED: process.env.LAT_MODERATION_ENABLED === 'true',
+      // Sentry error monitoring — initialised (only after cookie consent) by
+      // lat/plugins/lat-sentry.client.ts. A Sentry DSN is a public, client-side
+      // value (it ships in every browser bundle), so it's safe to commit. EU
+      // region for data residency. Set '' to disable.
+      LAT_SENTRY_DSN:
+        process.env.LAT_SENTRY_DSN ||
+        'https://a784a117df42dfcbace9f9737d0b5e5e@o4511899774943232.ingest.de.sentry.io/4511899776909392',
+      // Disable the PARENT Freegle Sentry: config.js defaults SENTRY_DSN to
+      // Freegle's own project, so without this L&T errors go THERE, ungated and
+      // without consent. Blank it so the parent sentry.client.ts skips init; our
+      // consent-gated lat-sentry.client.ts uses LAT_SENTRY_DSN instead.
+      SENTRY_DSN: '',
     },
   },
 
