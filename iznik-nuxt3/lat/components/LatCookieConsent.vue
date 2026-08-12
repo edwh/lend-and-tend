@@ -6,30 +6,32 @@
       role="region"
       aria-label="Cookie choices"
     >
-      <p class="lcc-text">
-        {{ siteName }} uses only the cookies needed to keep the site working —
-        signing in and keeping your session secure. No advertising, no
-        analytics. With your consent we may also use privacy-friendly error
-        monitoring to fix problems faster.
-        <nuxt-link to="/privacy" class="lcc-link"
-          >Privacy &amp; cookies</nuxt-link
-        >
-      </p>
-      <div class="lcc-actions">
-        <button
-          type="button"
-          class="lcc-btn lcc-btn-ghost"
-          @click="essentialOnly"
-        >
-          Essential only
-        </button>
-        <button
-          type="button"
-          class="lcc-btn lcc-btn-primary"
-          @click="acceptAll"
-        >
-          Accept
-        </button>
+      <div class="lcc-inner">
+        <p class="lcc-text">
+          {{ siteName }} uses only the cookies needed to keep the site working —
+          signing in and keeping your session secure. No advertising, no
+          analytics. With your consent we may also use privacy-friendly error
+          monitoring to fix problems faster.
+          <nuxt-link to="/privacy" class="lcc-link"
+            >Privacy &amp; cookies</nuxt-link
+          >
+        </p>
+        <div class="lcc-actions">
+          <button
+            type="button"
+            class="lcc-btn lcc-btn-ghost"
+            @click="essentialOnly"
+          >
+            Essential only
+          </button>
+          <button
+            type="button"
+            class="lcc-btn lcc-btn-primary"
+            @click="acceptAll"
+          >
+            Accept
+          </button>
+        </div>
       </div>
     </div>
   </client-only>
@@ -44,31 +46,35 @@ const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
 </script>
 
 <style scoped>
+/* Full-width bar pinned across the bottom so it can't be missed. */
 .lat-cookie-consent {
   position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1040; /* below the login modal (1050) */
-  max-width: 720px;
-  margin: 0 auto;
   background: #fff;
-  border: 1px solid #e2ddd0;
-  border-radius: 10px;
-  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18);
-  padding: 16px 18px;
+  border-top: 3px solid var(--lat-color-primary);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.16);
+  padding: 16px 24px;
+  font-family: var(--lat-font-body);
+}
+
+/* Content stays readable-width and centred; the bar behind it is full-width. */
+.lcc-inner {
+  max-width: 1100px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
   flex-wrap: wrap;
-  font-family: var(--lat-font-body);
 }
 
 .lcc-text {
   flex: 1;
-  min-width: 240px;
+  min-width: 260px;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   color: var(--lat-color-text-muted);
 }
@@ -81,15 +87,15 @@ const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
 
 .lcc-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
 .lcc-btn {
-  padding: 9px 18px;
+  padding: 10px 22px;
   border-radius: 0.2rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 150ms ease-in-out;
   font-family: var(--lat-font-body);
@@ -105,8 +111,8 @@ const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
   border-color: var(--lat-color-primary-dark);
 }
 
-/* "Essential only" is a real, equally-clickable button (reject must be as easy
-   as accept) — just visually secondary. */
+/* "Essential only" is a real, equally-clickable button (reject as easy as
+   accept) — just visually secondary. */
 .lcc-btn-ghost {
   background: #fff;
   color: var(--lat-color-primary-dark);
@@ -116,9 +122,11 @@ const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
   border-color: var(--lat-color-primary-dark);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .lat-cookie-consent {
-    padding: 14px;
+    padding: 14px 16px;
+  }
+  .lcc-inner {
     gap: 12px;
   }
   .lcc-actions {
