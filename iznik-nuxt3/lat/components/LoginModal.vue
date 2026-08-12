@@ -390,6 +390,42 @@ defineExpose({ show, showLogin, hide, showModal })
   gap: 14px;
 }
 
+/* "Check your email" confirmation shown after a magic link is sent.
+   Previously unstyled — the emoji rendered at ~1rem and nothing was centred. */
+.lat-link-sent {
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.lat-link-sent-icon {
+  font-size: 2.75rem;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.lat-link-sent h3 {
+  font-family: var(--lat-font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--lat-color-text);
+  margin: 0 0 10px;
+}
+
+.lat-link-sent p {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--lat-color-text-muted);
+  margin: 0 0 10px;
+}
+
+.lat-link-sent p:last-child {
+  margin-bottom: 0;
+}
+
+.lat-link-sent-hint {
+  font-size: 0.85rem;
+}
+
 .field {
   display: flex;
   flex-direction: column;
