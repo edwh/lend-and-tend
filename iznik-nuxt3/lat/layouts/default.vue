@@ -6,6 +6,7 @@
     <client-only>
       <LoginModal v-if="!loggedIn" />
     </client-only>
+    <LatCookieConsent />
   </div>
 </template>
 
