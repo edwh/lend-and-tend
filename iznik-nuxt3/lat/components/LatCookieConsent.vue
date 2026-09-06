@@ -17,18 +17,10 @@
           >
         </p>
         <div class="lcc-actions">
-          <button
-            type="button"
-            class="lcc-btn lcc-btn-ghost"
-            @click="essentialOnly"
-          >
+          <button type="button" class="lcc-btn" @click="essentialOnly">
             Essential only
           </button>
-          <button
-            type="button"
-            class="lcc-btn lcc-btn-primary"
-            @click="acceptAll"
-          >
+          <button type="button" class="lcc-btn" @click="acceptAll">
             Accept
           </button>
         </div>
@@ -91,6 +83,10 @@ const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
   flex-shrink: 0;
 }
 
+/* Both choices share one identical style — reject ("Essential only") is given
+   exactly the same size, colour and visual weight as accept ("Accept"), so
+   neither is nudged. Required by PECR/GDPR: rejecting must be as easy AND as
+   prominent as accepting (no dark pattern). */
 .lcc-btn {
   padding: 10px 22px;
   border-radius: 0.2rem;
@@ -99,27 +95,17 @@ const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
   cursor: pointer;
   transition: all 150ms ease-in-out;
   font-family: var(--lat-font-body);
-}
-
-.lcc-btn-primary {
   background: var(--lat-color-primary);
   color: #fff;
   border: 2px solid var(--lat-color-primary);
 }
-.lcc-btn-primary:hover {
+.lcc-btn:hover {
   background: var(--lat-color-primary-dark);
   border-color: var(--lat-color-primary-dark);
 }
-
-/* "Essential only" is a real, equally-clickable button (reject as easy as
-   accept) — just visually secondary. */
-.lcc-btn-ghost {
-  background: #fff;
-  color: var(--lat-color-primary-dark);
-  border: 2px solid #cfd8c4;
-}
-.lcc-btn-ghost:hover {
-  border-color: var(--lat-color-primary-dark);
+.lcc-btn:focus-visible {
+  outline: 3px solid var(--lat-color-primary-dark);
+  outline-offset: 2px;
 }
 
 @media (max-width: 640px) {
