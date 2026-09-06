@@ -5,6 +5,13 @@
 node_modules
 .nuxt
 .output
+# The rooted patterns above miss the layer copies (lat/, modtools-lat/). A
+# host-side build leaking lat/.output or modtools-lat/.output into the image
+# makes the prod container skip its env-aware first-start build and serve the
+# wrong (baked) API URLs. Match them at any depth. (Restored from upstream.)
+**/node_modules
+**/.nuxt
+**/.output
 dist
 .env
 .env.*
