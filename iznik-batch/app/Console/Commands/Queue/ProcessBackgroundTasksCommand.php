@@ -996,9 +996,16 @@ class ProcessBackgroundTasksCommand extends Command
         $key = $recentKey;
 
         if (! $key) {
-            $key = uniqid();
+            // 128-bit CSPRNG token, not uniqid(): this validatekey confirms
+            // ownership of an email and the Go /session handler will MERGE another
+            // account into this one on a match, so a guessable (time-based) key is
+            // an account-takeover vector. (Matches upstream security fix 48cadc34f.)
+            $key = bin2hex(random_bytes(16));
+            // Also stamp validatetime: the "reuse a key issued < 600s ago" lookup
+            // above compares against it, and it was never being set here, so the
+            // reuse window silently never applied. (Same as upstream.)
             DB::statement(
-                'INSERT INTO users_emails (email, canon, validatekey, backwards) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE validatekey = ?',
+                'INSERT INTO users_emails (email, canon, validatekey, backwards, validatetime) VALUES (?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE validatekey = ?, validatetime = NOW()',
                 [$email, $canon, $key, strrev($canon), $key]
             );
         }
