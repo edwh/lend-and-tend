@@ -1,0 +1,29 @@
+# lat-mjml — MJML render sidecar. Private (lat-mjml.flycast:80).
+#   Deploy: fly deploy deploy/fly -c deploy/fly/mjml.fly.toml
+#   Private IP: fly ips allocate-v6 --private -a lat-mjml
+app = "lat-mjml"
+primary_region = "lhr"
+
+[build]
+  image = "adrianrudnik/mjml-server:latest"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 80
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # fly-proxy port mapping for the flycast address. Raw TCP passthrough (no
+  # "http" handler): the mjml-server errors when fly-proxy parses HTTP for it;
+  # batch speaks HTTP over the plain tunnel fine.
+  [[services.ports]]
+    port = 80
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

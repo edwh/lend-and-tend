@@ -1,0 +1,35 @@
+# lat-delivery — weserv image resize/delivery. Private (lat-delivery.flycast:80),
+# behind the proxy at /lat-delivery/*.
+#   Deploy: fly deploy deploy/fly/delivery -c deploy/fly/delivery/fly.toml
+#   Private IP: fly ips allocate-v6 --private -a lat-delivery
+# NOTE: the compose gives this shm_size=1gb; Fly has no shm_size knob, so give
+# the VM enough memory (weserv uses /dev/shm sized off RAM) and bump if needed.
+app = "lat-delivery"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 80
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # fly-proxy bridges flycast (IPv6) to the app's IPv4 listener; also
+  # auto-starts this scale-to-zero machine on an inbound request.
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.http_checks]]
+    method = "get"
+    path = "/"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "15s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1024mb"

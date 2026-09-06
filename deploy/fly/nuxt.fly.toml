@@ -1,0 +1,69 @@
+# lat-nuxt — Nuxt SSR frontend. Private (lat-nuxt.flycast:4002).
+#   Deploy: fly deploy ./iznik-nuxt3 -c deploy/fly/nuxt.fly.toml
+#   Private IP: fly ips allocate-v6 --private -a lat-nuxt
+#   Secrets: fly secrets set SMTP_USERNAME=… SMTP_PASSWORD=… \
+#            STRIPE_SECRET_KEY=… STRIPE_WEBHOOK_SECRET=… -a lat-nuxt
+#
+# Uses deploy/fly/nuxt/Dockerfile, which bakes `.output` at IMAGE-build time
+# (on Fly's remote builder). Cold starts are seconds, so this app scales to
+# zero. Public runtimeConfig is baked from [build.args] below (it's read from
+# process.env when nuxt.config runs); secrets stay in [env]/fly secrets and are
+# read at request time by the server routes.
+app = "lat-nuxt"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "nuxt/Dockerfile"
+
+  # Baked into the build (see the Dockerfile). Keep in sync with [env].
+  [build.args]
+    NODE_ENV = "production"
+    IZNIK_API_V2 = "https://new.lendandtend.com/apiv2"
+    NUXT_PUBLIC_API_URL = "https://new.lendandtend.com/apiv2"
+    USER_SITE = "https://new.lendandtend.com"
+    LAT_USER_SITE = "https://new.lendandtend.com"
+    FREEGLE_USER_SITE = "https://new.lendandtend.com"
+    LAT_TUS_PUBLIC_URL = "https://new.lendandtend.com/lat-uploads/files/"
+    LAT_DELIVERY_PUBLIC_URL = "https://new.lendandtend.com/lat-delivery/"
+    LAT_WORLD_GROUPID = "1000000"
+    LAT_MODERATION_ENABLED = "false"
+    LAT_USE_FREEGLE_GEOCODER = "false"
+
+[env]
+  NODE_ENV = "production"
+  NUXT_DEV_MODE = "false"
+  IZNIK_API_V2 = "https://new.lendandtend.com/apiv2"
+  NUXT_PUBLIC_API_URL = "https://new.lendandtend.com/apiv2"
+  USER_SITE = "https://new.lendandtend.com"
+  LAT_USER_SITE = "https://new.lendandtend.com"
+  FREEGLE_USER_SITE = "https://new.lendandtend.com"
+  LAT_TUS_PUBLIC_URL = "https://new.lendandtend.com/lat-uploads/files/"
+  LAT_DELIVERY_PUBLIC_URL = "https://new.lendandtend.com/lat-delivery/"
+  LAT_WORLD_GROUPID = "1000000"
+  CONTACT_EMAIL = "hello@lendandtend.com"
+  # Contact-form + Stripe secrets (SMTP_* map from LAT_MAIL_*): via fly secrets.
+  SMTP_HOST = "smtp.mailgun.org"
+  SMTP_PORT = "587"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 4002
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # fly-proxy bridges flycast (IPv6) to the app's IPv4 listener.
+  [[services.ports]]
+    port = 4002
+    handlers = ["http"]
+
+  [[services.http_checks]]
+    method = "get"
+    path = "/"
+    interval = "20s"
+    timeout = "8s"
+    grace_period = "30s"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "1024mb"

@@ -1,0 +1,38 @@
+# lat-mysql — private Percona, reachable at lat-mysql.flycast:3306.
+# Equivalent of the lat-percona container (+ its lat-db volume).
+#   Deploy:  fly deploy deploy/fly/mysql -c deploy/fly/mysql/fly.toml
+#   Volume:  fly volumes create lat_mysql_data --size 3 -r lhr -a lat-mysql
+#   Private IP (for .flycast): fly ips allocate-v6 --private -a lat-mysql
+#   Secrets: fly secrets set MYSQL_ROOT_PASSWORD=… MYSQL_PASSWORD=… -a lat-mysql
+app = "lat-mysql"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  MYSQL_DATABASE = "lat"
+  MYSQL_USER = "lat"
+  # MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD -> fly secrets
+
+# Private TCP service. suspend freezes RAM (incl. InnoDB buffer pool) to disk
+# when idle and thaws on the first inbound packet (sub-second) — scale-to-zero
+# for a database without losing warm cache.
+[[services]]
+  protocol = "tcp"
+  internal_port = 3306
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "5s"
+
+[mounts]
+  source = "lat_mysql_data"
+  destination = "/var/lib/mysql"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

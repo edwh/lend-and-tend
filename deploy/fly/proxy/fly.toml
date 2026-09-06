@@ -1,0 +1,25 @@
+# lat-proxy — the ONLY public app. Holds new.lendandtend.com, Fly-managed TLS,
+# and path-routes to the private backends (see Caddyfile).
+#   Deploy:  fly deploy deploy/fly/proxy -c deploy/fly/proxy/fly.toml
+#   Cert:    fly certs add new.lendandtend.com -a lat-proxy
+app = "lat-proxy"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

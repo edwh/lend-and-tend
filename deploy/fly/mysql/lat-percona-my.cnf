@@ -1,0 +1,32 @@
+[mysqld]
+# Mirrors the Katapult conf/lat-percona-my.cnf ...
+max_connections = 500
+skip-log-bin
+sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+
+# ...plus a Fly-specific addition: make mysql_native_password the default auth
+# plugin. Percona 8 defaults to caching_sha2_password, whose first-time auth
+# needs TLS or an RSA public-key exchange. The Go apiv2 driver
+# (go-sql-driver/mysql) refuses that key exchange over a plaintext connection
+# unless allowPublicKeyRetrieval=true is in the DSN — which iznik-server-go
+# does not set — so a cold-cache connection fails with "unexpected EOF".
+# Native passwords authenticate over plaintext with no key exchange, so the
+# app connects reliably over Fly's (already WireGuard-encrypted) private net.
+default-authentication-plugin=mysql_native_password
+
+# --- Fit a 512MB Fly machine ---
+# The Go API keeps an idle pool of up to 200 connections (SetMaxIdleConns(200),
+# hardcoded upstream), so mysql must sustain ~200 threads on a small box.
+# The dominant fixed cost on MySQL 8 is performance_schema (~150-300MB) — off it
+# goes; the L&T dataset is tiny so we don't need the instrumentation. Then trim
+# per-connection and temp buffers so 200 idle connections stay within budget.
+# InnoDB buffer pool is left at the 128M default (dataset is a few MB).
+performance_schema = OFF
+sort_buffer_size = 256K
+join_buffer_size = 256K
+read_buffer_size = 128K
+read_rnd_buffer_size = 256K
+tmp_table_size = 16M
+max_heap_table_size = 16M
+table_open_cache = 400
+host_cache_size = 0

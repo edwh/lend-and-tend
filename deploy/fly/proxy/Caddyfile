@@ -1,0 +1,61 @@
+# Caddy path-router for the Lend & Tend Fly.io deployment.
+#
+# Fly's edge routes by HOSTNAME, not path — so this proxy app reproduces the
+# single-hostname, path-based routing the Katapult VM's Caddy does. Fly
+# terminates TLS at its edge (managed cert for new.lendandtend.com) and
+# forwards plain HTTP to :8080 here; this file only does path routing to the
+# private backend apps over Fly's internal network (*.flycast, which also
+# auto-starts a stopped machine — needed for scale-to-zero).
+#
+# Backends must each have a private IPv6 allocated:
+#   fly ips allocate-v6 --private -a <app>
+
+{
+	admin off
+	# Fly terminates TLS; we serve plain HTTP on the internal port.
+	auto_https off
+}
+
+:8080 {
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow"
+
+	# Nuxt server API routes (contact form, Stripe) live in lat-nuxt, NOT the
+	# Go API — match them BEFORE the /api* -> Go rule below.
+	@nuxtapi path /api/contact /api/checkout /api/stripe-webhook
+	handle @nuxtapi {
+		reverse_proxy lat-nuxt.flycast:4002
+	}
+
+	# Go API (Freegle apiv2) — /apiv2* and /api*
+	@api path /apiv2* /api*
+	handle @api {
+		reverse_proxy lat-api.flycast:8192
+	}
+
+	# Moderator interface
+	handle /admin* {
+		reverse_proxy lat-admin.flycast:4003
+	}
+
+	# Photo uploads (tusd) and image delivery (weserv), prefix-stripped.
+	handle_path /lat-uploads/* {
+		reverse_proxy lat-tusd.flycast:8080
+	}
+	handle_path /lat-delivery/* {
+		reverse_proxy lat-delivery.flycast:80
+	}
+
+	# Everything else -> Nuxt SSR frontend
+	handle {
+		reverse_proxy lat-nuxt.flycast:4002
+	}
+
+	handle_errors {
+		@down `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+		handle @down {
+			header Content-Type "text/html; charset=utf-8"
+			respond "<h1>Lend &amp; Tend is starting up…</h1><p>One moment — waking the service.</p>" 503
+		}
+	}
+}

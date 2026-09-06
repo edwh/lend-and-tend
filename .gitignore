@@ -88,3 +88,6 @@ iznik-nuxt3/walkthrough-out/*.webm
 
 # Local migration data dump (not part of the app; created out-of-band)
 migration-data/
+
+# Local-only snapshot of the Katapult VM (pre-decommission). Never commit — see katapult-vm-backup/README.md
+/katapult-vm-backup/

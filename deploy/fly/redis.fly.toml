@@ -1,0 +1,29 @@
+# lat-redis — Redis (MJML compile back-pressure semaphore only; no persistence
+# needed). Private (lat-redis.flycast:6379).
+#   Deploy: fly deploy deploy/fly -c deploy/fly/redis.fly.toml   (image, no build context)
+#   Private IP: fly ips allocate-v6 --private -a lat-redis
+# (Alternatively use Upstash Redis and point REDIS_HOST at it.)
+app = "lat-redis"
+primary_region = "lhr"
+
+[build]
+  image = "redis:7-alpine"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 6379
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # fly-proxy port mapping for the flycast address (raw TCP; redis is client-first).
+  [[services.ports]]
+    port = 6379
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

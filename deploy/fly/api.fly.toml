@@ -1,0 +1,44 @@
+# lat-api — Go apiv2. Private (lat-api.flycast:8192).
+#   Deploy: fly deploy ./iznik-server-go -c deploy/fly/api.fly.toml
+#   Private IP: fly ips allocate-v6 --private -a lat-api
+#   Secrets: fly secrets set MYSQL_PASSWORD=… JWT_SECRET=… -a lat-api
+app = "lat-api"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "api/Dockerfile"
+
+[env]
+  MYSQL_HOST = "lat-mysql.internal"
+  MYSQL_PORT = "3306"
+  MYSQL_DBNAME = "lat"
+  MYSQL_USER = "lat"
+  MYSQL_PROTOCOL = "tcp"
+  USER_SITE = "new.lendandtend.com"
+  IMAGE_DELIVERY = "https://new.lendandtend.com/lat-delivery/"
+  UPLOADS = "https://new.lendandtend.com/lat-uploads/files/"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8192
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # fly-proxy bridges the flycast IPv6 address to the app's IPv4 (0.0.0.0)
+  # listener. Without this, lat-api.flycast:8192 is unrouted ("connection
+  # reset"); .internal can't be used because Fiber binds IPv4-only.
+  [[services.ports]]
+    port = 8192
+    handlers = ["http"]
+
+  [[services.http_checks]]
+    method = "get"
+    path = "/apiv2/online"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1024mb"
