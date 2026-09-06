@@ -20,6 +20,9 @@ primary_region = "lhr"
   release_command = "php artisan migrate --force"
 
 [env]
+  # Never seed the demo users (incl. the hard-coded-password Admin account) in
+  # production. Explicit, on top of the migration's own fail-safe gate.
+  CREATE_DEMO_USERS = "false"
   DB_CONNECTION = "mysql"
   DB_HOST = "lat-mysql.internal"
   DB_PORT = "3306"
