@@ -4,8 +4,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 // Creates demo users for Lend & Tend development/testing.
-// Skipped when CREATE_DEMO_USERS env var is 'false'.
-// Default: enabled (so dev environments get demo users automatically).
+//
+// FAIL-SAFE: demo users (incl. an Admin-role account with a hard-coded,
+// publicly-known password) are ONLY seeded in local/testing environments, or
+// when CREATE_DEMO_USERS is explicitly set to 'true'. In every other
+// environment — including production, where APP_ENV is unset and Laravel
+// defaults it to 'production' — this migration does nothing. This is the
+// opposite of the previous opt-OUT default, which silently created a
+// login-as-admin backdoor on any environment that forgot to set
+// CREATE_DEMO_USERS=false (the flag was set nowhere in the repo).
 return new class extends Migration
 {
     private array $demoUsers = [
@@ -16,7 +23,15 @@ return new class extends Migration
 
     public function up(): void
     {
-        if (getenv('CREATE_DEMO_USERS') === 'false') {
+        $optIn = getenv('CREATE_DEMO_USERS');
+        $env = getenv('APP_ENV') ?: 'production';
+
+        // Explicit off always wins.
+        if ($optIn === 'false') {
+            return;
+        }
+        // Outside local/testing, require an explicit opt-in.
+        if (!in_array($env, ['local', 'testing'], true) && $optIn !== 'true') {
             return;
         }
 
