@@ -1,0 +1,22 @@
+{
+  "Your listing, and where it is up to": {
+    "label": "Your listing, and where it is up to",
+    "arrow": "down",
+    "box": {
+      "x": 0.6164,
+      "y": 0.1717,
+      "w": 0.143,
+      "h": 0.0222
+    }
+  },
+  "Your photo, live on the listing": {
+    "label": "Your photo, live on the listing",
+    "arrow": "right",
+    "box": {
+      "x": 0.2406,
+      "y": 0.2374,
+      "w": 0.1667,
+      "h": 0.1496
+    }
+  }
+}

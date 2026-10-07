@@ -1,0 +1,22 @@
+{
+  "Chat back and forth": {
+    "label": "Chat back and forth",
+    "arrow": "up",
+    "box": {
+      "x": 0.25,
+      "y": 0.871,
+      "w": 0.75,
+      "h": 0.0694
+    }
+  },
+  "Priya has sent an agreement to look at": {
+    "label": "Priya has sent an agreement to look at",
+    "arrow": "left",
+    "box": {
+      "x": 0.5266,
+      "y": 0.7692,
+      "w": 0.0554,
+      "h": 0.0358
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "Priya's garden": {
+    "label": "Priya's garden",
+    "arrow": "down",
+    "box": {
+      "x": 0.2531,
+      "y": 0.1964,
+      "w": 0.4938,
+      "h": 0.0284
+    }
+  },
+  "A real photo of the garden": {
+    "label": "A real photo of the garden",
+    "arrow": "right",
+    "box": {
+      "x": 0.2531,
+      "y": 0.2478,
+      "w": 0.1563,
+      "h": 0.1151
+    }
+  },
+  "Message Priya to get started": {
+    "label": "Message Priya to get started",
+    "arrow": "up",
+    "box": {
+      "x": 0.2531,
+      "y": 0.8333,
+      "w": 0.1394,
+      "h": 0.0395
+    }
+  }
+}

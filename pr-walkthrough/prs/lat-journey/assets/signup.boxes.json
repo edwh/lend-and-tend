@@ -1,0 +1,42 @@
+{
+  "Your name": {
+    "label": "Your name",
+    "arrow": "right",
+    "box": {
+      "x": 0.3547,
+      "y": 0.458,
+      "w": 0.2906,
+      "h": 0.0099
+    }
+  },
+  "Your email - no password to remember": {
+    "label": "Your email - no password to remember",
+    "arrow": "right",
+    "box": {
+      "x": 0.3547,
+      "y": 0.4942,
+      "w": 0.2906,
+      "h": 0.0099
+    }
+  },
+  "Lending, tending, or both": {
+    "label": "Lending, tending, or both",
+    "arrow": "right",
+    "box": {
+      "x": 0.3547,
+      "y": 0.4764,
+      "w": 0.2906,
+      "h": 0.0092
+    }
+  },
+  "Join": {
+    "label": "Join",
+    "arrow": "up",
+    "box": {
+      "x": 0.3547,
+      "y": 0.5238,
+      "w": 0.2906,
+      "h": 0.0103
+    }
+  }
+}

@@ -1,0 +1,341 @@
+{
+  "meta": {
+    "title": "Lend & Tend - both sides of sharing a garden",
+    "subtitle": "Sign up, offer a garden, find one, get in touch, and agree how it will work",
+    "brand": "Lend & Tend",
+    "brandSubtitle": "garden sharing",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "_note": "One video, two sides. Priya (lender) signs up and offers her garden with a real photo; Sam (tender) finds it and gets in touch; Priya responds; the two agree. Screenshot scenes position callouts by `ref` (labels measured live into <shot>.boxes.json) with focusAuto. Tall pages: pan or split into focused scenes so nothing crops.",
+  "scenes": [
+    {
+      "type": "title",
+      "seconds": 5,
+      "title": "Lend & Tend",
+      "subtitle": "Someone with a garden. Someone who wants to grow. Here is how they meet.",
+      "showStats": false
+    },
+    {
+      "type": "narration",
+      "seconds": 9,
+      "chapter": "Two sides",
+      "heading": "Priya lends. Sam tends.",
+      "bullets": [
+        "Priya has raised beds she can no longer keep up with.",
+        "Sam has just moved to a flat with no outside space.",
+        "This walkthrough follows both of them, from signing up to a signed agreement."
+      ],
+      "caption": "First, Priya's side: joining and offering her garden."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 11,
+      "chapter": "Join",
+      "src": "lat-journey/home.masked.png",
+      "caption": "Everything starts from the home page: what Lend & Tend is, and how to join. Sign in or join from the top right.",
+      "pan": "down"
+    },
+    {
+      "type": "screenshot",
+      "seconds": 12,
+      "chapter": "Join",
+      "src": "lat-journey/signup.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.6,
+      "caption": "Joining takes a name and an email. There is no password: Lend & Tend emails you a sign-in link.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.0,
+          "ref": "Your name"
+        },
+        {
+          "at": 4.0,
+          "until": 7.5,
+          "ref": "Your email - no password to remember"
+        },
+        {
+          "at": 6.5,
+          "until": 10.0,
+          "ref": "Lending, tending, or both"
+        },
+        {
+          "at": 9.0,
+          "until": 11.5,
+          "ref": "Join"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 8,
+      "chapter": "Join",
+      "src": "lat-journey/signin-email.masked.png",
+      "caption": "Coming back later? Ask for a link and open the email. That is the whole sign-in."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 9,
+      "chapter": "Join",
+      "src": "lat-journey/join.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.8,
+      "caption": "A one-off joining fee unlocks messaging. Anyone on Pension Credit or Universal Credit can ask for a free concession.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.0,
+          "ref": "A one-off joining fee unlocks messaging"
+        },
+        {
+          "at": 4.5,
+          "until": 8.5,
+          "ref": "Or ask for a free concession"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 16,
+      "chapter": "Offer your garden",
+      "src": "lat-journey/lend.masked.png",
+      "pan": "down",
+      "caption": "Priya describes her garden: a name, what it is like, real photos, what she is hoping for, and any ground rules. Her address and phone stay private."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Offer your garden",
+      "src": "lat-journey/profile.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.8,
+      "caption": "Her listing is live under My Gardens, photo and all.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.5,
+          "ref": "Your photo, live on the listing"
+        },
+        {
+          "at": 5.0,
+          "until": 9.0,
+          "ref": "Your listing, and where it is up to"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "seconds": 7,
+      "chapter": "Two sides",
+      "heading": "Now Sam's side.",
+      "bullets": [
+        "Sam joins as a tender, the same way, and looks for a garden nearby."
+      ],
+      "caption": "Finding a garden to tend."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 9,
+      "chapter": "Find a garden",
+      "src": "lat-journey/map.masked.png",
+      "caption": "The map shows gardens offered near you. Pins are blurred for privacy until you are matched."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 11,
+      "chapter": "Find a garden",
+      "src": "lat-journey/garden.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.85,
+      "caption": "Sam opens Priya's listing, sees the garden for real, and sends her a message.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.0,
+          "ref": "Priya's garden"
+        },
+        {
+          "at": 4.0,
+          "until": 7.5,
+          "ref": "A real photo of the garden"
+        },
+        {
+          "at": 7.0,
+          "until": 10.5,
+          "ref": "Message Priya to get started"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "seconds": 6,
+      "chapter": "Two sides",
+      "heading": "Back to Priya.",
+      "bullets": [
+        "A new message is waiting in her chats."
+      ],
+      "caption": "Responding."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 8,
+      "chapter": "Respond",
+      "src": "lat-journey/chats-lender.masked.png",
+      "caption": "Every conversation lives in Chats. Priya opens Sam's message."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 12,
+      "chapter": "Respond",
+      "src": "lat-journey/chat-lender.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.85,
+      "caption": "She replies in the chat. When they are both ready she can propose an agreement, and share her address privately, only when she chooses.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.0,
+          "ref": "Reply to Sam"
+        },
+        {
+          "at": 4.5,
+          "until": 8.5,
+          "ref": "When you're both ready, propose an agreement"
+        },
+        {
+          "at": 8.0,
+          "until": 11.5,
+          "ref": "Share your address privately, only when you choose"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Agree",
+      "src": "lat-journey/chat-tender.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.85,
+      "caption": "Priya fills in a simple agreement and sends it. Sam sees it in the chat.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.0,
+          "ref": "Chat back and forth"
+        },
+        {
+          "at": 4.5,
+          "until": 9.0,
+          "ref": "Priya has sent an agreement to look at"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Agree",
+      "src": "lat-journey/agreement-proposed.masked.png",
+      "focusAuto": true,
+      "caption": "The agreement sets out what Sam will grow and when he will visit.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.5,
+          "ref": "What you'll grow"
+        },
+        {
+          "at": 5.0,
+          "until": 9.0,
+          "ref": "When you'll visit"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 8,
+      "chapter": "Agree",
+      "src": "lat-journey/agreement-proposed.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.8,
+      "caption": "A few ground rules, agreed up front: pets, water, sharing the produce.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 7.0,
+          "ref": "A few ground rules, agreed up front"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 10,
+      "chapter": "Agree",
+      "src": "lat-journey/agreement-proposed.masked.png",
+      "focusAuto": true,
+      "caption": "A review date gives them a season to try it. Sam accepts when he is happy.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 5.5,
+          "ref": "A review date - a season to try it"
+        },
+        {
+          "at": 5.0,
+          "until": 9.5,
+          "ref": "Accept when you're happy"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 7,
+      "chapter": "Agreed",
+      "src": "lat-journey/agreement-confirmed.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.92,
+      "caption": "Agreed. Both of them see the confirmed agreement.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 6.0,
+          "ref": "Agreed - both of you are set"
+        }
+      ]
+    },
+    {
+      "type": "screenshot",
+      "seconds": 9,
+      "chapter": "What happens next",
+      "src": "lat-journey/timeline.masked.png",
+      "caption": "What to expect over the season, and when Lend & Tend will check in."
+    },
+    {
+      "type": "screenshot",
+      "seconds": 8,
+      "chapter": "What happens next",
+      "src": "lat-journey/checkin.masked.png",
+      "focusAuto": true,
+      "focusMinW": 0.72,
+      "caption": "A quick check-in later on keeps both of them in touch.",
+      "callouts": [
+        {
+          "at": 1.5,
+          "until": 7.0,
+          "ref": "How's it going?"
+        }
+      ]
+    },
+    {
+      "type": "outro",
+      "seconds": 8,
+      "title": "Share a garden, grow good things.",
+      "bullets": [
+        "Join with just your email.",
+        "Offer a garden, or find one to tend.",
+        "Chat, agree simple terms, and grow together."
+      ]
+    }
+  ]
+}

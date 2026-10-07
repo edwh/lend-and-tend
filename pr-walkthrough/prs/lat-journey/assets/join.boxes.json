@@ -1,0 +1,22 @@
+{
+  "A one-off joining fee unlocks messaging": {
+    "label": "A one-off joining fee unlocks messaging",
+    "arrow": "down",
+    "box": {
+      "x": 0.318,
+      "y": 0.3954,
+      "w": 0.182,
+      "h": 0.0409
+    }
+  },
+  "Or ask for a free concession": {
+    "label": "Or ask for a free concession",
+    "arrow": "down",
+    "box": {
+      "x": 0.5,
+      "y": 0.3954,
+      "w": 0.182,
+      "h": 0.0409
+    }
+  }
+}

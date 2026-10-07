@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "note": "Test data only (seeded demo members and gardens on the local stack) - no real PII, so no regions to mask. The render still produces identity .masked.png copies that the storyboard references.",
+  "images": [
+    { "src": "home.png", "out": "home.masked.png", "regions": [] },
+    { "src": "signup.png", "out": "signup.masked.png", "regions": [] },
+    { "src": "signin-email.png", "out": "signin-email.masked.png", "regions": [] },
+    { "src": "onboarding.png", "out": "onboarding.masked.png", "regions": [] },
+    { "src": "join.png", "out": "join.masked.png", "regions": [] },
+    { "src": "lend.png", "out": "lend.masked.png", "regions": [] },
+    { "src": "garden.png", "out": "garden.masked.png", "regions": [] },
+    { "src": "profile.png", "out": "profile.masked.png", "regions": [] },
+    { "src": "map.png", "out": "map.masked.png", "regions": [] },
+    { "src": "chat-tender.png", "out": "chat-tender.masked.png", "regions": [] },
+    { "src": "chats-lender.png", "out": "chats-lender.masked.png", "regions": [] },
+    { "src": "chat-lender.png", "out": "chat-lender.masked.png", "regions": [] },
+    { "src": "agreement-proposed.png", "out": "agreement-proposed.masked.png", "regions": [] },
+    { "src": "agreement-confirmed.png", "out": "agreement-confirmed.masked.png", "regions": [] },
+    { "src": "timeline.png", "out": "timeline.masked.png", "regions": [] },
+    { "src": "checkin.png", "out": "checkin.masked.png", "regions": [] }
+  ]
+}

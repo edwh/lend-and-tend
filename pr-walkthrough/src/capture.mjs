@@ -133,6 +133,14 @@ export async function capture(plan, { baseUrl, assetsDir, headful = false, stora
         const shotBase = (shot.baseUrl ? subst(shot.baseUrl) : baseUrl).replace(/\/$/, '');
         await page.goto(shotBase + subst(shot.route), { waitUntil: 'networkidle', timeout: 30000 });
         for (const step of shot.steps || []) await runStep(page, step, shotBase);
+        // Hide chrome that is not part of the product (dev-tools overlays, dev-only
+        // controls, a mail catcher's sidebar). Plan-level `hide` applies to every shot;
+        // a shot's own `hide` adds to it. Purely cosmetic: nothing is clicked or changed.
+        const hide = [...(plan.hide || []), ...(shot.hide || [])];
+        if (hide.length) {
+          await page.addStyleTag({ content: hide.map((s) => `${s}{display:none !important}`).join('\n') });
+          await page.waitForTimeout(150);
+        }
         const dest = join(assetsDir, shot.name);
         const fullPage = !shot.clip && shot.fullPage !== false;
         if (shot.clip) {
@@ -192,6 +200,13 @@ async function main() {
   const assetsDir = arg('--out', join(exampleDir, 'assets'));
 
   const storageState = arg('--storage-state', undefined);
+  // --only a.png,b.png re-captures just those shots (e.g. after fixing one step).
+  const only = arg('--only', '');
+  if (only) {
+    const names = new Set(only.split(',').map((s) => s.trim()).filter(Boolean));
+    plan.shots = plan.shots.filter((s) => names.has(s.name) || names.has(s.name.replace(/\.png$/, '')));
+    if (!plan.shots.length) throw new Error(`--only matched no shots: ${only}`);
+  }
   console.log(`• capturing ${plan.shots.length} shot(s) from ${baseUrl}${storageState ? ' (authed)' : ''}`);
   const results = await capture(plan, { baseUrl, assetsDir, headful: hasFlag('--headful'), storageState, authDir: exampleDir });
   const failed = results.filter((r) => !r.ok);

@@ -1,0 +1,52 @@
+{
+  "What you'll grow": {
+    "label": "What you'll grow",
+    "arrow": "right",
+    "box": {
+      "x": 0.2188,
+      "y": 0.3717,
+      "w": 0.5625,
+      "h": 0.0464
+    }
+  },
+  "When you'll visit": {
+    "label": "When you'll visit",
+    "arrow": "right",
+    "box": {
+      "x": 0.2188,
+      "y": 0.4551,
+      "w": 0.5625,
+      "h": 0.0464
+    }
+  },
+  "A few ground rules, agreed up front": {
+    "label": "A few ground rules, agreed up front",
+    "arrow": "right",
+    "box": {
+      "x": 0.2188,
+      "y": 0.5587,
+      "w": 0.5625,
+      "h": 0.0418
+    }
+  },
+  "A review date - a season to try it": {
+    "label": "A review date - a season to try it",
+    "arrow": "up",
+    "box": {
+      "x": 0.2188,
+      "y": 0.7513,
+      "w": 0.1322,
+      "h": 0.0298
+    }
+  },
+  "Accept when you're happy": {
+    "label": "Accept when you're happy",
+    "arrow": "up",
+    "box": {
+      "x": 0.6306,
+      "y": 0.8999,
+      "w": 0.1507,
+      "h": 0.0275
+    }
+  }
+}

@@ -1,0 +1,477 @@
+{
+  "_about": "Drive the running Lend & Tend app (localhost:4002) through both sides of the journey - a lender signing up and offering a garden with a real photo, a tender finding it and getting in touch, the lender responding, and the two agreeing - and screenshot each screen read-only. Seeded ids + auth states come from iznik-nuxt3/walkthrough-out/seed-journey.cjs: ids.json -> env vars, .auth-*.json -> storageStates. Run from pr-walkthrough/: export $(node -e \"const i=require('./prs/lat-journey/ids.json');console.log(Object.entries(i).map(([k,v])=>k+'='+v).join(' '))\") && node src/capture.mjs --pr-dir prs/lat-journey --base-url http://localhost:4002",
+  "baseUrl": "",
+  "defaultViewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "shots": [
+    {
+      "name": "home.png",
+      "route": "/",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitForText": "Patch Matched"
+        },
+        {
+          "waitMs": 2500
+        },
+        {
+          "clickText": "Essential only"
+        },
+        {
+          "waitMs": 800
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "button:has-text(\"Sign in\")",
+          "label": "Sign in or join",
+          "arrow": "down"
+        }
+      ]
+    },
+    {
+      "name": "signup.png",
+      "route": "/",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitForText": "Patch Matched"
+        },
+        {
+          "waitMs": 2500
+        },
+        {
+          "clickText": "Essential only"
+        },
+        {
+          "waitMs": 800
+        },
+        {
+          "click": "button:has-text(\"Sign in\")"
+        },
+        {
+          "waitFor": "[role=dialog]"
+        },
+        {
+          "waitMs": 800
+        },
+        {
+          "waitFor": "#lat-fullname"
+        },
+        {
+          "fill": "#lat-fullname",
+          "value": "Priya Shah"
+        },
+        {
+          "fill": "#lat-email",
+          "value": "priya.shah@example.com"
+        },
+        {
+          "select": "#lat-role",
+          "value": "lender"
+        },
+        {
+          "waitMs": 500
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "#lat-fullname",
+          "label": "Your name",
+          "arrow": "right"
+        },
+        {
+          "selector": "#lat-email",
+          "label": "Your email - no password to remember",
+          "arrow": "right"
+        },
+        {
+          "selector": "#lat-role",
+          "label": "Lending, tending, or both",
+          "arrow": "right"
+        },
+        {
+          "selector": "[role=dialog] button.btn-submit",
+          "label": "Join",
+          "arrow": "up"
+        }
+      ]
+    },
+    {
+      "name": "signin-email.png",
+      "baseUrl": "http://localhost:4025",
+      "route": "/view/${MAIL1_ID}",
+      "steps": [
+        {
+          "waitFor": "#preview-html"
+        },
+        {
+          "waitMs": 3000
+        }
+      ],
+      "clip": "#preview-html"
+    },
+    {
+      "name": "onboarding.png",
+      "route": "/onboarding",
+      "auth": ".auth-lender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitMs": 2500
+        }
+      ]
+    },
+    {
+      "name": "join.png",
+      "route": "/join",
+      "auth": ".auth-unpaid.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": ".join-tab"
+        },
+        {
+          "waitMs": 1200
+        }
+      ],
+      "annotate": [
+        {
+          "selector": ".join-tab >> nth=0",
+          "label": "A one-off joining fee unlocks messaging",
+          "arrow": "down"
+        },
+        {
+          "selector": ".join-tab:has-text(\"Concession\")",
+          "label": "Or ask for a free concession",
+          "arrow": "down"
+        }
+      ],
+      "hide": [
+        ".dev-bypass"
+      ]
+    },
+    {
+      "name": "lend.png",
+      "route": "/lend",
+      "auth": ".auth-lender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": "#subject"
+        },
+        {
+          "fill": "#subject",
+          "value": "Sunny back garden with raised beds"
+        },
+        {
+          "fill": "#about",
+          "value": "Four raised beds, a small greenhouse and a water butt, in a south-facing back garden. I built it all a few years ago and now struggle to keep up. It would make me happy to see it full of veg again."
+        },
+        {
+          "fill": "#arrangement",
+          "value": "Help with the mowing in return for use of the veg patch, or pure goodwill."
+        },
+        {
+          "fill": "#restrictions",
+          "value": "No commercial growing, and please no bonfires."
+        },
+        {
+          "waitMs": 600
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "#subject",
+          "label": "Name your garden",
+          "arrow": "right"
+        },
+        {
+          "selector": "#about",
+          "label": "Describe what it's like",
+          "arrow": "right"
+        },
+        {
+          "selector": ".app-photo-uploader",
+          "label": "Add real photos of your garden",
+          "arrow": "right"
+        },
+        {
+          "selector": "#arrangement",
+          "label": "What you're hoping for",
+          "arrow": "right"
+        },
+        {
+          "selector": "#restrictions",
+          "label": "Any ground rules",
+          "arrow": "right"
+        }
+      ]
+    },
+    {
+      "name": "profile.png",
+      "route": "/profile",
+      "auth": ".auth-lender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": ".garden-photo"
+        },
+        {
+          "waitMs": 1200
+        }
+      ],
+      "annotate": [
+        {
+          "selector": ".garden-status",
+          "label": "Your listing, and where it is up to",
+          "arrow": "down"
+        },
+        {
+          "selector": ".garden-photo",
+          "label": "Your photo, live on the listing",
+          "arrow": "right"
+        }
+      ]
+    },
+    {
+      "name": "map.png",
+      "route": "/map",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitMs": 3000
+        },
+        {
+          "fill": "input[placeholder^='Search postcode']",
+          "value": "SW1A 1AA"
+        },
+        {
+          "press": "Enter"
+        },
+        {
+          "waitMs": 4000
+        }
+      ]
+    },
+    {
+      "name": "garden.png",
+      "route": "/garden/${GARDEN1_ID}",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": "button:has-text(\"Send message\")"
+        },
+        {
+          "waitFor": ".garden-photo"
+        },
+        {
+          "waitMs": 1200
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "h1",
+          "label": "Priya's garden",
+          "arrow": "down"
+        },
+        {
+          "selector": ".garden-photo",
+          "label": "A real photo of the garden",
+          "arrow": "right"
+        },
+        {
+          "selector": "button:has-text(\"Send message\")",
+          "label": "Message Priya to get started",
+          "arrow": "up"
+        }
+      ]
+    },
+    {
+      "name": "chats-lender.png",
+      "route": "/chats",
+      "auth": ".auth-lender3.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitForText": "Sam Okafor"
+        },
+        {
+          "waitMs": 1500
+        }
+      ]
+    },
+    {
+      "name": "chat-lender.png",
+      "route": "/chats/${CHAT3_ID}",
+      "auth": ".auth-lender3.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": "#chatmessage"
+        },
+        {
+          "waitForText": "raised beds look wonderful"
+        },
+        {
+          "waitMs": 1200
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "#chatmessage",
+          "label": "Reply to Sam",
+          "arrow": "up"
+        },
+        {
+          "selector": "button:has-text(\"Sign agreement\"):visible",
+          "label": "When you're both ready, propose an agreement",
+          "arrow": "up"
+        },
+        {
+          "selector": "button:has-text(\"Send address\"):visible",
+          "label": "Share your address privately, only when you choose",
+          "arrow": "up"
+        }
+      ]
+    },
+    {
+      "name": "chat-tender.png",
+      "route": "/chats/${CHAT1_ID}",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": "a.btn-view-agreement"
+        },
+        {
+          "waitMs": 1200
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "#chatmessage",
+          "label": "Chat back and forth",
+          "arrow": "up"
+        },
+        {
+          "selector": "a.btn-view-agreement",
+          "label": "Priya has sent an agreement to look at",
+          "arrow": "left"
+        }
+      ]
+    },
+    {
+      "name": "agreement-proposed.png",
+      "route": "/agreement/${GARDEN1_ID}?userId=${LENDER1_ID}",
+      "auth": ".auth-tender1.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": ".status-banner.proposed"
+        },
+        {
+          "waitMs": 800
+        }
+      ],
+      "annotate": [
+        {
+          "selector": "#whatToGrow",
+          "label": "What you'll grow",
+          "arrow": "right"
+        },
+        {
+          "selector": "#accessTimes",
+          "label": "When you'll visit",
+          "arrow": "right"
+        },
+        {
+          "selector": ".ground-rule",
+          "label": "A few ground rules, agreed up front",
+          "arrow": "right"
+        },
+        {
+          "selector": "#endDate",
+          "label": "A review date - a season to try it",
+          "arrow": "up"
+        },
+        {
+          "selector": "button:has-text(\"Accept and confirm\")",
+          "label": "Accept when you're happy",
+          "arrow": "up"
+        }
+      ]
+    },
+    {
+      "name": "agreement-confirmed.png",
+      "route": "/agreement/${GARDEN2_ID}?userId=${LENDER2_ID}",
+      "auth": ".auth-tender2.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": ".next-steps"
+        },
+        {
+          "waitMs": 800
+        }
+      ],
+      "annotate": [
+        {
+          "selector": ".status-banner.confirmed",
+          "label": "Agreed - both of you are set",
+          "arrow": "down"
+        }
+      ]
+    },
+    {
+      "name": "timeline.png",
+      "route": "/agreement/${GARDEN2_ID}?userId=${LENDER2_ID}",
+      "auth": ".auth-tender2.json",
+      "clip": ".next-steps",
+      "steps": [
+        {
+          "waitFor": ".lat-timeline"
+        },
+        {
+          "waitMs": 800
+        }
+      ]
+    },
+    {
+      "name": "checkin.png",
+      "route": "/checkin/${GARDEN2_ID}",
+      "auth": ".auth-tender2.json",
+      "fullPage": true,
+      "steps": [
+        {
+          "waitFor": ".status-options"
+        },
+        {
+          "waitMs": 800
+        }
+      ],
+      "annotate": [
+        {
+          "selector": ".status-options",
+          "label": "How's it going?",
+          "arrow": "right"
+        },
+        {
+          "selector": "#checkin-note",
+          "label": "Add a note if you like",
+          "arrow": "up"
+        }
+      ]
+    }
+  ],
+  "hide": [
+    "#nuxt-devtools-container",
+    "nuxt-devtools-inspect-panel",
+    "#vue-tracer-overlay"
+  ]
+}
