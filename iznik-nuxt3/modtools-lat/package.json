@@ -7,6 +7,7 @@
     "build": "nuxi prepare && nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "clean": "nuxi cleanup"
+    "clean": "nuxi cleanup",
+    "start": "PORT=${PORT:-4003} HOST=0.0.0.0 node .output/server/index.mjs"
   }
 }

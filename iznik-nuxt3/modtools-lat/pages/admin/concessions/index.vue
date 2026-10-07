@@ -2,8 +2,8 @@
   <div class="admin-page">
     <h1 class="page-title">Concession requests</h1>
     <p class="text-muted mb-3">
-      Users who have self-declared a concession. Search for a user above to verify their reason and
-      update their payment status if needed.
+      Users who have self-declared a concession. Search for a user above to
+      verify their reason and update their payment status if needed.
     </p>
 
     <div class="admin-card">
@@ -21,7 +21,9 @@
         </button>
       </div>
 
-      <div v-if="searchError" class="text-muted" style="color:#c62828;">{{ searchError }}</div>
+      <div v-if="searchError" class="text-muted" style="color: #c62828">
+        {{ searchError }}
+      </div>
 
       <table v-if="concessionUsers.length" class="admin-table">
         <thead>
@@ -37,15 +39,27 @@
           <tr v-for="u in concessionUsers" :key="u.id">
             <td>{{ u.displayname }}</td>
             <td class="text-muted">{{ u.email || '—' }}</td>
-            <td class="text-muted">{{ u.settings?.lat_payment?.reason || '—' }}</td>
-            <td class="text-muted">{{ formatDate(u.settings?.lat_payment?.claimedAt) }}</td>
-            <td style="display:flex;gap:6px;">
-              <button class="btn btn-sm btn-danger" :disabled="updating[u.id]" @click="revoke(u)">Revoke access</button>
+            <td class="text-muted">
+              {{ u.settings?.lat_payment?.reason || '—' }}
+            </td>
+            <td class="text-muted">
+              {{ formatDate(u.settings?.lat_payment?.claimedAt) }}
+            </td>
+            <td style="display: flex; gap: 6px">
+              <button
+                class="btn btn-sm btn-danger"
+                :disabled="updating[u.id]"
+                @click="revoke(u)"
+              >
+                Revoke access
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p v-else-if="searched && !searching" class="text-muted">No concession applicants found in search results.</p>
+      <p v-else-if="searched && !searching" class="text-muted">
+        No concession applicants found in search results.
+      </p>
     </div>
   </div>
 </template>
@@ -67,7 +81,9 @@ const allResults = ref<any[]>([])
 const updating = reactive<Record<number, boolean>>({})
 
 const concessionUsers = computed(() =>
-  allResults.value.filter((u) => u.settings?.lat_payment?.status === 'concession')
+  allResults.value.filter(
+    (u) => u.settings?.lat_payment?.status === 'concession'
+  )
 )
 
 async function search() {
@@ -97,14 +113,24 @@ async function updatePayment(u: any, status: string | null) {
       method: 'PATCH',
       body: {
         id: u.id,
-        settings: { lat_payment: status ? { status, updatedByAdmin: true, updatedAt: new Date().toISOString() } : null },
+        settings: {
+          lat_payment: status
+            ? {
+                status,
+                updatedByAdmin: true,
+                updatedAt: new Date().toISOString(),
+              }
+            : null,
+        },
       },
       headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
     })
     if (u.settings) {
       u.settings.lat_payment = status ? { status, updatedByAdmin: true } : null
     }
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   updating[u.id] = false
 }
 
@@ -112,6 +138,10 @@ const revoke = (u: any) => updatePayment(u, null)
 
 function formatDate(iso?: string) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 </script>

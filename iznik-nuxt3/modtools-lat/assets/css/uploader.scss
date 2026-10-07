@@ -1,0 +1,5 @@
+// Forwarded from the Lend & Tend layer so root/lat components that import
+// `~/assets/css/uploader` (aliased to this layer) get the same styles. `@import`,
+// not `@forward`: these partials rely on the colour variables the build injects
+// into the importing stylesheet. Do not add rules here; edit lat/assets/css/uploader.scss.
+@import "../../../lat/assets/css/uploader";

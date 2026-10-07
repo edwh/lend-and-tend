@@ -35,41 +35,80 @@
             <td>{{ u.displayname }}</td>
             <td class="text-muted">{{ u.email || '—' }}</td>
             <td>
-              <span class="badge" :class="paymentBadgeClass(u.settings?.lat_payment?.status)">
+              <span
+                class="badge"
+                :class="paymentBadgeClass(u.settings?.lat_payment?.status)"
+              >
                 {{ paymentLabel(u.settings?.lat_payment?.status) }}
               </span>
             </td>
             <td class="text-muted">{{ u.settings?.lat_role || '—' }}</td>
             <td>
-              <button class="btn btn-sm btn-primary" @click="editUser(u)">Edit</button>
+              <button class="btn btn-sm btn-primary" @click="editUser(u)">
+                Edit
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p v-else-if="searched && !searching" class="text-muted">No users found.</p>
+      <p v-else-if="searched && !searching" class="text-muted">
+        No users found.
+      </p>
     </div>
 
     <!-- Edit panel -->
     <div v-if="editing" class="admin-card">
-      <div class="admin-card__title">Edit user: {{ editing.displayname }} (#{{ editing.id }})</div>
+      <div class="admin-card__title">
+        Edit user: {{ editing.displayname }} (#{{ editing.id }})
+      </div>
 
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-weight:600;font-size:0.87rem;margin-bottom:6px;">Payment status</label>
-        <select v-model="editForm.paymentStatus" class="search-input" style="width:auto;max-width:200px;">
+      <div style="margin-bottom: 16px">
+        <label
+          style="
+            display: block;
+            font-weight: 600;
+            font-size: 0.87rem;
+            margin-bottom: 6px;
+          "
+          >Payment status</label
+        >
+        <select
+          v-model="editForm.paymentStatus"
+          class="search-input"
+          style="width: auto; max-width: 200px"
+        >
           <option value="">Not joined</option>
           <option value="paid">Paid</option>
           <option value="concession">Concession</option>
         </select>
       </div>
 
-      <div v-if="editError" class="text-muted" style="color:#c62828;margin-bottom:8px;">{{ editError }}</div>
-      <div v-if="editSuccess" class="text-muted" style="color:#2e7d32;margin-bottom:8px;">Saved successfully.</div>
+      <div
+        v-if="editError"
+        class="text-muted"
+        style="color: #c62828; margin-bottom: 8px"
+      >
+        {{ editError }}
+      </div>
+      <div
+        v-if="editSuccess"
+        class="text-muted"
+        style="color: #2e7d32; margin-bottom: 8px"
+      >
+        Saved successfully.
+      </div>
 
-      <div style="display:flex;gap:10px;">
+      <div style="display: flex; gap: 10px">
         <button class="btn btn-primary" :disabled="saving" @click="saveEdit">
           {{ saving ? 'Saving…' : 'Save' }}
         </button>
-        <button class="btn btn-sm" style="border:1px solid #ddd;background:white;" @click="editing = null">Cancel</button>
+        <button
+          class="btn btn-sm"
+          style="border: 1px solid #ddd; background: white"
+          @click="editing = null"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   </div>
@@ -133,7 +172,11 @@ async function saveEdit() {
   try {
     const settings: Record<string, any> = {}
     if (editForm.paymentStatus) {
-      settings.lat_payment = { status: editForm.paymentStatus, updatedByAdmin: true, updatedAt: new Date().toISOString() }
+      settings.lat_payment = {
+        status: editForm.paymentStatus,
+        updatedByAdmin: true,
+        updatedAt: new Date().toISOString(),
+      }
     } else {
       settings.lat_payment = { status: null }
     }
@@ -142,7 +185,10 @@ async function saveEdit() {
       body: { id: editing.value.id, settings },
       headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
     })
-    editing.value.settings = { ...editing.value.settings, lat_payment: settings.lat_payment }
+    editing.value.settings = {
+      ...editing.value.settings,
+      lat_payment: settings.lat_payment,
+    }
     editSuccess.value = true
   } catch {
     editError.value = 'Save failed. You may not have permission.'
