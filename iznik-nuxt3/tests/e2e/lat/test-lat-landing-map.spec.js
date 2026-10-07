@@ -13,10 +13,14 @@
 // hijacked into being a full map view, but pins still render. MapView
 // is loaded via `defineAsyncComponent` because the underlying Leaflet
 // library touches `window` at module load and the landing page is SSR'd.
-const { test, expect } = require('@playwright/test')
+// The L&T fixture sets baseURL from LAT_BASE_URL; the root Playwright config
+// points at Freegle's stack, where '/' is the Go API's 404.
+const { test, expect } = require('./lat-fixtures')
 
 test.describe('Landing-page map preview', () => {
-  test('renders the Leaflet map with at least one garden marker', async ({ page }) => {
+  test('renders the Leaflet map with at least one garden marker', async ({
+    page,
+  }) => {
     await page.goto('/')
 
     // The MapView lives inside `.map-preview` on the landing page.
@@ -34,9 +38,9 @@ test.describe('Landing-page map preview', () => {
     // The whole point of using MapView vs the previous tile-layer-only
     // teaser: pins must actually appear. Give Supercluster + fetchAll
     // time to settle before checking.
-    await expect(
-      preview.locator('.leaflet-marker-icon').first()
-    ).toBeVisible({ timeout: 20_000 })
+    await expect(preview.locator('.leaflet-marker-icon').first()).toBeVisible({
+      timeout: 20_000,
+    })
 
     const count = await preview.locator('.leaflet-marker-icon').count()
     expect(count).toBeGreaterThan(0)
@@ -52,14 +56,15 @@ test.describe('Landing-page map preview', () => {
     })
 
     // Zoom controls (the +/- buttons) shouldn't be rendered in preview mode.
-    await expect(
-      preview.locator('.leaflet-control-zoom')
-    ).toHaveCount(0)
+    await expect(preview.locator('.leaflet-control-zoom')).toHaveCount(0)
 
     // The "Open full map →" overlay link is still present so users
     // can transition to the real map.
-    await expect(
-      page.getByRole('link', { name: /Open full map/ })
-    ).toBeVisible()
+    // The whole preview is one link to /map (its accessible name comes from
+    // an aria-label, so do not match on the pill's text).
+    const link = page.locator('a:has(.map-preview)').first()
+    await expect(link).toBeVisible({ timeout: 10_000 })
+    await expect(link).toHaveAttribute('href', /\/map/)
+    await expect(link.locator('.btn-overlay')).toHaveText(/Open full map/)
   })
 })

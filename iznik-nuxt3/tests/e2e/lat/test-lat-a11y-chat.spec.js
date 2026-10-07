@@ -235,8 +235,12 @@ test.describe('Conversation-side accessibility', () => {
     const send = page
       .getByRole('button', { name: /Send to tender|Accept and confirm/ })
       .first()
+    // The agreement page settles (auth boot, then the form) before we measure;
+    // scrolling a page that is still navigating destroyed the evaluate context.
+    await expect(send).toBeVisible({ timeout: 20_000 })
     await send.scrollIntoViewIfNeeded()
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await expect(send).toBeVisible()
     const [btn, bar] = await Promise.all([
       send.boundingBox(),
       banner.boundingBox(),

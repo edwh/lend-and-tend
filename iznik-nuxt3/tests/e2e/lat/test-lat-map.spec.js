@@ -59,7 +59,7 @@ test.describe('Map page', () => {
   // actually move?" signal than .leaflet-map-pane style.transform (which
   // Leaflet resets to translate3d(0,0,0) after flyTo finishes).
   /** @param {import('@playwright/test').Page} page */
-  async function firstTileKey(page) {
+  function firstTileKey(page) {
     return page.evaluate(() => {
       const img = document.querySelector('.leaflet-tile')
       const src = img?.getAttribute('src') || ''
@@ -95,7 +95,7 @@ test.describe('Map page', () => {
     // Map should pan to Manchester (zoom 13 per searchLocation()) — tile set
     // changes, so the first tile's z/x/y differs from the initial UK view.
     await expect
-      .poll(async () => firstTileKey(page), {
+      .poll(() => firstTileKey(page), {
         timeout: 10_000,
         intervals: [200, 500, 1000],
       })
@@ -130,7 +130,7 @@ test.describe('Map page', () => {
     await button.click()
 
     await expect
-      .poll(async () => firstTileKey(page), {
+      .poll(() => firstTileKey(page), {
         timeout: 10_000,
         intervals: [200, 500, 1000],
       })
@@ -193,13 +193,31 @@ test.describe('Map page', () => {
     })
 
     // Source-of-truth from branding.config.ts: lender=#B868CA (lilac), tender=#4F6642 (green)
-    const lenderColor = await page
-      .locator('.dot.lender')
-      .evaluate((el) => getComputedStyle(el).backgroundColor)
-    const tenderColor = await page
-      .locator('.dot.tender')
-      .evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(lenderColor).toBe('rgb(184, 104, 202)')
-    expect(tenderColor).toBe('rgb(79, 102, 66)')
+    // The legend dots take the role colours from the brand tokens (the
+    // accessibility pass deepened them for contrast), so compare against the
+    // tokens rather than a literal: a dot must match its role, lilac for
+    // lenders and green for tenders, and the two must differ.
+    const dotAndToken = (role) =>
+      page.locator(`.dot.${role}`).evaluate((el, r) => {
+        const probe = document.createElement('span')
+        probe.style.backgroundColor = getComputedStyle(document.documentElement)
+          .getPropertyValue(`--lat-color-${r}-text`)
+          .trim()
+        document.body.appendChild(probe)
+        const token = getComputedStyle(probe).backgroundColor
+        probe.remove()
+        return { dot: getComputedStyle(el).backgroundColor, token }
+      }, role)
+    const lender = await dotAndToken('lender')
+    const tender = await dotAndToken('tender')
+    expect(lender.dot).toBe(lender.token)
+    expect(tender.dot).toBe(tender.token)
+    expect(lender.dot).not.toBe(tender.dot)
+    // Lilac: more red and blue than green. Green: more green than red or blue.
+    const rgb = (c) => c.match(/\d+/g).map(Number)
+    const [lr, lg, lb] = rgb(lender.dot)
+    const [tr, tg, tb] = rgb(tender.dot)
+    expect(lr > lg && lb > lg).toBe(true)
+    expect(tg > tr && tg > tb).toBe(true)
   })
 })

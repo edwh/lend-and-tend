@@ -155,6 +155,28 @@ async function loginViaModal(page, email, _password) {
   await expect(logoutLink(page)).toBeVisible({ timeout: 20_000 })
 }
 
+/**
+ * Clicks "Sign agreement" in an open chat and waits to land on the agreement
+ * page. A newly posted garden only becomes findable once the batch job
+ * messages:update-spatial-index has run (every minute), and until then the
+ * button shows a notice instead of navigating, so re-click until it does.
+ */
+async function openAgreementFromChat(page, { timeout = 4 * 60_000 } = {}) {
+  const button = page.getByRole('button', { name: 'Sign agreement' }).first()
+  await expect(button).toBeVisible({ timeout: 30_000 })
+  const notice = page.getByTestId('agreement-notice')
+  await expect(async () => {
+    if (!/\/agreement\/\d+/.test(page.url())) {
+      await button.click()
+      await Promise.race([
+        page.waitForURL(/\/agreement\/\d+/, { timeout: 8_000 }),
+        notice.waitFor({ state: 'visible', timeout: 8_000 }),
+      ]).catch(() => {})
+    }
+    expect(page.url(), 'listing not indexed yet').toMatch(/\/agreement\/\d+/)
+  }).toPass({ timeout, intervals: [10_000] })
+}
+
 const MAILPIT_URL = process.env.LAT_MAILPIT_URL || 'http://localhost:4025'
 
 /**
@@ -273,6 +295,7 @@ module.exports = {
   logoutLink,
   generateTestEmail,
   waitForChatEntry,
+  openAgreementFromChat,
   markUserAsPaid,
   fillLocationPicker,
   LAT_BASE_URL,

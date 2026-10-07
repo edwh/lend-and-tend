@@ -7,7 +7,9 @@
 const { test, expect, signUpViaModal } = require('./lat-fixtures')
 
 test.describe('Account settings page (formerly "Profile")', () => {
-  test('account & settings page is accessible after sign-up', async ({ page }) => {
+  test('account & settings page is accessible after sign-up', async ({
+    page,
+  }) => {
     await page.goto('/')
     await signUpViaModal(page)
 
@@ -35,7 +37,9 @@ test.describe('Account settings page (formerly "Profile")', () => {
     ).toBeVisible({ timeout: 10_000 })
   })
 
-  test('settings page shows "not yet joined" for a fresh user', async ({ page }) => {
+  test('settings page shows "not yet joined" for a fresh user', async ({
+    page,
+  }) => {
     await page.goto('/')
     await signUpViaModal(page)
 
@@ -45,7 +49,9 @@ test.describe('Account settings page (formerly "Profile")', () => {
     })
   })
 
-  test('settings page shows Join now link for unpaid users', async ({ page }) => {
+  test('settings page shows Join now link for unpaid users', async ({
+    page,
+  }) => {
     await page.goto('/')
     await signUpViaModal(page)
 
@@ -68,18 +74,25 @@ test.describe('Account settings page (formerly "Profile")', () => {
     })
   })
 
-  test('Change password section is present', async ({ page }) => {
+  test('there is no Change password section (sign-in is by emailed link)', async ({
+    page,
+  }) => {
     await page.goto('/')
     await signUpViaModal(page)
 
     await page.goto('/settings')
     await expect(
-      page.getByRole('heading', { name: 'Change password', level: 2 })
-    ).toBeVisible()
-    await expect(page.locator('#newpass')).toBeVisible()
+      page.getByRole('heading', { name: 'Account & Settings' })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.getByRole('heading', { name: /Change password/i })
+    ).toHaveCount(0)
+    await expect(page.locator('#newpass')).toHaveCount(0)
   })
 
-  test('/profile (My Gardens) is not the account-settings page', async ({ page }) => {
+  test('/profile (My Gardens) is not the account-settings page', async ({
+    page,
+  }) => {
     // Regression guard: the route restructure means /profile must NOT
     // show the account-edit form. If somebody puts those fields back
     // here we should know.

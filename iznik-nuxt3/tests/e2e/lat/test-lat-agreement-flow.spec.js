@@ -7,6 +7,7 @@ const {
   waitForChatEntry,
   markUserAsPaid,
   fillLocationPicker,
+  openAgreementFromChat,
 } = require('./lat-fixtures')
 
 /**
@@ -179,14 +180,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Interested in your garden!').first().click()
     await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 10_000 })
 
-    // Lender clicks "Sign agreement" button
-    await expect(
-      page.getByRole('button', { name: 'Sign agreement' })
-    ).toBeVisible({ timeout: 10_000 })
-    await page.getByRole('button', { name: 'Sign agreement' }).click()
-
-    // Should navigate to agreement page
-    await expect(page).toHaveURL(/\/agreement\/\d+/, { timeout: 10_000 })
+    // Lender clicks "Sign agreement" (re-clicking until the new listing is
+    // in the public index) and lands on the agreement page.
+    await openAgreementFromChat(page)
 
     // Lender fills in terms
     await page.locator('#whatToGrow').fill('Vegetables and herbs')
@@ -308,9 +304,8 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Interested!').first().click()
     await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 10_000 })
 
-    // Click "Sign agreement"
-    await page.getByRole('button', { name: 'Sign agreement' }).click()
-    await expect(page).toHaveURL(/\/agreement\/\d+/, { timeout: 10_000 })
+    // Click "Sign agreement" (waits for the listing to be indexed)
+    await openAgreementFromChat(page)
 
     // Fill and send agreement
     await page.locator('#whatToGrow').fill('Tomatoes')
@@ -828,7 +823,9 @@ test.describe('Agreement guidance pages', () => {
       page.getByRole('heading', { name: 'What to expect', level: 1 })
     ).toBeVisible({ timeout: 10_000 })
     // Arrangement guide card + a timeline milestone heading.
-    await expect(page.getByText('Introductions')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Introductions' })
+    ).toBeVisible()
     await expect(page.getByText('Begin garden-sharing')).toBeVisible()
     await expect(page.getByText('Review & reflect')).toBeVisible()
   })
