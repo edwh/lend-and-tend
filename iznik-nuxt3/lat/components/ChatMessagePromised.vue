@@ -167,6 +167,9 @@ const agreementUrl = computed(() => {
 }
 
 .btn-view-agreement {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
   background: var(--lat-color-primary);
   color: white;

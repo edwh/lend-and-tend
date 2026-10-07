@@ -204,9 +204,12 @@
         </div>
       </div>
       <div class="d-flex d-lg-none justify-content-between align-middle">
-        <div
+        <!-- Real buttons (not clickable divs) so the phone actions are reachable
+             by keyboard and screen readers, with 44px tap targets. -->
+        <button
           v-if="chat && chat.chattype === 'User2User' && otheruser"
-          class="ms-1 me-2"
+          type="button"
+          class="mobile-action ms-1 me-2"
           @click="goToAgreement"
         >
           <v-icon
@@ -218,11 +221,11 @@
           <div class="mobtext text--smallest">
             {{ existingAgreement ? 'Agreement' : 'Sign agreement' }}
           </div>
-        </div>
-        <div
+        </button>
+        <button
           v-if="chat && chat.chattype === 'User2User' && otheruser"
-          disabled
-          class="me-2"
+          type="button"
+          class="mobile-action me-2"
           @click="addressBook"
         >
           <v-icon
@@ -232,10 +235,11 @@
             :class="{ shrink: shrink }"
           />
           <div class="mobtext text--smallest">Send address</div>
-        </div>
-        <div
+        </button>
+        <button
           v-if="chat && chat.chattype === 'User2Mod' && mod"
-          class="me-2"
+          type="button"
+          class="mobile-action me-2"
           @click="spamReport"
         >
           <v-icon
@@ -245,8 +249,8 @@
             :class="{ shrink: shrink }"
           />
           <div class="mobtext text--smallest">Spammer</div>
-        </div>
-        <div class="" @click="photoAdd">
+        </button>
+        <button type="button" class="mobile-action" @click="photoAdd">
           <v-icon
             scale="2"
             icon="camera"
@@ -254,7 +258,7 @@
             :class="{ shrink: shrink }"
           />
           <div class="mobtext text--smallest">Photo</div>
-        </div>
+        </button>
         <SpinButton
           variant="primary"
           size="md"
@@ -1059,6 +1063,24 @@ onMounted(() => {
     }
   }
 }
+.mobile-action {
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  min-width: 44px;
+  min-height: 44px;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.mobile-action:focus-visible {
+  outline: 3px solid var(--lat-color-primary-dark);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 .agreement-notice {
   display: flex;
   align-items: flex-start;

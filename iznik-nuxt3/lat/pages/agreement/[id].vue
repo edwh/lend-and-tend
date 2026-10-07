@@ -78,14 +78,17 @@ definePageMeta({
 }
 
 .btn-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
   background: none;
-  border: none;
-  color: var(--lat-color-primary);
+  border: 0;
+  color: var(--lat-color-primary-dark);
   font-size: 0.9rem;
   font-weight: 500;
+  text-decoration: underline;
   cursor: pointer;
-  padding: 0;
-  text-decoration: none;
 }
 
 .btn-back:hover {

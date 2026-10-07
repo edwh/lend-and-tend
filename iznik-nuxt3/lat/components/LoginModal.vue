@@ -4,12 +4,15 @@
       v-if="showModal"
       class="lat-modal-overlay"
       @click.self="onBackdropClick"
+      @keydown.esc.prevent="hide"
+      @keydown.tab="onTabKey"
     >
       <div
+        ref="dialogEl"
         class="lat-modal-dialog"
         role="dialog"
         aria-modal="true"
-        :aria-label="signUp ? 'Join Lend & Tend' : 'Sign in'"
+        aria-labelledby="lat-modal-title"
       >
         <div class="lat-modal-header">
           <img
@@ -17,7 +20,7 @@
             class="lat-modal-logo"
             alt="Lend & Tend"
           />
-          <h2 class="lat-modal-title">
+          <h2 id="lat-modal-title" class="lat-modal-title">
             {{ signUp ? 'Join Lend & Tend' : 'Welcome back' }}
           </h2>
           <button class="lat-modal-close" aria-label="Close" @click="hide">
@@ -148,6 +151,8 @@
 </template>
 
 <script setup>
+import { ref, watch, nextTick } from 'vue'
+import { trapTab, initialFocusTarget } from '../composables/latDialogKeys'
 import { SignUpError } from '~/api/BaseAPI'
 import { useAuthStore } from '~/stores/auth'
 import { useMiscStore } from '~/stores/misc'
@@ -192,6 +197,34 @@ function hide() {
   authStore.forceLogin = false
   linkSent.value = false
 }
+
+// Keyboard + focus: Tab stays inside the dialog, focus starts on the first
+// field, and goes back to whatever opened the dialog when it closes.
+const dialogEl = ref(null)
+let openerEl = null
+
+function onTabKey(event) {
+  trapTab(event, dialogEl.value)
+}
+
+watch(showModal, async (open) => {
+  if (typeof document === 'undefined') return
+  if (open) {
+    openerEl = document.activeElement
+    await nextTick()
+    initialFocusTarget(dialogEl.value)?.focus()
+  } else if (openerEl && typeof openerEl.focus === 'function') {
+    openerEl.focus()
+    openerEl = null
+  }
+})
+
+// Switching between sign-in and sign-up re-renders the form: focus its first field.
+watch([signUp, linkSent], async () => {
+  if (!showModal.value) return
+  await nextTick()
+  initialFocusTarget(dialogEl.value)?.focus()
+})
 
 function onBackdropClick() {
   if (!forceLogin.value) {
@@ -475,7 +508,7 @@ defineExpose({ show, showLogin, hide, showModal })
 }
 
 .btn-submit {
-  background: var(--lat-color-primary);
+  background: var(--lat-color-primary-dark);
   color: white;
   border: none;
   border-radius: 6px;
@@ -488,7 +521,7 @@ defineExpose({ show, showLogin, hide, showModal })
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: var(--lat-color-primary-dark);
+  background: #3f5235;
 }
 .btn-submit:disabled {
   opacity: 0.6;
@@ -543,7 +576,7 @@ defineExpose({ show, showLogin, hide, showModal })
 
 .terms-note {
   margin: 8px 0 0;
-  color: #aaa;
+  color: #5f6b57; /* was #aaa: 2.3:1 on white */
   font-size: 0.75rem;
 }
 

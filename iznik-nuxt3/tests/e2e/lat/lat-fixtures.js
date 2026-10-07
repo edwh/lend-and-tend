@@ -15,6 +15,11 @@ const test = base.extend({
       baseURL: LAT_BASE_URL,
       storageState: { cookies: [], origins: [] },
       viewport: { width: 1280, height: 720 },
+      // Same setting as the docs screenshot generator: wherever Bootstrap or
+      // the app gates smooth scrolling and transitions on
+      // prefers-reduced-motion, this turns them off, so a control Playwright
+      // has just scrolled to settles at once instead of being "not stable".
+      reducedMotion: 'reduce',
     })
     const page = await context.newPage()
     try {

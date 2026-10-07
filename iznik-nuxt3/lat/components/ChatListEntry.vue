@@ -1,9 +1,11 @@
 <!--
   Lend & Tend override of upstream components/ChatListEntry.vue (upstream a39dee6e3f).
-  The ONLY difference is in `esnippet`: system snippets are passed through
+  Differences from upstream: (1) `esnippet`: system snippets are passed through
   latChatSnippet() so a proposed agreement reads "Agreement sent" rather than
   Freegle's "Item promised". When upstream changes this component, re-copy it
-  and re-apply that one change.
+  and re-apply these changes. (2) `.chat-time` uses the L&T muted text colour
+  (the grey failed WCAG contrast) and the avatar is aria-hidden (decorative next
+  to the name).
 -->
 <template>
   <div
@@ -13,12 +15,17 @@
     :class="{ unread: chat.unseen }"
     @mouseenter="fetch"
   >
-    <ChatAvatar
-      :icon="resolvedIcon"
-      :name="avatarName"
-      :supporter="chat.supporter"
-      :unread-count="chat.unseen"
-    />
+    <span aria-hidden="true" class="chat-avatar-wrap">
+      <ChatAvatar
+        :icon="resolvedIcon"
+        :name="avatarName"
+        :supporter="chat.supporter"
+        :unread-count="chat.unseen"
+      />
+    </span>
+    <span v-if="chat.unseen" class="visually-hidden"
+      >{{ chat.unseen }} unread</span
+    >
     <div class="chat-content">
       <div class="chat-header">
         <span class="chat-name">{{ chat.name }}</span>
@@ -181,6 +188,10 @@ onMounted(() => {
   }
 }
 
+.chat-avatar-wrap {
+  display: contents;
+}
+
 .generated-avatar {
   width: 56px;
   height: 56px;
@@ -234,7 +245,7 @@ onMounted(() => {
 
 .chat-time {
   font-size: 0.75rem;
-  color: var(--color-gray-500);
+  color: var(--lat-color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
 }

@@ -1,5 +1,12 @@
 <template>
-  <b-modal ref="modal" scrollable size="md" title="Send your garden address">
+  <b-modal
+    ref="modal"
+    scrollable
+    size="md"
+    title="Send your garden address"
+    title-tag="h2"
+    modal-class="lat-address-modal"
+  >
     <template #default>
       <div v-if="loading" class="text-center py-3">
         <div class="spinner-border" role="status" />
@@ -270,5 +277,22 @@ async function confirmSend() {
 }
 .small {
   font-size: 0.85rem;
+}
+</style>
+
+<style>
+/* Teleported modal: not reachable from a scoped block. Dark green so the white
+   label meets 4.5:1 (the brand green alone does not). */
+.lat-address-modal .btn-primary {
+  background-color: var(--lat-color-primary-dark);
+  border-color: var(--lat-color-primary-dark);
+}
+.lat-address-modal .btn-primary:hover,
+.lat-address-modal .btn-primary:focus-visible {
+  background-color: #3f5235;
+  border-color: #3f5235;
+}
+.lat-address-modal .modal-title {
+  font-size: 1.25rem;
 }
 </style>

@@ -56,7 +56,7 @@
 
       <!-- How it works (draft state only) -->
       <div v-if="!isProposed && !isConfirmed && isLender" class="how-it-works">
-        <h3>How it works</h3>
+        <h2 class="section-heading">How it works</h2>
         <ol>
           <li>
             Fill in the terms below — what will be grown, when you'll visit, and
@@ -78,7 +78,7 @@
         v-if="!isProposed && !isConfirmed && isLender && listingDetails.length"
         class="listing-details"
       >
-        <h3>From your garden listing</h3>
+        <h2 class="section-heading">From your garden listing</h2>
         <p class="listing-hint">
           Carried over so you don’t have to retype it — fold anything relevant
           into the terms below.
@@ -91,7 +91,9 @@
 
       <!-- Terms form -->
       <div class="agreement-terms">
-        <h3>{{ isConfirmed ? 'Agreed terms' : 'Terms' }}</h3>
+        <h2 class="section-heading">
+          {{ isConfirmed ? 'Agreed terms' : 'Terms' }}
+        </h2>
         <p v-if="!isConfirmed && isLender" class="terms-note">
           {{
             isProposed
@@ -197,7 +199,7 @@
 
       <!-- What happens next (confirmed only) -->
       <div v-if="isConfirmed" class="next-steps">
-        <h3>What happens next</h3>
+        <h2 class="section-heading">What happens next</h2>
         <p v-if="checkinDue" class="checkin-due">
           ⏰ A check-in is due — let your
           {{ isLender ? 'tender' : 'lender' }} know how it's going.
@@ -746,7 +748,7 @@ async function withdraw() {
 .status-banner.draft {
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  color: #6c757d;
+  color: #495057; /* #6c757d was 4.3:1 on this grey, under the 4.5:1 minimum */
 }
 
 .agreement-meta {
@@ -778,7 +780,8 @@ async function withdraw() {
   padding: 14px 16px;
   margin-bottom: 20px;
 }
-.how-it-works h3 {
+.how-it-works h3,
+h2.section-heading {
   margin: 0 0 8px;
   font-size: 0.95rem;
   font-weight: 700;
@@ -888,6 +891,7 @@ async function withdraw() {
 }
 
 .ground-rule-select {
+  min-height: 44px;
   flex-shrink: 0;
   padding: 6px 10px;
   border: 1px solid #ddd;
@@ -909,6 +913,7 @@ async function withdraw() {
 }
 
 .date-input {
+  min-height: 44px;
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;

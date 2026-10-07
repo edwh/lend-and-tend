@@ -44,10 +44,16 @@
           </div>
 
           <template v-else>
-            <div class="status-options">
+            <div
+              class="status-options"
+              role="group"
+              aria-label="How is it going?"
+            >
               <button
+                type="button"
                 class="status-btn"
                 :class="{ active: picked === 'growing' }"
+                :aria-pressed="picked === 'growing'"
                 @click="picked = 'growing'"
               >
                 <span class="status-emoji">🟢</span>
@@ -56,8 +62,10 @@
               </button>
 
               <button
+                type="button"
                 class="status-btn"
                 :class="{ active: picked === 'ok' }"
+                :aria-pressed="picked === 'ok'"
                 @click="picked = 'ok'"
               >
                 <span class="status-emoji">🟡</span>
@@ -66,8 +74,10 @@
               </button>
 
               <button
+                type="button"
                 class="status-btn"
                 :class="{ active: picked === 'not_working' }"
+                :aria-pressed="picked === 'not_working'"
                 @click="picked = 'not_working'"
               >
                 <span class="status-emoji">🔴</span>
@@ -189,11 +199,17 @@ async function submit() {
 }
 
 .btn-back {
-  display: inline-block;
-  color: var(--lat-color-primary);
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: var(--lat-color-primary-dark);
   font-size: 0.9rem;
-  margin-bottom: 20px;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
 }
 .btn-back:hover {
   text-decoration: underline;

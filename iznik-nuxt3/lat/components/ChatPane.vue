@@ -31,14 +31,21 @@
           class="desktop-profile-header"
         >
           <div class="profile-header-main">
-            <ProfileImage
-              :image="chat.icon"
-              :name="chat.name"
-              class="profile-header-avatar clickme"
-              is-thumbnail
-              size="lg"
+            <button
+              type="button"
+              class="profile-header-avatar-btn"
+              :aria-label="`Show details for ${chat.name}`"
               @click="showInfo"
-            />
+            >
+              <ProfileImage
+                :image="chat.icon"
+                :name="chat.name"
+                class="profile-header-avatar"
+                is-thumbnail
+                size="lg"
+                aria-hidden="true"
+              />
+            </button>
             <div class="profile-header-info">
               <div class="profile-header-name">
                 <span class="clickme" @click="showInfo">{{ chat.name }}</span>
@@ -667,7 +674,30 @@ function typing() {
 }
 
 .action-btn--mark-read {
-  border: 1px solid $color-red !important;
-  color: $color-red !important;
+  /* Bootstrap's red fails 4.5:1 for small text; use the darker shade. */
+  border: 1px solid #b02a37 !important;
+  color: #b02a37 !important;
+}
+
+.profile-header-avatar-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.profile-header-avatar-btn:focus-visible {
+  outline: 3px solid var(--lat-color-primary-dark);
+  outline-offset: 2px;
+}
+</style>
+
+<style lang="scss">
+/* Unscoped on purpose: the unread badge is rendered by b-badge. White on
+   Bootstrap's red is under 4.5:1 for small text; the darker red passes. */
+.action-btn--mark-read .badge {
+  background-color: #b02a37 !important;
 }
 </style>

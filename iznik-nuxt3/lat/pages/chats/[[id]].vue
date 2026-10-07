@@ -70,7 +70,12 @@
                       />
                     </div>
                   </form>
-                  <button class="mark-read-btn" @click="markAllRead">
+                  <button
+                    type="button"
+                    class="mark-read-btn"
+                    aria-label="Mark all chats read"
+                    @click="markAllRead"
+                  >
                     <v-icon icon="check-double" />
                     <span class="d-none d-sm-inline">Mark all read</span>
                   </button>
@@ -714,6 +719,7 @@ async function searchMore() {
 }
 
 .search-input {
+  min-height: 44px;
   padding-left: 32px !important;
   border-radius: var(--radius-xl, 1.25rem) !important;
   border: 1px solid $color-gray-4 !important;
@@ -728,6 +734,8 @@ async function searchMore() {
 }
 
 .mark-read-btn {
+  min-height: 44px;
+  min-width: 44px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -790,6 +798,7 @@ async function searchMore() {
 }
 
 .chat-action-btn {
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 6px;
