@@ -19,12 +19,7 @@
 // time.
 
 const path = require('path')
-const {
-  test,
-  expect,
-  signUpViaModal,
-  logoutLink,
-} = require('./lat-fixtures')
+const { test, expect, signUpViaModal, logoutLink } = require('./lat-fixtures')
 
 // Strict block-list — these are the Freegle hosts that, if hit by an
 // L&T browser, mean USER DATA is flowing through Freegle:
@@ -46,6 +41,32 @@ const FREEGLE_INFRA_HOSTS = [
 const FIXTURE = path.join(__dirname, 'fixtures', 'test-garden.jpg')
 
 test.describe('Image upload + delivery routing', () => {
+  test('no Freegle host reaches the browser in the public runtime config', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    const offenders = await page.evaluate(() => {
+      const pub =
+        (window.__NUXT__ &&
+          window.__NUXT__.config &&
+          window.__NUXT__.config.public) ||
+        {}
+      const out = []
+      const walk = (obj, path) => {
+        for (const [k, v] of Object.entries(obj || {})) {
+          const p = path ? `${path}.${k}` : k
+          if (typeof v === 'string') {
+            if (/ilovefreegle|modtools\.org/i.test(v)) out.push(`${p}=${v}`)
+          } else if (v && typeof v === 'object') {
+            walk(v, p)
+          }
+        }
+      }
+      walk(pub, '')
+      return out
+    })
+    expect(offenders, offenders.join('\n')).toEqual([])
+  })
   test('runtime config carries L&T-owned TUS_UPLOADER and IMAGE_DELIVERY', async ({
     page,
   }) => {
@@ -60,10 +81,19 @@ test.describe('Image upload + delivery routing', () => {
     expect(cfg.tus).toMatch(/:4080\/files\/?$/)
     expect(cfg.delivery).toMatch(/:4081(\/.*)?$/)
     // Hard-block on Freegle data-path hosts even if ports happen to match.
-    const dataPathHosts = ['uploads.ilovefreegle.org', 'images.ilovefreegle.org', 'delivery.ilovefreegle.org']
+    const dataPathHosts = [
+      'uploads.ilovefreegle.org',
+      'images.ilovefreegle.org',
+      'delivery.ilovefreegle.org',
+    ]
     for (const host of dataPathHosts) {
-      expect(cfg.tus, `TUS_UPLOADER must not contain ${host}`).not.toContain(host)
-      expect(cfg.delivery, `IMAGE_DELIVERY must not contain ${host}`).not.toContain(host)
+      expect(cfg.tus, `TUS_UPLOADER must not contain ${host}`).not.toContain(
+        host
+      )
+      expect(
+        cfg.delivery,
+        `IMAGE_DELIVERY must not contain ${host}`
+      ).not.toContain(host)
     }
   })
 
@@ -97,20 +127,20 @@ test.describe('Image upload + delivery routing', () => {
     // POST to create the upload + (optionally) PATCH for the body —
     // both go to TUS_UPLOADER.
     await expect
-      .poll(
-        () => requestUrls.filter((u) => u.includes(':4080/files')).length,
-        {
-          timeout: 30_000,
-          message: 'Expected at least one upload request to lat-tusd (:4080)',
-        }
-      )
+      .poll(() => requestUrls.filter((u) => u.includes(':4080/files')).length, {
+        timeout: 30_000,
+        message: 'Expected at least one upload request to lat-tusd (:4080)',
+      })
       .toBeGreaterThan(0)
 
     // No requests must have gone to Freegle infrastructure.
     const leaked = requestUrls.filter((u) =>
       FREEGLE_INFRA_HOSTS.some((h) => u.includes(h))
     )
-    expect(leaked, `Leaked requests to Freegle infra: ${leaked.join(', ')}`).toEqual([])
+    expect(
+      leaked,
+      `Leaked requests to Freegle infra: ${leaked.join(', ')}`
+    ).toEqual([])
   })
 
   test('image fetches go via lat-delivery, not Freegle delivery', async ({
@@ -136,7 +166,9 @@ test.describe('Image upload + delivery routing', () => {
     )
     expect(
       leaked,
-      `No browser request should hit Freegle infrastructure; leaked: ${leaked.join(', ')}`
+      `No browser request should hit Freegle infrastructure; leaked: ${leaked.join(
+        ', '
+      )}`
     ).toEqual([])
   })
 })

@@ -198,3 +198,23 @@ aren't accidentally reverted:
   save a hop you could point SSR at `http://lat-api.flycast:8192/apiv2`.
 - **Mail/Sentry:** unchanged — Mailgun SMTP (secrets) and the consent-gated
   Sentry to L&T's own project; no mailpit on Fly.
+
+## Deploy notes from 2026-10-07
+
+- `fly deploy <dir> -c <toml>`: the `-c` path is resolved relative to `<dir>`, so use
+  absolute paths (`$R/...`) for both or you get "config file not found".
+- `fly ssh console` needs the org WireGuard tunnel (times out from a plain WSL shell);
+  `fly machine exec <machine> -a <app> "<cmd>"` works without it. The api image has
+  no `printenv`, but `/usr/bin/env` is there.
+- `lat-nuxt` MUST carry the same `JWT_SECRET` as `lat-api` (the concession and
+  checkout server routes verify/mint tokens with it); without it they answer 503
+  "Not configured". Copy it with `fly machine exec <api-machine> -a lat-api /usr/bin/env`
+  and `fly secrets set JWT_SECRET=... -a lat-nuxt`.
+- Before a batch deploy check `fly machines list -a lat-batch` shows ONE worker
+  machine: a stopped duplicate from an earlier deploy would be started by the deploy
+  and run a second scheduler (double emails). Destroy stale ones first.
+- `lat-nuxt` needs `IMAGE_DELIVERY` (no trailing slash) as well as
+  `LAT_DELIVERY_PUBLIC_URL`: the shared navbar skeleton and NuxtPicture build image
+  URLs from it and fall back to Freegle's delivery host when it is unset.
+- To check which migrations ran on prod, query the `migrations` table on `lat-mysql`
+  (the repo's test hook refuses shell commands that mention the migration subcommand).

@@ -3,6 +3,20 @@ import { fileURLToPath } from 'node:url'
 const latColorVarsPath = fileURLToPath(new URL('./assets/css/_color-vars.scss', import.meta.url))
 const latGlobalCssPath = fileURLToPath(new URL('./assets/css/global.scss', import.meta.url))
 
+// Lend & Tend hosts its own uploads and image delivery. The parent config.js
+// reads TUS_UPLOADER / IMAGE_DELIVERY from the environment and otherwise falls
+// back to Freegle's servers, so derive them from the L&T public URLs here:
+// a deployment that sets only LAT_TUS_PUBLIC_URL / LAT_DELIVERY_PUBLIC_URL must
+// never send a member's photo to Freegle (that is exactly what happened on Fly).
+process.env.TUS_UPLOADER =
+  process.env.TUS_UPLOADER ||
+  process.env.LAT_TUS_PUBLIC_URL ||
+  'http://localhost:4080/files/'
+process.env.IMAGE_DELIVERY =
+  process.env.IMAGE_DELIVERY ||
+  (process.env.LAT_DELIVERY_PUBLIC_URL || 'http://localhost:4081').replace(/\/+$/, '')
+const latUserSite = process.env.LAT_USER_SITE || process.env.USER_SITE || 'http://localhost:4002'
+
 export default defineNuxtConfig({
   extends: ['../'],
 
@@ -52,6 +66,21 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       APIv2: process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2',
+      // No Freegle host may reach the browser. Everything below has a Freegle
+      // default in the parent config.js; L&T overrides each with its own value.
+      TUS_UPLOADER: process.env.TUS_UPLOADER,
+      IMAGE_DELIVERY: process.env.IMAGE_DELIVERY,
+      USER_SITE: latUserSite,
+      IMAGE_SITE: process.env.IMAGE_SITE || latUserSite,
+      USER_DOMAIN: process.env.USER_DOMAIN || 'lendandtend.com',
+      MODTOOLS_SITE: process.env.MODTOOLS_SITE || '',
+      OSM_TILE: process.env.OSM_TILE || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      // Freegle's geocoder only when explicitly switched on; the map otherwise
+      // uses the L&T API's own typeahead plus postcodes.io.
+      GEOCODE:
+        process.env.LAT_USE_FREEGLE_GEOCODER === 'true'
+          ? process.env.GEOCODE || 'https://geocode.ilovefreegle.org/api'
+          : '',
       LAT_WORLD_GROUPID: parseInt(process.env.LAT_WORLD_GROUPID || '0'),
       // Dev-only "pretend to pay" bypass. Fail SAFE: never enabled in
       // production regardless of the env var, so a forgotten flag can't hand
