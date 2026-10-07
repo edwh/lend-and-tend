@@ -1,5 +1,6 @@
 <template>
   <div class="map-page">
+    <h1 class="visually-hidden">Find a garden to lend or tend</h1>
     <div class="map-layout">
       <!-- Tab bar -->
       <div class="tab-bar">
@@ -33,8 +34,12 @@
                 @keyup.enter="searchLocation"
                 @input="onGeoInput"
               />
-              <button class="geocoder-btn" @click="searchLocation">
-                <VIcon :icon="['fas', 'search']" />
+              <button
+                class="geocoder-btn"
+                aria-label="Search"
+                @click="searchLocation"
+              >
+                <VIcon :icon="['fas', 'search']" aria-hidden="true" />
               </button>
               <div v-if="geoSuggestions.length" class="geocoder-dropdown">
                 <button

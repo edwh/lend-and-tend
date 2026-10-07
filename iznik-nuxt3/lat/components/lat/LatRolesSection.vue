@@ -132,7 +132,9 @@ const { ctaClick } = useLatAuth()
 /* lenderText on lenderBg → 5.1:1 ✓ */
 .lender-pill {
   background: #d0ecc0;
-  color: var(--lat-color-lender-text);
+  color: var(
+    --lat-color-secondary-dark
+  ); /* 6.8:1; the lilac lender-text was 2.9:1 */
 }
 
 /* tenderText on tenderBg → 6:1 ✓ */
@@ -173,7 +175,9 @@ const { ctaClick } = useLatAuth()
   content: '✓';
   position: absolute;
   left: 0;
-  color: var(--lat-color-lender-text);
+  color: var(
+    --lat-color-secondary-dark
+  ); /* 6.8:1; the lilac lender-text was 2.9:1 */
   font-weight: 700;
 }
 
@@ -207,7 +211,9 @@ const { ctaClick } = useLatAuth()
 /* lenderText on lenderBg border → 5.1:1 ✓ */
 .lender-cta {
   background: transparent;
-  color: var(--lat-color-lender-text);
+  color: var(
+    --lat-color-secondary-dark
+  ); /* 6.8:1; the lilac lender-text was 2.9:1 */
   border: 2px solid var(--lat-color-lender-text);
 }
 

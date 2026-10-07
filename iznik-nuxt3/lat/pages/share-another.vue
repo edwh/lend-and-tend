@@ -173,7 +173,10 @@ onMounted(() => {
   opacity: 0.9;
 }
 .btn-secondary {
-  background: var(--lat-color-secondary, #b868ca);
+  background: var(
+    --lat-color-secondary-dark,
+    #7a3a8a
+  ); /* white text needs the darker purple */
   color: white;
 }
 .btn-secondary:hover {

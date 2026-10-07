@@ -315,7 +315,7 @@ function skip() {
 
 .join-intent {
   font-size: 0.82rem;
-  color: #aaa;
+  color: #6b6b6b;
   margin: 0;
 }
 
@@ -413,7 +413,7 @@ function skip() {
 .stripe-note {
   text-align: center;
   font-size: 0.78rem;
-  color: #aaa;
+  color: #6b6b6b;
   margin-top: 10px;
 }
 
@@ -464,7 +464,7 @@ function skip() {
 .dev-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #b7730a;
+  color: #8a5600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 8px;
@@ -472,7 +472,7 @@ function skip() {
 
 .btn-dev {
   background: #f0a500;
-  color: white;
+  color: #2b2200;
   border: none;
 }
 .btn-dev:hover {
@@ -497,7 +497,7 @@ function skip() {
 }
 .skip-or {
   font-size: 0.8rem;
-  color: #aaa;
+  color: #6b6b6b;
 }
 
 .btn-skip {
@@ -518,7 +518,7 @@ function skip() {
 .skip-note {
   text-align: center;
   font-size: 0.78rem;
-  color: #bbb;
+  color: #6b6b6b;
   margin: 8px 0 0;
 }
 

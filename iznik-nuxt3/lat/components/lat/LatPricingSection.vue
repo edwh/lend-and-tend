@@ -88,7 +88,7 @@ const { hasPaid, ctaClick } = useLatAuth()
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--lat-color-lender-text);
+  color: var(--lat-color-secondary-dark);
   margin-bottom: 8px;
 }
 
@@ -116,7 +116,7 @@ const { hasPaid, ctaClick } = useLatAuth()
 .price-free-note {
   margin-top: 12px;
   font-size: 0.8rem;
-  color: var(--lat-color-lender-text);
+  color: var(--lat-color-secondary-dark);
   font-weight: 600;
 }
 

@@ -30,7 +30,7 @@ export const branding = {
   // ── Colour palette ────────────────────────────────────────────────────────
   // Exact values from Wilder Gardens Style Tile PDF
   colors: {
-    primary: '#329732',       // Brand green — primary CTA, nav, buttons
+    primary: '#287528',       // Brand green — primary CTA, nav, buttons
     primaryDark: '#4F6642',   // Forest green — headings, dark text on green
     primaryLight: '#8CC63F',  // Light green variant
     secondary: '#B868CA',     // Purple/lilac — tender role, secondary accent
@@ -45,15 +45,15 @@ export const branding = {
     textMuted: '#5A3B1F',     // Dark brown — muted/secondary text
     error: '#CC3F00',         // Burnt orange — errors, alerts
     warning: '#CC3F00',       // Burnt orange
-    success: '#329732',       // Brand green
+    success: '#287528',       // Brand green
     info: '#B868CA',          // Purple
 
     // Role-specific pill colours — match the map pins: lender = lilac
     // (offers garden), tender = green (does the growing).
     lenderBg: '#f3e8f7',      // Light purple background
-    lenderText: '#B868CA',    // Purple text
+    lenderText: '#8e3f9d',    // Purple text
     tenderBg: '#e8f5e9',      // Light green background
-    tenderText: '#4F6642',    // Forest green text
+    tenderText: '#3f5236',    // Forest green text
     bothBg: '#eef5e9',        // Light green/cream mix
     bothText: '#4F6642',      // Forest green
   },

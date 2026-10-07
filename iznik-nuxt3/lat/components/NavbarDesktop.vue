@@ -1,6 +1,7 @@
 <template>
   <b-navbar
     id="navbar_large"
+    aria-label="Main navigation"
     class="lat-navbar d-none d-xl-flex ps-1 pe-2 navbar-light navbar-expand-xl"
     fixed="top"
   >

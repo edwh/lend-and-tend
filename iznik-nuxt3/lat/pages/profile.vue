@@ -427,7 +427,7 @@ async function makeAvailableAgain(listing: any) {
 }
 
 .status-available { background: #e3f2fd; color: #1565c0; }
-.status-proposed { background: #fff3e0; color: #e65100; }
+.status-proposed { background: #fff3e0; color: #bf4300; } /* 4.8:1; #e65100 was 3.5:1 */
 .status-confirmed { background: #e8f5e9; color: #2d5a27; }
 
 .agreement-link {

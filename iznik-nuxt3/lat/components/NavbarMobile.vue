@@ -3,12 +3,17 @@
     <div>
       <b-navbar
         type="light"
+        aria-label="Top bar"
         class="lat-navbar d-flex justify-content-between d-xl-none"
         :class="{ hideNavBarTop: navBarHidden, showNavBarTop: !navBarHidden }"
         fixed="top"
       >
         <nuxt-link to="/" class="navbar-brand p-0">
-          <img src="/images/lat/logo.png?v=2" alt="Lend & Tend" class="lat-logo" />
+          <img
+            src="/images/lat/logo.png?v=2"
+            alt="Lend & Tend"
+            class="lat-logo"
+          />
         </nuxt-link>
 
         <div v-if="!loggedIn" class="d-flex align-items-center">
@@ -23,15 +28,32 @@
         </div>
 
         <div v-if="loggedIn" class="d-flex align-items-center gap-2">
-          <nuxt-link to="/chats" class="text-dark position-relative px-2">
-            <v-icon icon="comments" class="fa-lg" />
-            <b-badge v-if="chatCount" variant="danger" class="chatbadge">{{
-              chatCount
-            }}</b-badge>
+          <nuxt-link
+            to="/chats"
+            class="text-dark position-relative px-2"
+            :aria-label="
+              chatCount ? `Messages, ${chatCount} unread` : 'Messages'
+            "
+          >
+            <v-icon icon="comments" class="fa-lg" aria-hidden="true" />
+            <b-badge
+              v-if="chatCount"
+              variant="danger"
+              class="chatbadge"
+              aria-hidden="true"
+              >{{ chatCount }}</b-badge
+            >
           </nuxt-link>
-          <b-dropdown no-caret variant="primary" class="userOptions">
+          <b-dropdown
+            no-caret
+            variant="primary"
+            class="userOptions"
+            toggle-class="user-menu-toggle"
+            aria-label="Account menu"
+          >
             <template #button-content>
-              <v-icon icon="user" size="lg" />
+              <v-icon icon="user" size="lg" aria-hidden="true" />
+              <span class="visually-hidden">Account menu</span>
             </template>
             <b-dropdown-item href="/profile">
               <v-icon icon="user" class="menu-icon" /> My Garden
@@ -48,6 +70,7 @@
 
       <nav
         class="navbar-bottom d-xl-none"
+        aria-label="Main navigation"
         :class="{
           hideNavBarBottom: navBarBottomHidden,
           showNavBarBottom: !navBarBottomHidden,

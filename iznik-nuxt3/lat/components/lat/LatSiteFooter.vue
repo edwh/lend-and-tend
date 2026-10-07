@@ -18,7 +18,7 @@
       </div>
 
       <div class="footer-links-col">
-        <h3 class="footer-col-heading">Explore</h3>
+        <h2 class="footer-col-heading">Explore</h2>
         <nav class="footer-links">
           <NuxtLink to="/map">Map</NuxtLink>
           <NuxtLink to="/about">About</NuxtLink>
@@ -31,7 +31,7 @@
       </div>
 
       <div class="footer-contact-col">
-        <h3 class="footer-col-heading">Contact</h3>
+        <h2 class="footer-col-heading">Contact</h2>
         <p>
           <a :href="`mailto:${branding.email}`" class="footer-email">{{
             branding.email
@@ -126,7 +126,7 @@ import branding from '~/branding.config'
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.68); /* 6:1 on the footer; 0.45 was 3.9:1 */
   margin: 0 0 14px;
 }
 
@@ -176,7 +176,7 @@ import branding from '~/branding.config'
 
 .footer-legal p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.68);
   font-size: 0.8rem;
 }
 

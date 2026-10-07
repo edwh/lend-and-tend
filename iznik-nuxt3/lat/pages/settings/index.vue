@@ -150,7 +150,11 @@
               </p>
             </div>
             <label class="toggle-switch">
-              <input v-model="form.lat_alerts_enabled" type="checkbox" />
+              <input
+                v-model="form.lat_alerts_enabled"
+                type="checkbox"
+                aria-label="Email me when new listings appear nearby"
+              />
               <span class="toggle-track" />
             </label>
           </div>
@@ -182,6 +186,7 @@
             controls which new listings trigger alerts for you.
           </p>
           <div class="field">
+            <label class="field-label" for="radius">Travel radius</label>
             <select
               id="radius"
               v-model="form.lat_travelRadius"
@@ -210,7 +215,11 @@
               <p class="toggle-note">Once a month while you're unmatched</p>
             </div>
             <label class="toggle-switch">
-              <input v-model="form.lat_waitlist_reminders" type="checkbox" />
+              <input
+                v-model="form.lat_waitlist_reminders"
+                type="checkbox"
+                aria-label="Send me still interested reminders"
+              />
               <span class="toggle-track" />
             </label>
           </div>

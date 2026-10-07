@@ -448,7 +448,7 @@ useHead({
 
 .cta-inner p {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: #fff;
   margin: 0 0 32px;
 }
 

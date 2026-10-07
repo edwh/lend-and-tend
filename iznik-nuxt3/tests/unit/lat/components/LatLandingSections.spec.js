@@ -4,6 +4,11 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 
+import LatHowItWorksSection from '~/lat/components/lat/LatHowItWorksSection.vue'
+import LatTestimonialsSection from '~/lat/components/lat/LatTestimonialsSection.vue'
+import LatRolesSection from '~/lat/components/lat/LatRolesSection.vue'
+import LatSiteFooter from '~/lat/components/lat/LatSiteFooter.vue'
+
 const mockCtaClick = vi.fn()
 vi.mock('~/lat/composables/useLatAuth.js', () => ({
   useLatAuth: () => ({
@@ -26,11 +31,6 @@ vi.mock('~/branding.config', () => ({
     contactEmail: '',
   },
 }))
-
-import LatHowItWorksSection from '~/lat/components/lat/LatHowItWorksSection.vue'
-import LatTestimonialsSection from '~/lat/components/lat/LatTestimonialsSection.vue'
-import LatRolesSection from '~/lat/components/lat/LatRolesSection.vue'
-import LatSiteFooter from '~/lat/components/lat/LatSiteFooter.vue'
 
 function makeWrapper(comp) {
   return mount(comp, {
@@ -89,8 +89,10 @@ describe('LatRolesSection', () => {
 describe('LatSiteFooter', () => {
   it('has Explore and Contact columns', () => {
     const w = makeWrapper(LatSiteFooter)
-    const h3s = w.findAll('h3.footer-col-heading').map((n) => n.text())
-    expect(h3s).toContain('Explore')
-    expect(h3s).toContain('Contact')
+    // h2, not h3: the footer follows the page's h1 directly on short pages,
+    // and skipping a heading level is an accessibility failure.
+    const headings = w.findAll('h2.footer-col-heading').map((n) => n.text())
+    expect(headings).toContain('Explore')
+    expect(headings).toContain('Contact')
   })
 })
