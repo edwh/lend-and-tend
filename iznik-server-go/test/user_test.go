@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/freegle/iznik-server-go/database"
-	user2 "github.com/freegle/iznik-server-go/user"
 	"github.com/freegle/iznik-server-go/user"
+	user2 "github.com/freegle/iznik-server-go/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1404,7 +1404,8 @@ func TestPatchUserMuteChitchat(t *testing.T) {
 	db := database.DBConn
 
 	// Create a mod and a target user on the same group.
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	targetID := CreateTestUser(t, prefix+"_target", "User")
 	groupID := CreateTestGroup(t, prefix)
 	CreateTestMembership(t, modID, groupID, "Moderator")
@@ -1501,7 +1502,8 @@ func TestPatchUserSettingsModOnMember(t *testing.T) {
 	prefix := uniquePrefix("patchsetmod")
 	db := database.DBConn
 
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	memberID := CreateTestUser(t, prefix+"_member", "User")
 	groupID := CreateTestGroup(t, prefix)
 	CreateTestMembership(t, modID, groupID, "Moderator")
@@ -1549,7 +1551,8 @@ func TestPatchUserSettingsModOnMemberRelevantAllowed(t *testing.T) {
 	prefix := uniquePrefix("patchrelmod")
 	db := database.DBConn
 
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	memberID := CreateTestUser(t, prefix+"_member", "User")
 	groupID := CreateTestGroup(t, prefix)
 	CreateTestMembership(t, modID, groupID, "Moderator")
@@ -1741,7 +1744,8 @@ func TestLimboUserAdminCannotDeleteModerator(t *testing.T) {
 	db := database.DBConn
 
 	adminID := CreateTestUser(t, prefix+"_admin", "Admin")
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	_, adminToken := CreateTestSession(t, adminID)
 
 	// Make the target user a moderator of some group.
@@ -1960,7 +1964,8 @@ func TestPostUserMergeByModerator(t *testing.T) {
 	prefix := uniquePrefix("mergemod")
 	db := database.DBConn
 
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	_, modToken := CreateTestSession(t, modID)
 
 	groupID := CreateTestGroup(t, prefix)
@@ -2001,7 +2006,8 @@ func TestPostUserMergeByModeratorForbiddenForOutsideUser(t *testing.T) {
 	// A moderator cannot merge users they don't moderate.
 	prefix := uniquePrefix("mergemodout")
 
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	_, modToken := CreateTestSession(t, modID)
 
 	groupID := CreateTestGroup(t, prefix)
@@ -2624,7 +2630,8 @@ func TestGetUserFetchMT_NonAdminNoDonations(t *testing.T) {
 
 	// Create a regular mod (not admin/support).
 	groupID := CreateTestGroup(t, prefix)
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	CreateTestMembership(t, modID, groupID, "Moderator")
 	_, modToken := CreateTestSession(t, modID)
 
@@ -2741,7 +2748,8 @@ func TestGetUserFetchMT_MessageHistoryForMod(t *testing.T) {
 
 	groupID := CreateTestGroup(t, prefix)
 	posterID := CreateTestUser(t, prefix+"_poster", "User")
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	CreateTestMembership(t, posterID, groupID, "Member")
 	CreateTestMembership(t, modID, groupID, "Moderator")
 	_, modToken := CreateTestSession(t, modID)
@@ -2877,7 +2885,8 @@ func TestGetUserMembershipsPostingStatus(t *testing.T) {
 	db := database.DBConn
 
 	groupID := CreateTestGroup(t, prefix)
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	CreateTestMembership(t, modID, groupID, "Owner")
 	_, modToken := CreateTestSession(t, modID)
 
@@ -2940,7 +2949,8 @@ func TestFetchMTModmailsCount(t *testing.T) {
 	db := database.DBConn
 
 	targetID := CreateTestUser(t, prefix+"_target", "User")
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	groupID := CreateTestGroup(t, prefix)
 	CreateTestMembership(t, targetID, groupID, "Member")
 	CreateTestMembership(t, modID, groupID, "Moderator")
@@ -3046,7 +3056,8 @@ func TestGetUserReplies(t *testing.T) {
 	db := database.DBConn
 	groupID := CreateTestGroup(t, prefix)
 
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	CreateTestMembership(t, modID, groupID, "Moderator")
 	_, modToken := CreateTestSession(t, modID)
 
@@ -3418,7 +3429,8 @@ func TestGetDeletedUserNameAsMod(t *testing.T) {
 	db.Exec("UPDATE users SET fullname = 'Jane Doe', deleted = NOW() WHERE id = ?", userID)
 
 	// Create a mod who can view deleted users.
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	_, modToken := CreateTestSession(t, modID)
 	groupID := CreateTestGroup(t, prefix)
 	CreateTestMembership(t, modID, groupID, "Moderator")
@@ -3471,7 +3483,8 @@ func TestGetUserReturnsEngagement(t *testing.T) {
 
 	// Create a mod who can view this user.
 	groupID := CreateTestGroup(t, prefix)
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	CreateTestMembership(t, modID, groupID, "Owner")
 	CreateTestMembership(t, userID, groupID, "Member")
 	_, modToken := CreateTestSession(t, modID)
@@ -3635,7 +3648,8 @@ func TestSettingsNotVisibleToOtherUsers(t *testing.T) {
 	}
 
 	// Create a mod viewer in a shared group — they should see settings.
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	_, modToken := CreateTestSession(t, modID)
 	groupID := CreateTestGroup(t, prefix)
 	CreateTestMembership(t, modID, groupID, "Moderator")
@@ -4140,7 +4154,8 @@ func TestRecentWanted_GoAPI_ExcludesNonApproved(t *testing.T) {
 
 	groupID := CreateTestGroup(t, prefix)
 	posterID := CreateTestUser(t, prefix+"_poster", "User")
-	modID := CreateTestUser(t, prefix+"_mod", "User")
+	// A real group moderator has systemrole=Moderator (synced by SyncSystemRole in production).
+	modID := CreateTestUser(t, prefix+"_mod", "Moderator")
 	CreateTestMembership(t, posterID, groupID, "Member")
 	CreateTestMembership(t, modID, groupID, "Moderator")
 	_, modToken := CreateTestSession(t, modID)

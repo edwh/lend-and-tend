@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	neturl "net/url"
 	"os"
 	"sort"
 	"strings"
@@ -83,15 +84,15 @@ type EmailStats struct {
 	TotalSent       int64   `json:"total_sent"`
 	Opened          int64   `json:"opened"`
 	Clicked         int64   `json:"clicked"`
-	LinkedBounces   int64   `json:"linked_bounces"`   // Bounces matched to specific tracked emails via bounced_at
+	LinkedBounces   int64   `json:"linked_bounces"` // Bounces matched to specific tracked emails via bounced_at
 	OpenRate        float64 `json:"open_rate"`
 	ClickRate       float64 `json:"click_rate"`
 	ClickToOpenRate float64 `json:"click_to_open_rate"`
 	BounceRate      float64 `json:"bounce_rate"`
 	// Actual bounces from bounces_emails table (includes all bounces, not just tracked ones)
-	TotalBounces     int64   `json:"total_bounces"`
-	PermanentBounces int64   `json:"permanent_bounces"`
-	TemporaryBounces int64   `json:"temporary_bounces"`
+	TotalBounces     int64 `json:"total_bounces"`
+	PermanentBounces int64 `json:"permanent_bounces"`
+	TemporaryBounces int64 `json:"temporary_bounces"`
 }
 
 // AMPStats represents AMP-specific statistics
@@ -103,18 +104,18 @@ type AMPStats struct {
 	AMPRendered   int64   `json:"amp_rendered"`
 	AMPRenderRate float64 `json:"amp_render_rate"`
 	// AMP engagement metrics
-	AMPOpened     int64   `json:"amp_opened"`
-	AMPClicked    int64   `json:"amp_clicked"`
-	AMPLinkedBounces int64 `json:"amp_linked_bounces"` // AMP emails with bounces matched to tracked emails
-	AMPReplied    int64   `json:"amp_replied"`
-	AMPOpenRate   float64 `json:"amp_open_rate"`
-	AMPClickRate  float64 `json:"amp_click_rate"`
-	AMPBounceRate float64 `json:"amp_bounce_rate"`
-	AMPReplyRate  float64 `json:"amp_reply_rate"`
+	AMPOpened        int64   `json:"amp_opened"`
+	AMPClicked       int64   `json:"amp_clicked"`
+	AMPLinkedBounces int64   `json:"amp_linked_bounces"` // AMP emails with bounces matched to tracked emails
+	AMPReplied       int64   `json:"amp_replied"`
+	AMPOpenRate      float64 `json:"amp_open_rate"`
+	AMPClickRate     float64 `json:"amp_click_rate"`
+	AMPBounceRate    float64 `json:"amp_bounce_rate"`
+	AMPReplyRate     float64 `json:"amp_reply_rate"`
 	// Reply breakdown by method for AMP-enabled emails
-	AMPRepliedViaAMP   int64   `json:"amp_replied_via_amp"`   // Replies via AMP form
-	AMPRepliedViaEmail int64   `json:"amp_replied_via_email"` // Replies via email
-	AMPReplyViaAMPRate float64 `json:"amp_reply_via_amp_rate"`
+	AMPRepliedViaAMP     int64   `json:"amp_replied_via_amp"`   // Replies via AMP form
+	AMPRepliedViaEmail   int64   `json:"amp_replied_via_email"` // Replies via email
+	AMPReplyViaAMPRate   float64 `json:"amp_reply_via_amp_rate"`
 	AMPReplyViaEmailRate float64 `json:"amp_reply_via_email_rate"`
 	// Click breakdown: reply clicks (to message/chat pages) vs other clicks
 	AMPReplyClicks    int64   `json:"amp_reply_clicks"`     // Clicks to reply on web
@@ -126,14 +127,14 @@ type AMPStats struct {
 	// Legacy action rate (for backwards compatibility)
 	AMPActionRate float64 `json:"amp_action_rate"`
 	// Non-AMP engagement metrics (for comparison)
-	NonAMPOpened      int64   `json:"non_amp_opened"`
-	NonAMPClicked     int64   `json:"non_amp_clicked"`
-	NonAMPLinkedBounces int64 `json:"non_amp_linked_bounces"` // Non-AMP emails with bounces matched to tracked emails
-	NonAMPReplied     int64   `json:"non_amp_replied"`
-	NonAMPOpenRate    float64 `json:"non_amp_open_rate"`
-	NonAMPClickRate   float64 `json:"non_amp_click_rate"`
-	NonAMPBounceRate  float64 `json:"non_amp_bounce_rate"`
-	NonAMPReplyRate   float64 `json:"non_amp_reply_rate"`
+	NonAMPOpened        int64   `json:"non_amp_opened"`
+	NonAMPClicked       int64   `json:"non_amp_clicked"`
+	NonAMPLinkedBounces int64   `json:"non_amp_linked_bounces"` // Non-AMP emails with bounces matched to tracked emails
+	NonAMPReplied       int64   `json:"non_amp_replied"`
+	NonAMPOpenRate      float64 `json:"non_amp_open_rate"`
+	NonAMPClickRate     float64 `json:"non_amp_click_rate"`
+	NonAMPBounceRate    float64 `json:"non_amp_bounce_rate"`
+	NonAMPReplyRate     float64 `json:"non_amp_reply_rate"`
 	// Click breakdown for non-AMP
 	NonAMPReplyClicks    int64   `json:"non_amp_reply_clicks"`
 	NonAMPOtherClicks    int64   `json:"non_amp_other_clicks"`
@@ -644,18 +645,18 @@ func getAMPStats(db *gorm.DB, emailType, startDate, endDate string) AMPStats {
 
 // UserEmailTrackingResponse represents email tracking data for a user
 type UserEmailTrackingResponse struct {
-	ID            uint64     `json:"id"`
-	EmailType     string     `json:"email_type"`
-	Subject       *string    `json:"subject"`
-	SentAt        *time.Time `json:"sent_at"`
-	OpenedAt      *time.Time `json:"opened_at"`
-	OpenedVia     *string    `json:"opened_via"`
-	ClickedAt     *time.Time `json:"clicked_at"`
-	ClickedLink   *string    `json:"clicked_link"`
-	LinksClicked  uint16     `json:"links_clicked"`
-	BouncedAt     *time.Time `json:"bounced_at"`
+	ID             uint64     `json:"id"`
+	EmailType      string     `json:"email_type"`
+	Subject        *string    `json:"subject"`
+	SentAt         *time.Time `json:"sent_at"`
+	OpenedAt       *time.Time `json:"opened_at"`
+	OpenedVia      *string    `json:"opened_via"`
+	ClickedAt      *time.Time `json:"clicked_at"`
+	ClickedLink    *string    `json:"clicked_link"`
+	LinksClicked   uint16     `json:"links_clicked"`
+	BouncedAt      *time.Time `json:"bounced_at"`
 	UnsubscribedAt *time.Time `json:"unsubscribed_at"`
-	CreatedAt     time.Time  `json:"created_at"`
+	CreatedAt      time.Time  `json:"created_at"`
 }
 
 // UserEmails returns email tracking for a specific user (requires authentication)
@@ -830,11 +831,11 @@ type DailyStats struct {
 	PermanentBounces int64 `json:"permanent_bounces"`
 	TemporaryBounces int64 `json:"temporary_bounces"`
 	// AMP-specific metrics
-	AMPSent          int64 `json:"amp_sent"`
-	AMPOpened        int64 `json:"amp_opened"`
-	AMPClicked       int64 `json:"amp_clicked"`
-	AMPLinkedBounces int64 `json:"amp_linked_bounces"`
-	AMPReplied       int64 `json:"amp_replied"`
+	AMPSent             int64 `json:"amp_sent"`
+	AMPOpened           int64 `json:"amp_opened"`
+	AMPClicked          int64 `json:"amp_clicked"`
+	AMPLinkedBounces    int64 `json:"amp_linked_bounces"`
+	AMPReplied          int64 `json:"amp_replied"`
 	NonAMPSent          int64 `json:"non_amp_sent"`
 	NonAMPOpened        int64 `json:"non_amp_opened"`
 	NonAMPClicked       int64 `json:"non_amp_clicked"`
@@ -1325,8 +1326,31 @@ func isValidRedirectURL(url string) bool {
 	// Allow modtools.org for moderator chat links
 	allowedDomains = append(allowedDomains, "modtools.org")
 
+	// Allow freegle.in for Freegle PayPal short links (e.g. donate CTA)
+	allowedDomains = append(allowedDomains, "freegle.in")
+
+	// Same-origin relative paths (e.g. "/mypost/123") are safe to redirect to.
+	if strings.HasPrefix(url, "/") && !strings.HasPrefix(url, "//") {
+		return true
+	}
+
+	// Match on the exact host, not a naive substring: strings.Contains(url, domain) would
+	// accept "https://evil.com/modtools.org" and "https://modtools.org.evil.com" as valid.
+	parsed, err := neturl.Parse(url)
+	if err != nil {
+		return false
+	}
+	// Only http(s) redirects (blocks javascript:, data:, etc.).
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if host == "" {
+		return false
+	}
 	for _, domain := range allowedDomains {
-		if strings.Contains(url, domain) {
+		d := strings.ToLower(domain)
+		if host == d || strings.HasSuffix(host, "."+d) {
 			return true
 		}
 	}
