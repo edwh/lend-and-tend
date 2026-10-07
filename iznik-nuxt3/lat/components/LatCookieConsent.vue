@@ -36,7 +36,7 @@ import { useCookieConsent } from '../composables/useCookieConsent'
 import branding from '~/branding.config'
 
 const siteName = branding.siteName
-const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
+const { hasChosen, acceptAll, essentialOnly, barHeight } = useCookieConsent()
 
 // The bar is fixed to the bottom of the viewport, so it would cover whatever
 // is at the foot of a long page (the agreement form's "Send to tender" button,
@@ -50,7 +50,10 @@ let observer = null
 function reserveSpace() {
   if (typeof document === 'undefined') return
   const h = bar.value ? bar.value.offsetHeight : 0
-  document.body.style.paddingBottom = h ? `${h}px` : ''
+  barHeight.value = h
+  // scrollIntoView / focus scrolling (keyboard users, Playwright, "jump to
+  // field" links) must land ABOVE the bar, not underneath it.
+  document.documentElement.style.scrollPaddingBottom = h ? `${h}px` : ''
 }
 
 function observe() {
@@ -66,11 +69,19 @@ function observe() {
 }
 
 onMounted(observe)
+// The bar sits inside <client-only>, whose slot renders a tick AFTER this
+// component mounts, so `bar` is still null in onMounted. Watch the ref: the
+// moment the bar exists (or goes away) re-measure. flush 'post' runs after
+// the DOM update, when offsetHeight is real.
+watch(bar, observe, { flush: 'post' })
 watch(hasChosen, () => nextTick(observe))
 onBeforeUnmount(() => {
   if (observer) observer.disconnect()
   observer = null
-  if (typeof document !== 'undefined') document.body.style.paddingBottom = ''
+  if (typeof document !== 'undefined') {
+    barHeight.value = 0
+    document.documentElement.style.scrollPaddingBottom = ''
+  }
 })
 </script>
 
@@ -108,10 +119,18 @@ onBeforeUnmount(() => {
   color: var(--lat-color-text-muted);
 }
 
+/* Dark green: the brand green on white is below 4.5:1 for small text. The
+   padding gives the link a 44px-tall tap target on a phone. */
 .lcc-link {
-  color: var(--lat-color-primary);
+  color: var(--lat-color-primary-dark);
   font-weight: 600;
   white-space: nowrap;
+  display: inline-block;
+  /* 44px hit area without making the bar taller: the padding is cancelled by
+     the margin, so the surrounding text keeps its line height. */
+  padding: 10px 0;
+  margin: -10px 0;
+  text-decoration: underline;
 }
 
 .lcc-actions {

@@ -35,7 +35,10 @@ const test = base.extend({
  * @param {import('@playwright/test').Locator} control  element to click
  * @param {import('@playwright/test').Locator} effect   element that proves the click landed
  */
-async function clickUntilHydrated(control, effect, timeout = 15_000) {
+// 45 s, not 15: against the dev server the first visit to a route compiles it
+// on demand, and under load (another suite, a build) hydration alone can take
+// longer than 15 s. The assertion is unchanged; only the budget is wider.
+async function clickUntilHydrated(control, effect, timeout = 45_000) {
   await expect(async () => {
     await control.click()
     await expect(effect).toBeVisible({ timeout: 1_000 })

@@ -2,6 +2,7 @@
   <div>
     <LayoutCommon :key="'nuxt-' + bump">
       <slot />
+      <LatCookieSpacer />
     </LayoutCommon>
     <client-only>
       <LoginModal v-if="!loggedIn" />

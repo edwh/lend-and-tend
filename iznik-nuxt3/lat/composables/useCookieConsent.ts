@@ -35,7 +35,13 @@ export function useCookieConsent() {
     cookie.value = value
   }
 
+  // Measured height of the fixed banner while it is showing (0 otherwise).
+  // Set by LatCookieConsent, read by LatCookieSpacer, which pads the page
+  // content so the last control on a long page is never under the bar.
+  const barHeight = useState<number>('lat-cookie-bar-height', () => 0)
+
   return {
+    barHeight,
     consent,
     hasChosen,
     nonEssentialAllowed,
