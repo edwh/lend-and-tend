@@ -159,8 +159,8 @@ services:
       FREEGLE_SUPPORT_ADDR: "hello@lendandtend.com"
       # Public logo URL — emails are viewed in external clients, so this can't
       # be the localhost dev server. Points at the deployed L&T site.
-      LAT_ASSET_BASE_URL: "${LAT_ASSET_BASE_URL:-https://lat.lend-and-tend.katapult.cloud}"
-      FREEGLE_LOGO_URL: "${LAT_ASSET_BASE_URL:-https://lat.lend-and-tend.katapult.cloud}/images/lat/logo.png?v=2"
+      LAT_ASSET_BASE_URL: "${LAT_ASSET_BASE_URL:-https://new.lendandtend.com}"
+      FREEGLE_LOGO_URL: "${LAT_ASSET_BASE_URL:-https://new.lendandtend.com}/images/lat/logo.png?v=2"
       FREEGLE_REGISTERED_ADDRESS: "${LAT_REGISTERED_ADDRESS:-Lend and Tend Limited, 62 Brown Street, Sheffield, S1 2BS}"
       # L&T's Go API has no email tracking redirect/pixel endpoints, so send
       # links straight to their destination rather than via Freegle's tracker.
