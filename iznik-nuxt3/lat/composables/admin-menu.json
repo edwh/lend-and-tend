@@ -1,0 +1,71 @@
+[
+  {
+    "heading": null,
+    "items": [
+      {
+        "link": "/admin",
+        "name": "Dashboard"
+      }
+    ]
+  },
+  {
+    "heading": "Gardens",
+    "items": [
+      {
+        "link": "/admin/gardens/pending",
+        "name": "Pending"
+      },
+      {
+        "link": "/admin/gardens/approved",
+        "name": "Approved"
+      }
+    ]
+  },
+  {
+    "heading": "Members",
+    "items": [
+      {
+        "link": "/admin/members",
+        "name": "All members"
+      },
+      {
+        "link": "/admin/members/flagged",
+        "name": "Flagged"
+      },
+      {
+        "link": "/admin/users",
+        "name": "Search"
+      }
+    ]
+  },
+  {
+    "heading": null,
+    "items": [
+      {
+        "link": "/admin/moderation",
+        "name": "Review queue"
+      },
+      {
+        "link": "/admin/chats",
+        "name": "Chats"
+      },
+      {
+        "link": "/admin/agreements",
+        "name": "Agreements"
+      },
+      {
+        "link": "/admin/concessions",
+        "name": "Concessions"
+      }
+    ]
+  },
+  {
+    "heading": null,
+    "items": [
+      {
+        "link": "/admin/settings",
+        "name": "Settings"
+      }
+    ]
+  }
+]

@@ -1,8 +1,20 @@
 <template>
   <div :class="['lat-admin-menu-item', { active: isActive }]">
-    <span v-if="indent" class="ps-3" />
-    <NuxtLink :to="link" @click="onClick">{{ name }}</NuxtLink>
-    <span v-if="badge > 0" class="lat-admin-menu-badge">{{ badge }}</span>
+    <NuxtLink
+      :to="link"
+      class="lat-admin-menu-link"
+      :class="{ 'lat-admin-menu-link--indent': indent }"
+      :aria-current="isActive ? 'page' : null"
+      @click="onClick"
+    >
+      <span>{{ name }}</span>
+      <span
+        v-if="badge > 0"
+        class="lat-admin-menu-badge"
+        :aria-label="`${badge} waiting`"
+        >{{ badge }}</span
+      >
+    </NuxtLink>
   </div>
 </template>
 
@@ -12,8 +24,10 @@
 // extends the root app, not modtools/, so that component never resolved and
 // the sidebar rendered only its section headings. Same props, no ModTools
 // stores: `count`/`othercount` (ModTools work-count keys) are accepted and
-// ignored; `directcount` shows as a badge.
+// ignored; `directcount` shows as a badge. The whole row is the link (a big
+// tap target), and the current section is announced with aria-current.
 import { computed } from 'vue'
+import { activeMenuLink } from '../composables/latAdminMenu'
 import { useRoute } from '#imports'
 
 const props = defineProps({
@@ -30,11 +44,9 @@ const emit = defineEmits(['mobilehidemenu'])
 
 const route = useRoute()
 
-const isActive = computed(() => {
-  const path = route?.path || ''
-  if (props.link === '/admin') return path === '/admin' || path === '/admin/'
-  return path === props.link || path.startsWith(props.link + '/')
-})
+const isActive = computed(
+  () => activeMenuLink(route?.path || '') === props.link
+)
 
 const badge = computed(() => props.directcount || 0)
 
@@ -45,27 +57,38 @@ function onClick() {
 
 <style scoped>
 .lat-admin-menu-item {
-  padding: 6px 4px;
+  margin: 2px 6px;
+  border-radius: 6px;
+}
+.lat-admin-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: #1a2e0d;
+  text-decoration: none;
   font-size: 1rem;
 }
-.lat-admin-menu-item a {
-  color: var(--lat-color-text, #1a2e0d);
-  text-decoration: none;
+.lat-admin-menu-link--indent {
+  padding-left: 22px;
 }
-.lat-admin-menu-item a:hover {
+.lat-admin-menu-link:hover {
+  background: #e4e9df;
   text-decoration: underline;
 }
-.lat-admin-menu-item.active a {
+.lat-admin-menu-item.active .lat-admin-menu-link {
+  background: #2f7d4a;
+  color: #fff;
   font-weight: 600;
-  color: var(--lat-color-primary-dark, #2f7d4a);
 }
 .lat-admin-menu-badge {
   display: inline-block;
-  margin-left: 6px;
+  margin-left: auto;
   min-width: 1.4em;
   padding: 0 6px;
   border-radius: 999px;
-  background: #c62828;
+  background: #b71c1c;
   color: #fff;
   font-size: 0.75rem;
   font-weight: 600;

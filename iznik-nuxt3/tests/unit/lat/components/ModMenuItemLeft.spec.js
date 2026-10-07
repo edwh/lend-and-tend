@@ -35,18 +35,39 @@ describe('ModMenuItemLeft (lat)', () => {
 
   it('indents when asked', () => {
     expect(
-      mountItem({ link: '/x', name: 'x', indent: true }).find('.ps-3').exists()
+      mountItem({ link: '/x', name: 'x', indent: true })
+        .find('.lat-admin-menu-link--indent')
+        .exists()
     ).toBe(true)
-    expect(mountItem({ link: '/x', name: 'x' }).find('.ps-3').exists()).toBe(
-      false
-    )
+    expect(
+      mountItem({ link: '/x', name: 'x' })
+        .find('.lat-admin-menu-link--indent')
+        .exists()
+    ).toBe(false)
+  })
+
+  it('announces the current section to assistive tech', () => {
+    mockRoute.path = '/admin/members'
+    expect(
+      mountItem({ link: '/admin/members', name: 'Members' })
+        .find('a')
+        .attributes('aria-current')
+    ).toBe('page')
+    expect(
+      mountItem({ link: '/admin/chats', name: 'Chats' })
+        .find('a')
+        .attributes('aria-current')
+    ).toBeUndefined()
   })
 
   it('marks the current section active, with the dashboard matching exactly', () => {
     mockRoute.path = '/admin/members/flagged'
     expect(
-      mountItem({ link: '/admin/members', name: 'Members' }).classes()
+      mountItem({ link: '/admin/members/flagged', name: 'Flagged' }).classes()
     ).toContain('active')
+    expect(
+      mountItem({ link: '/admin/members', name: 'Members' }).classes()
+    ).not.toContain('active')
     expect(
       mountItem({ link: '/admin/pending', name: 'Pending' }).classes()
     ).not.toContain('active')

@@ -1,13 +1,13 @@
 <template>
   <div>
-    <h2 class="lat-admin-title">Settings</h2>
+    <h1 class="lat-admin-title">Settings</h1>
 
     <p class="lat-admin-subtitle">
       Administrative settings for the Lend & Tend platform.
     </p>
 
     <div class="lat-admin-card">
-      <h3 class="lat-admin-heading">General Information</h3>
+      <h2 class="lat-admin-heading">General Information</h2>
 
       <div class="lat-admin-info-group">
         <label class="lat-admin-label">Platform Name:</label>
@@ -24,7 +24,7 @@
         <p class="lat-admin-value">{{ apiEndpoint }}</p>
       </div>
 
-      <h3 class="lat-admin-heading" style="margin-top: 2rem">Your Account</h3>
+      <h2 class="lat-admin-heading lat-admin-heading--spaced">Your Account</h2>
 
       <div class="lat-admin-info-group">
         <label class="lat-admin-label">Name:</label>
@@ -53,7 +53,9 @@ useHead({ title: 'Settings — L&T Admin' })
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 
-const worldGroupId = computed(() => config.public.LAT_WORLD_GROUPID || 'Not configured')
+const worldGroupId = computed(
+  () => config.public.LAT_WORLD_GROUPID || 'Not configured'
+)
 const apiEndpoint = computed(() => config.public.APIv2 || 'Not configured')
 
 const userInfo = computed(() => {
@@ -73,24 +75,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.lat-admin-title {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #1a2e0d;
-}
-
-.lat-admin-subtitle {
-  color: #5c6b4a;
-  margin-bottom: 18px;
-}
-
-.lat-admin-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
-  padding: 22px;
-}
-
 .lat-admin-heading {
   font-size: 1.1rem;
   font-weight: 700;
@@ -121,5 +105,8 @@ onMounted(() => {
   font-size: 0.95rem;
   color: #333;
   padding: 0.5rem 0;
+}
+.lat-admin-heading--spaced {
+  margin-top: 2rem;
 }
 </style>

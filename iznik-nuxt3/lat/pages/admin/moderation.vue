@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="page-title">Review queue</h2>
+    <h1 class="page-title">Review queue</h1>
     <p class="page-desc">
       Messages flagged by the word filter or reported by users. Review each one
       and approve or reject.
@@ -205,7 +205,7 @@ onMounted(loadQueue)
 
 .review-reason-badge {
   background: #fff3e0;
-  color: #e65100;
+  color: #9a3c00;
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 0.75rem;
@@ -272,7 +272,7 @@ onMounted(loadQueue)
 
 .btn-hold {
   background: #fff3e0;
-  color: #e65100;
+  color: #9a3c00;
 }
 .btn-hold:hover:not(:disabled) {
   background: #ffe0b2;
