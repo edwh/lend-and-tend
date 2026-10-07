@@ -36,6 +36,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import { paymentLabel } from '~/composables/latAdminMembers'
 
 definePageMeta({ layout: 'admin' })
 
@@ -86,7 +87,7 @@ async function savePayment() {
   saving.value = false
 }
 
-const plabel = (s?: string) => s === 'paid' ? 'Paid' : s === 'concession' ? 'Concession' : 'Not joined'
+const plabel = paymentLabel
 const pclass = (s?: string) => s === 'paid' ? 'b-paid' : s === 'concession' ? 'b-conc' : 'b-none'
 </script>
 

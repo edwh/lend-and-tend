@@ -36,7 +36,7 @@
             </td>
             <td>
               <NuxtLink
-                :to="`/admin/members/${member.id}`"
+                :to="memberDetailPath(member.id)"
                 class="lat-admin-btn-link"
                 >View</NuxtLink
               >
@@ -50,6 +50,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth'
+import { memberDetailPath } from '~/composables/latAdminMembers'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Flagged Members — L&T Admin' })

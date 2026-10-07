@@ -9,7 +9,9 @@ const {
 } = require('./lat-fixtures')
 
 test.describe('Sign-up flow', () => {
-  test('sign-up modal shows name, email, password fields', async ({ page }) => {
+  test('sign-up modal shows name and email fields, and no password field', async ({
+    page,
+  }) => {
     await page.goto('/')
     await openLoginModal(page)
     const dialog = page.getByRole('dialog')

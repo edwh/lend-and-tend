@@ -24,7 +24,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Reason</th>
-            <th>Approved</th>
+            <th>Claimed</th>
             <th></th>
           </tr>
         </thead>
@@ -35,9 +35,20 @@
             <td class="lat-admin-muted">{{ u.email || '—' }}</td>
             <td>{{ u.settings?.lat_payment?.reason || '—' }}</td>
             <td class="lat-admin-muted">
-              {{ fmtDate(u.settings?.lat_payment?.updatedAt) }}
+              {{
+                fmtDate(
+                  u.settings?.lat_payment?.updatedAt ||
+                    u.settings?.lat_payment?.claimedAt
+                )
+              }}
             </td>
             <td>
+              <NuxtLink
+                :to="memberDetailPath(u.id)"
+                class="lat-admin-btn-link"
+                style="margin-right: 10px"
+                >View</NuxtLink
+              >
               <button
                 class="lat-admin-btn-small lat-admin-btn-revoke"
                 :disabled="processing[u.id]"
@@ -56,6 +67,14 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth'
+import {
+  membershipRows,
+  normaliseMembership,
+  memberDetailPath,
+  resolveUsers,
+  adminUserFetcher,
+  paymentStatusOf,
+} from '~/composables/latAdminMembers'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Concessions — L&T Admin' })
@@ -82,24 +101,17 @@ async function loadConcessions() {
       params: { groupid, collection: 'Approved', limit: 1000 },
       headers,
     })
-    const ids = (Array.isArray(list) ? list : list?.members ?? []).map(
-      (m) => m.userid
+    // Rows carry the MEMBERSHIP id as `id`; the person is `userid`.
+    const ids = membershipRows(list).map((m) => normaliseMembership(m).userid)
+    const users = await resolveUsers(
+      ids,
+      adminUserFetcher({
+        apiBase: config.public.APIv2,
+        token: headers.Authorization,
+      }),
+      { max: 1000 }
     )
-    const found = []
-    for (let i = 0; i < ids.length; i += 10) {
-      const batch = await Promise.all(
-        ids.slice(i, i + 10).map((id) =>
-          $fetch(`${config.public.APIv2}/user/${id}`, {
-            params: { modtools: true },
-            headers,
-          }).catch(() => null)
-        )
-      )
-      for (const u of batch) {
-        if (u?.settings?.lat_payment?.status === 'concession') found.push(u)
-      }
-    }
-    concessions.value = found
+    concessions.value = users.filter((u) => paymentStatusOf(u) === 'concession')
   } catch {
     error.value = 'Failed to load concessions.'
   }

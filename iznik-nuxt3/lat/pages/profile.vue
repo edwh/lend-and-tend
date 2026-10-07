@@ -10,8 +10,8 @@
       <template v-else>
         <!-- Posted success banner -->
         <div v-if="postedSuccess" class="alert-success mb-3">
-          <strong>Your listing is submitted!</strong>
-          Once approved it will appear on the map.
+          <strong>Your listing is live!</strong>
+          It will appear on the map within a minute or two.
           When someone gets in touch you'll see a message in <NuxtLink to="/chats">Messages</NuxtLink> and receive an email alert — check your spam folder if you don't see it.
         </div>
 

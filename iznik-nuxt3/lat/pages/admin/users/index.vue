@@ -30,6 +30,12 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import {
+  searchResultIds,
+  resolveUsers,
+  adminUserFetcher,
+  paymentLabel,
+} from '~/composables/latAdminMembers'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Users — L&T Admin' })
@@ -43,23 +49,37 @@ const searchError = ref('')
 const results = ref<any[]>([])
 
 async function search() {
-  if (!query.value.trim()) return
+  const q = query.value.trim()
+  if (!q) {
+    searchError.value = 'Type a name or email address to search.'
+    return
+  }
   searching.value = true
   searchError.value = ''
   results.value = []
   searched.value = false
   try {
+    // The search returns ids only; read each matching member as an admin.
     const data = await $fetch(`${config.public.APIv2}/user/search`, {
-      params: { q: query.value.trim(), modtools: true },
+      params: { q, modtools: true },
       headers: { Authorization: authStore.auth.jwt },
     })
-    results.value = Array.isArray(data) ? data : data?.users ?? []
-  } catch { searchError.value = 'Search failed.' }
+    results.value = await resolveUsers(
+      searchResultIds(data),
+      adminUserFetcher({ apiBase: config.public.APIv2, token: authStore.auth.jwt }),
+      { max: 50 }
+    )
+  } catch (e: any) {
+    searchError.value =
+      e?.response?.status === 400 || e?.status === 400
+        ? 'Type at least a couple of characters of a name or email.'
+        : 'Search failed.'
+  }
   searching.value = false
   searched.value = true
 }
 
-const plabel = (s?: string) => s === 'paid' ? 'Paid' : s === 'concession' ? 'Concession' : 'Not joined'
+const plabel = paymentLabel
 const pclass = (s?: string) => s === 'paid' ? 'b-paid' : s === 'concession' ? 'b-conc' : 'b-none'
 </script>
 

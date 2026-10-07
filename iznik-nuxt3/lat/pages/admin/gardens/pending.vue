@@ -2,9 +2,7 @@
   <div>
     <h2 class="lat-admin-title">Pending Gardens</h2>
 
-    <p class="lat-admin-subtitle">
-      Listings awaiting approval.
-    </p>
+    <p class="lat-admin-subtitle">Listings awaiting approval.</p>
 
     <div style="display: flex; gap: 10px; margin-bottom: 18px">
       <button class="lat-admin-sbtn" :disabled="loading" @click="loadListings">
@@ -33,11 +31,17 @@
             <td>
               <span
                 class="lat-admin-badge"
-                :class="m.type === 'Offer' ? 'lat-admin-b-offer' : 'lat-admin-b-wanted'"
+                :class="
+                  m.type === 'Offer'
+                    ? 'lat-admin-b-offer'
+                    : 'lat-admin-b-wanted'
+                "
                 >{{ m.type === 'Offer' ? 'Lender' : 'Tender' }}</span
               >
             </td>
-            <td class="lat-admin-muted">{{ m.fromname || m.fromuser || '—' }}</td>
+            <td class="lat-admin-muted">
+              {{ m.fromname || m.fromuser || '—' }}
+            </td>
             <td class="lat-admin-muted">{{ fmtDate(m.arrival) }}</td>
             <td>
               <div style="display: flex; gap: 4px">
@@ -70,13 +74,17 @@
 
 <script setup>
 import { useMessageStore } from '~/stores/message'
+import { useAuthStore } from '~/stores/auth'
 import Api from '~/api'
+import { messageInCollection } from '~/composables/latAdminListings'
+import { resolveUsers, adminUserFetcher } from '~/composables/latAdminMembers'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Pending Gardens — L&T Admin' })
 
 const config = useRuntimeConfig()
 const messageStore = useMessageStore()
+const authStore = useAuthStore()
 const api = Api(config)
 
 const loading = ref(true)
@@ -94,9 +102,10 @@ async function loadListings() {
       collection: 'Pending',
       limit: 200,
     })
-    // Extract pending messages from store
+    // The API nests group/collection under each message's `groups`; the
+    // helper understands that (and the flattened shape).
     listings.value = Object.values(messageStore.list)
-      .filter((m) => m.groupid === groupid && m.collection === 'Pending')
+      .filter((m) => messageInCollection(m, groupid, 'Pending'))
       .map((m) => ({
         id: m.id,
         subject: m.subject || '',
@@ -105,6 +114,21 @@ async function loadListings() {
         fromuser: m.fromuser,
         arrival: m.arrival,
       }))
+    loading.value = false
+    // Messages carry the poster's id only; look the names up as an admin.
+    const posters = await resolveUsers(
+      [...new Set(listings.value.map((m) => m.fromuser).filter(Boolean))],
+      adminUserFetcher({
+        apiBase: config.public.APIv2,
+        token: authStore.auth.jwt,
+      }),
+      { max: 100 }
+    )
+    const names = new Map(posters.map((u) => [Number(u.id), u.displayname]))
+    listings.value = listings.value.map((m) => ({
+      ...m,
+      fromname: m.fromname || names.get(Number(m.fromuser)),
+    }))
   } catch {
     error.value = 'Failed to load pending listings.'
   }

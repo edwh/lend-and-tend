@@ -130,45 +130,10 @@
           </button>
         </section>
 
-        <!-- Password change -->
-        <section class="settings-card">
-          <h2 class="card-title">Change password</h2>
-          <div class="field">
-            <label class="field-label" for="newpass">New password</label>
-            <input
-              id="newpass"
-              v-model="newPassword"
-              class="field-input"
-              type="password"
-              autocomplete="new-password"
-            />
-          </div>
-          <div class="field">
-            <label class="field-label" for="confirmpass"
-              >Confirm password</label
-            >
-            <input
-              id="confirmpass"
-              v-model="confirmPassword"
-              class="field-input"
-              type="password"
-              autocomplete="new-password"
-            />
-          </div>
-          <div v-if="passwordError" class="alert-error">
-            {{ passwordError }}
-          </div>
-          <div v-if="passwordSuccess" class="alert-success">
-            <VIcon :icon="['fas', 'check-circle']" /> Password changed.
-          </div>
-          <button
-            class="btn btn-outline mt-3"
-            :disabled="changingPassword"
-            @click="changePassword"
-          >
-            {{ changingPassword ? 'Saving…' : 'Change password' }}
-          </button>
-        </section>
+        <!-- Lend & Tend is passwordless (sign-in links by email), so there is
+             no password to change. The old "Change password" card was removed
+             rather than hidden: the API exposes nothing that says whether a
+             member ever had a password login. -->
 
         <!-- Notification alerts -->
         <section class="settings-card">
@@ -236,13 +201,13 @@
         <section class="settings-card">
           <h2 class="card-title">Waiting list reminders</h2>
           <p class="card-desc">
-            If you haven't been matched yet, we'll check in every few months to
-            make sure you're still looking. You can opt out here.
+            If you haven't been matched yet, we'll check in once a month to make
+            sure you're still looking. You can opt out here.
           </p>
           <div class="toggle-row">
             <div class="toggle-info">
               <strong>Send me "still interested?" reminders</strong>
-              <p class="toggle-note">Approx. every 3 months while unmatched</p>
+              <p class="toggle-note">Once a month while you're unmatched</p>
             </div>
             <label class="toggle-switch">
               <input v-model="form.lat_waitlist_reminders" type="checkbox" />
@@ -303,16 +268,16 @@
 </template>
 
 <script setup>
-import { useAuthStore } from '~/stores/auth'
-import branding from '~/branding.config'
-import Api from '~/api'
-import OurUploader from '~/components/OurUploader'
-import { useImageStore } from '~/stores/image'
 import {
   kmToMiles,
   milesToKm,
   nearestMileOption,
 } from '../../composables/useLatGeo.js'
+import { useAuthStore } from '~/stores/auth'
+import branding from '~/branding.config'
+import Api from '~/api'
+import OurUploader from '~/components/OurUploader'
+import { useImageStore } from '~/stores/image'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: `Settings — ${branding.siteName}` })
@@ -516,40 +481,6 @@ async function changeEmail() {
     console.error('Email change error:', err)
   } finally {
     changingEmail.value = false
-  }
-}
-
-/* Password change */
-const newPassword = ref('')
-const confirmPassword = ref('')
-const changingPassword = ref(false)
-const passwordError = ref('')
-const passwordSuccess = ref(false)
-
-async function changePassword() {
-  passwordError.value = ''
-  passwordSuccess.value = false
-  if (!newPassword.value || newPassword.value.length < 8) {
-    passwordError.value = 'Password must be at least 8 characters.'
-    return
-  }
-  if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = 'Passwords do not match.'
-    return
-  }
-  changingPassword.value = true
-  try {
-    await api.user.save({ password: newPassword.value })
-    newPassword.value = ''
-    confirmPassword.value = ''
-    passwordSuccess.value = true
-    setTimeout(() => {
-      passwordSuccess.value = false
-    }, 3000)
-  } catch {
-    passwordError.value = 'Could not change password. Please try again.'
-  } finally {
-    changingPassword.value = false
   }
 }
 </script>

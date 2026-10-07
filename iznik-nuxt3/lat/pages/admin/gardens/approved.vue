@@ -2,9 +2,7 @@
   <div>
     <h2 class="lat-admin-title">Approved Gardens</h2>
 
-    <p class="lat-admin-subtitle">
-      All approved garden listings.
-    </p>
+    <p class="lat-admin-subtitle">All approved garden listings.</p>
 
     <div style="display: flex; gap: 10px; margin-bottom: 18px">
       <button class="lat-admin-sbtn" :disabled="loading" @click="loadListings">
@@ -33,11 +31,17 @@
             <td>
               <span
                 class="lat-admin-badge"
-                :class="m.type === 'Offer' ? 'lat-admin-b-offer' : 'lat-admin-b-wanted'"
+                :class="
+                  m.type === 'Offer'
+                    ? 'lat-admin-b-offer'
+                    : 'lat-admin-b-wanted'
+                "
                 >{{ m.type === 'Offer' ? 'Lender' : 'Tender' }}</span
               >
             </td>
-            <td class="lat-admin-muted">{{ m.fromname || m.fromuser || '—' }}</td>
+            <td class="lat-admin-muted">
+              {{ m.fromname || m.fromuser || '—' }}
+            </td>
             <td class="lat-admin-muted">{{ fmtDate(m.arrival) }}</td>
             <td>
               <NuxtLink :to="`/garden/${m.id}`" class="lat-admin-btn-link"
@@ -54,12 +58,16 @@
 
 <script setup>
 import { useMessageStore } from '~/stores/message'
+import { useAuthStore } from '~/stores/auth'
+import { messageInCollection } from '~/composables/latAdminListings'
+import { resolveUsers, adminUserFetcher } from '~/composables/latAdminMembers'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Approved Gardens — L&T Admin' })
 
 const config = useRuntimeConfig()
 const messageStore = useMessageStore()
+const authStore = useAuthStore()
 
 const loading = ref(true)
 const error = ref('')
@@ -75,9 +83,10 @@ async function loadListings() {
       collection: 'Approved',
       limit: 200,
     })
-    // Extract approved messages from store
+    // The API nests group/collection under each message's `groups`; the
+    // helper understands that (and the flattened shape).
     listings.value = Object.values(messageStore.list)
-      .filter((m) => m.groupid === groupid && m.collection === 'Approved')
+      .filter((m) => messageInCollection(m, groupid, 'Approved'))
       .map((m) => ({
         id: m.id,
         subject: m.subject || '',
@@ -86,6 +95,21 @@ async function loadListings() {
         fromuser: m.fromuser,
         arrival: m.arrival,
       }))
+    loading.value = false
+    // Messages carry the poster's id only; look the names up as an admin.
+    const posters = await resolveUsers(
+      [...new Set(listings.value.map((m) => m.fromuser).filter(Boolean))],
+      adminUserFetcher({
+        apiBase: config.public.APIv2,
+        token: authStore.auth.jwt,
+      }),
+      { max: 100 }
+    )
+    const names = new Map(posters.map((u) => [Number(u.id), u.displayname]))
+    listings.value = listings.value.map((m) => ({
+      ...m,
+      fromname: m.fromname || names.get(Number(m.fromuser)),
+    }))
   } catch {
     error.value = 'Failed to load approved listings.'
   }
