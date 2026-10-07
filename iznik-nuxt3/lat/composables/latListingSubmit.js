@@ -1,14 +1,17 @@
 /**
  * Whether a listing form may be submitted yet.
  *
- * PhotoUploader marks each photo `uploading: true` until the file has reached
- * lat-tusd and been registered with the API (which is when it gets an `id`).
+ * PhotoUploader marks each photo `uploading: true` while the file travels to
+ * lat-tusd, clears it when tus finishes, then registers the photo with the API
+ * (POST /image) and sets its `id`; a failure sets `error`.
  * Posting before that silently drops the photo, because only photos with an
  * id are sent with the listing. So the Post / Save button waits for uploads.
  */
 export function uploadsInProgress(attachments) {
   return (Array.isArray(attachments) ? attachments : []).some(
-    (a) => a && a.uploading
+    // Still uploading, or uploaded but not yet registered with the API (no id
+    // yet). A failed upload (error) is not in progress: it will not be sent.
+    (a) => a && (a.uploading || (!a.id && !a.error))
   )
 }
 

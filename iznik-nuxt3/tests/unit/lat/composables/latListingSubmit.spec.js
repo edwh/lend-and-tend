@@ -13,6 +13,18 @@ describe('uploadsInProgress', () => {
     expect(uploadsInProgress([{ id: 1 }, { uploading: true }])).toBe(true)
   })
 
+  it('is true after the file has uploaded but before the API has registered it', () => {
+    // PhotoUploader clears `uploading` when tus finishes, then registers the
+    // photo (POST /image) and only then sets `id`. Posting in that window
+    // drops the photo, because only photos with an id are sent.
+    expect(uploadsInProgress([{ uploading: false }])).toBe(true)
+    expect(uploadsInProgress([{ id: 1 }, {}])).toBe(true)
+  })
+
+  it('is false for a photo whose upload failed (it will not be sent anyway)', () => {
+    expect(uploadsInProgress([{ uploading: false, error: true }])).toBe(false)
+  })
+
   it('is false once every photo is registered, or with no photos', () => {
     expect(uploadsInProgress([{ id: 1, uploading: false }, { id: 2 }])).toBe(
       false
