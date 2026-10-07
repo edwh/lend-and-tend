@@ -725,6 +725,61 @@ func TestPostMessageApprove(t *testing.T) {
 	// (not synchronously in the Go API), so no log or push_notify_group_mods assertions here.
 }
 
+// TestApproveAddsApprovedMessageToSpatial verifies that a Pending message with a
+// location is not in messages_spatial, and that approving it adds it (so it then
+// shows in the public browse) with the correct coordinates.
+func TestApproveAddsApprovedMessageToSpatial(t *testing.T) {
+	prefix := uniquePrefix("msgmod_appr_spatial")
+	db := database.DBConn
+
+	groupID := CreateTestGroup(t, prefix)
+	posterID := CreateTestUser(t, prefix+"_poster", "User")
+	modID := CreateTestUser(t, prefix+"_mod", "User")
+	CreateTestMembership(t, posterID, groupID, "Member")
+	CreateTestMembership(t, modID, groupID, "Moderator")
+	_, modToken := CreateTestSession(t, modID)
+
+	// A location with non-zero lat/lng for the spatial point.
+	var locLat, locLng float64
+	db.Raw("SELECT lat, lng FROM locations WHERE lat != 0 AND lng != 0 LIMIT 1").Row().Scan(&locLat, &locLng)
+	if locLat == 0 && locLng == 0 {
+		t.Fatal("No locations with non-zero lat/lng in test database")
+	}
+
+	// Pending message with a location.
+	db.Exec("INSERT INTO messages (fromuser, subject, textbody, message, type, lat, lng, arrival, date) VALUES (?, ?, 'Body', 'Body', 'Offer', ?, ?, NOW(), NOW())",
+		posterID, prefix+" spatial offer", locLat, locLng)
+	var msgID uint64
+	db.Raw("SELECT id FROM messages WHERE fromuser = ? AND subject = ? ORDER BY id DESC LIMIT 1", posterID, prefix+" spatial offer").Scan(&msgID)
+	require.NotZero(t, msgID)
+	db.Exec("INSERT INTO messages_groups (msgid, groupid, arrival, collection, contentcheck_checked_at) VALUES (?, ?, NOW(), 'Pending', NOW())", msgID, groupID)
+
+	// Pending → must not be in the spatial index.
+	var spatialCount int64
+	db.Raw("SELECT COUNT(*) FROM messages_spatial WHERE msgid = ?", msgID).Scan(&spatialCount)
+	assert.Equal(t, int64(0), spatialCount, "Pending message must not be in messages_spatial")
+
+	// Approve as the moderator.
+	body, _ := json.Marshal(map[string]interface{}{"id": msgID, "action": "Approve"})
+	req := httptest.NewRequest("POST", fmt.Sprintf("/api/message?jwt=%s", modToken), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := getApp().Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
+
+	// Approved → now in the spatial index with matching coordinates.
+	db.Raw("SELECT COUNT(*) FROM messages_spatial WHERE msgid = ?", msgID).Scan(&spatialCount)
+	assert.Equal(t, int64(1), spatialCount, "approved message should be in messages_spatial")
+
+	var spatialLat, spatialLng float64
+	db.Raw("SELECT ST_Y(point), ST_X(point) FROM messages_spatial WHERE msgid = ?", msgID).Row().Scan(&spatialLat, &spatialLng)
+	assert.InDelta(t, locLat, spatialLat, 0.001, "spatial lat should match location")
+	assert.InDelta(t, locLng, spatialLng, 0.001, "spatial lng should match location")
+
+	// Clean up the spatial entry so it does not affect other tests.
+	db.Exec("DELETE FROM messages_spatial WHERE msgid = ?", msgID)
+}
+
 func TestPostMessageApproveWithStdMsg(t *testing.T) {
 	prefix := uniquePrefix("msgmod_appr_std")
 	db := database.DBConn
@@ -2565,7 +2620,9 @@ func TestPutMessageSetsLatLngFromLocation(t *testing.T) {
 	db.Raw("SELECT COUNT(*) FROM messages_spatial WHERE msgid = ?", newID).Scan(&spatialCount)
 	assert.Equal(t, int64(0), spatialCount, "draft should not be in messages_spatial")
 
-	// Now submit via JoinAndPost — spatial index should be populated.
+	// Now submit via JoinAndPost. Every post starts Pending, and messages_spatial
+	// backs the public browse — so a Pending post must NOT enter it. It is added to
+	// the spatial index only when approved (see TestApproveAddsApprovedMessageToSpatial).
 	postBody, _ := json.Marshal(map[string]interface{}{
 		"id":     newID,
 		"email":  fmt.Sprintf("%s@test.com", prefix+"_user"),
@@ -2577,15 +2634,14 @@ func TestPutMessageSetsLatLngFromLocation(t *testing.T) {
 	assert.NoError(t, postErr)
 	assert.Equal(t, 200, postResp.StatusCode)
 
-	// Now messages_spatial should have the entry.
-	db.Raw("SELECT COUNT(*) FROM messages_spatial WHERE msgid = ?", newID).Scan(&spatialCount)
-	assert.Equal(t, int64(1), spatialCount, "submitted message should be in messages_spatial")
+	// Submitted message is Pending.
+	var collection string
+	db.Raw("SELECT collection FROM messages_groups WHERE msgid = ?", newID).Scan(&collection)
+	assert.Equal(t, "Pending", collection, "submitted message should start Pending")
 
-	// Verify spatial coords match.
-	var spatialLat, spatialLng float64
-	db.Raw("SELECT ST_Y(point), ST_X(point) FROM messages_spatial WHERE msgid = ?", newID).Row().Scan(&spatialLat, &spatialLng)
-	assert.InDelta(t, locLat, spatialLat, 0.001, "spatial lat should match location")
-	assert.InDelta(t, locLng, spatialLng, 0.001, "spatial lng should match location")
+	// Pending message must NOT be in messages_spatial (would leak to the public browse).
+	db.Raw("SELECT COUNT(*) FROM messages_spatial WHERE msgid = ?", newID).Scan(&spatialCount)
+	assert.Equal(t, int64(0), spatialCount, "Pending message must not be in messages_spatial")
 }
 
 func TestPutMessageNotMemberDraft(t *testing.T) {
@@ -6331,6 +6387,112 @@ func TestPatchMessageEditReviewRequiredGroupModerated(t *testing.T) {
 	var reviewRequired int
 	db.Raw("SELECT reviewrequired FROM messages_edits WHERE msgid = ? ORDER BY id DESC LIMIT 1", msgID).Scan(&reviewRequired)
 	assert.Equal(t, 1, reviewRequired, "Group-moderated edit of approved message should set reviewrequired=1")
+}
+
+// TestPatchMessageTextEditResetsContentCheck: a message that has already passed the
+// automated content-check (contentcheck_checked_at stamped, e.g. because it was
+// approved) must be re-queued for a fresh check when the owner edits its textbody.
+// Without this, content added via an edit (worry words, phone numbers, banned
+// keywords, ...) is never scanned by ContentCheckService.processUnprocessed(),
+// which only picks up rows where contentcheck_checked_at IS NULL — so the automated
+// moderation filters silently skip edited content forever, and it can only be
+// caught by a mod noticing it manually.
+func TestPatchMessageTextEditResetsContentCheck(t *testing.T) {
+	prefix := uniquePrefix("msgedit_recheck_text")
+	db := database.DBConn
+
+	groupID := CreateTestGroup(t, prefix)
+	ownerID := CreateTestUser(t, prefix+"_owner", "User")
+	CreateTestMembership(t, ownerID, groupID, "Member")
+	_, ownerToken := CreateTestSession(t, ownerID)
+
+	msgID := createPendingMessage(t, ownerID, groupID, prefix)
+	db.Exec("UPDATE messages_groups SET collection = 'Approved', contentcheck_checked_at = NOW(), contentcheck_reasons = ? WHERE msgid = ? AND groupid = ?",
+		`[{"check":"Vague","detail":"stale reason from the original check"}]`, msgID, groupID)
+
+	var checkedAtSet bool
+	db.Raw("SELECT contentcheck_checked_at IS NOT NULL FROM messages_groups WHERE msgid = ? AND groupid = ?", msgID, groupID).Scan(&checkedAtSet)
+	require.True(t, checkedAtSet, "test setup: message should start already content-checked")
+
+	body := map[string]interface{}{
+		"id":       msgID,
+		"textbody": prefix + " edited body with newly added content",
+	}
+	bodyBytes, _ := json.Marshal(body)
+	req := httptest.NewRequest("PATCH", "/api/message?jwt="+ownerToken, bytes.NewBuffer(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := getApp().Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "Edit should succeed")
+
+	var checkedAtStillSet bool
+	var reasons *string
+	db.Raw("SELECT contentcheck_checked_at IS NOT NULL, contentcheck_reasons FROM messages_groups WHERE msgid = ? AND groupid = ?", msgID, groupID).
+		Row().Scan(&checkedAtStillSet, &reasons)
+	assert.False(t, checkedAtStillSet, "editing the textbody should clear contentcheck_checked_at so the batch job re-checks the new content")
+	assert.Nil(t, reasons, "stale contentcheck_reasons from the pre-edit check should be cleared too")
+}
+
+// TestPatchMessageSubjectEditResetsContentCheck mirrors the textbody case for the
+// subject field, which checkMessage() also scans (Vague/NotAnItem/SubjectRepeat).
+func TestPatchMessageSubjectEditResetsContentCheck(t *testing.T) {
+	prefix := uniquePrefix("msgedit_recheck_subj")
+	db := database.DBConn
+
+	groupID := CreateTestGroup(t, prefix)
+	ownerID := CreateTestUser(t, prefix+"_owner", "User")
+	CreateTestMembership(t, ownerID, groupID, "Member")
+	_, ownerToken := CreateTestSession(t, ownerID)
+
+	msgID := createPendingMessage(t, ownerID, groupID, prefix)
+	db.Exec("UPDATE messages_groups SET collection = 'Approved', contentcheck_checked_at = NOW() WHERE msgid = ? AND groupid = ?", msgID, groupID)
+
+	body := map[string]interface{}{
+		"id":      msgID,
+		"subject": prefix + " edited subject",
+	}
+	bodyBytes, _ := json.Marshal(body)
+	req := httptest.NewRequest("PATCH", "/api/message?jwt="+ownerToken, bytes.NewBuffer(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := getApp().Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "Edit should succeed")
+
+	var checkedAtStillSet bool
+	db.Raw("SELECT contentcheck_checked_at IS NOT NULL FROM messages_groups WHERE msgid = ? AND groupid = ?", msgID, groupID).Scan(&checkedAtStillSet)
+	assert.False(t, checkedAtStillSet, "editing the subject should clear contentcheck_checked_at so the batch job re-checks the new content")
+}
+
+// TestPatchMessageNonContentEditKeepsContentCheck: editing a field that
+// ContentCheckService::checkMessage() never inspects (availablenow) must NOT
+// discard the existing content-check stamp — only subject/textbody/item edits
+// should trigger a re-check.
+func TestPatchMessageNonContentEditKeepsContentCheck(t *testing.T) {
+	prefix := uniquePrefix("msgedit_recheck_noop")
+	db := database.DBConn
+
+	groupID := CreateTestGroup(t, prefix)
+	ownerID := CreateTestUser(t, prefix+"_owner", "User")
+	CreateTestMembership(t, ownerID, groupID, "Member")
+	_, ownerToken := CreateTestSession(t, ownerID)
+
+	msgID := createPendingMessage(t, ownerID, groupID, prefix)
+	db.Exec("UPDATE messages_groups SET collection = 'Approved', contentcheck_checked_at = NOW() WHERE msgid = ? AND groupid = ?", msgID, groupID)
+
+	body := map[string]interface{}{
+		"id":           msgID,
+		"availablenow": 1,
+	}
+	bodyBytes, _ := json.Marshal(body)
+	req := httptest.NewRequest("PATCH", "/api/message?jwt="+ownerToken, bytes.NewBuffer(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := getApp().Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "Edit should succeed")
+
+	var checkedAtStillSet bool
+	db.Raw("SELECT contentcheck_checked_at IS NOT NULL FROM messages_groups WHERE msgid = ? AND groupid = ?", msgID, groupID).Scan(&checkedAtStillSet)
+	assert.True(t, checkedAtStillSet, "a non-content edit should not discard the existing content-check stamp")
 }
 
 // --- tnpostid and expiresat tests ---
