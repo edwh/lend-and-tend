@@ -73,16 +73,18 @@ async function signUpViaModal(page, opts = {}) {
     dialog.getByRole('heading', { name: 'Join Lend & Tend' })
   ).toBeVisible()
 
+  // Passwordless: sign-up is name + role + email. The modal sets a random
+  // password the member never sees; `password` is kept in the return value
+  // only so older call sites keep working.
   await dialog.locator('#lat-fullname').fill(fullname)
   await dialog.locator('#lat-email').fill(email)
-  await dialog.locator('#lat-password').fill(password)
   // Role is required for sign-up
   const role = opts.role || 'lender'
   const roleSelect = dialog.locator('#lat-role')
   if (await roleSelect.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await roleSelect.selectOption(role)
   }
-  await dialog.getByRole('button', { name: 'Join Lend & Tend' }).click()
+  await dialog.locator('button.btn-submit').click()
 
   // Should redirect to /onboarding after sign-up
   await expect(page).toHaveURL(/\/(onboarding|map)/, { timeout: 15_000 })
@@ -107,18 +109,24 @@ function logoutLink(page) {
 /**
  * Logs in via the login modal.
  */
-async function loginViaModal(page, email, password) {
+/**
+ * Signs in the way a member does: ask for a sign-in link, read it from
+ * Mailpit, open it. The second argument is ignored (kept for older call
+ * sites that passed a password).
+ */
+async function loginViaModal(page, email, _password) {
+  const requestedAt = Date.now() - 2_000
   await openLoginModal(page)
 
   const dialog = page.getByRole('dialog')
 
-  // If shown in sign-up view, switch to login via footer link
+  // If shown in sign-up view, switch to sign-in via the footer link
   const isSignUp = await dialog
     .getByRole('heading', { name: 'Join Lend & Tend' })
     .isVisible({ timeout: 2_000 })
     .catch(() => false)
   if (isSignUp) {
-    await dialog.locator('.link-btn', { hasText: 'Log in' }).click()
+    await dialog.locator('button.link-btn', { hasText: 'Sign in' }).click()
   }
 
   await expect(
@@ -126,10 +134,56 @@ async function loginViaModal(page, email, password) {
   ).toBeVisible()
 
   await dialog.locator('#lat-email').fill(email)
-  await dialog.locator('#lat-password').fill(password)
   await dialog.locator('button.btn-submit').click()
+  await expect(
+    dialog.getByRole('heading', { name: 'Check your email' })
+  ).toBeVisible({ timeout: 15_000 })
 
-  await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
+  const link = await fetchMagicLink(email, { after: requestedAt })
+  // Keep the test's own origin: the email's host is whatever the batch worker
+  // has as its public site URL.
+  const url = new URL(link)
+  await page.goto(`${url.pathname}${url.search}`)
+  await expect(logoutLink(page)).toBeVisible({ timeout: 20_000 })
+}
+
+const MAILPIT_URL = process.env.LAT_MAILPIT_URL || 'http://localhost:4025'
+
+/**
+ * Polls Mailpit for the most recent sign-in email to `email` (created after
+ * `after`, ms since epoch) and returns the magic-link URL (?u=&k=) in it.
+ * The batch worker queues and sends mail on a once-a-minute schedule, so this
+ * legitimately takes up to a couple of minutes.
+ */
+async function fetchMagicLink(email, { timeout = 180_000, after = 0 } = {}) {
+  const deadline = Date.now() + timeout
+  const query = encodeURIComponent(`to:"${email}"`)
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(
+        `${MAILPIT_URL}/api/v1/search?query=${query}&limit=5`
+      )
+      const list = await res.json()
+      for (const m of list.messages || []) {
+        if (new Date(m.Created).getTime() < after) continue
+        const full = await (
+          await fetch(`${MAILPIT_URL}/api/v1/message/${m.ID}`)
+        ).json()
+        const haystack = `${full.Text || ''}\n${full.HTML || ''}`.replace(
+          /&amp;/g,
+          '&'
+        )
+        const match = haystack.match(
+          /https?:\/\/[^\s"'<>]*[?&]u=\d+&k=[A-Za-z0-9]+/
+        )
+        if (match) return match[0]
+      }
+    } catch {
+      // Mailpit not ready or transient; keep polling.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 3_000))
+  }
+  throw new Error(`No sign-in email for ${email} within ${timeout}ms`)
 }
 
 /**
@@ -205,6 +259,7 @@ module.exports = {
   expect,
   signUpViaModal,
   loginViaModal,
+  fetchMagicLink,
   openLoginModal,
   clickUntilHydrated,
   logoutLink,

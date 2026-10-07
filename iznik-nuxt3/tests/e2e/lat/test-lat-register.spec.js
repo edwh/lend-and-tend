@@ -1,5 +1,12 @@
 // @ts-check
-const { test, expect, signUpViaModal, openLoginModal, logoutLink, generateTestEmail } = require('./lat-fixtures')
+const {
+  test,
+  expect,
+  signUpViaModal,
+  openLoginModal,
+  logoutLink,
+  generateTestEmail,
+} = require('./lat-fixtures')
 
 test.describe('Sign-up flow', () => {
   test('sign-up modal shows name, email, password fields', async ({ page }) => {
@@ -14,7 +21,8 @@ test.describe('Sign-up flow', () => {
     }
     await expect(dialog.locator('#lat-fullname')).toBeVisible()
     await expect(dialog.locator('#lat-email')).toBeVisible()
-    await expect(dialog.locator('#lat-password')).toBeVisible()
+    // Passwordless: there is no password field on sign-up.
+    await expect(dialog.locator('#lat-password')).toHaveCount(0)
   })
 
   test('sign-up with empty name shows validation error', async ({ page }) => {
@@ -28,7 +36,6 @@ test.describe('Sign-up flow', () => {
     }
 
     await dialog.locator('#lat-email').fill(generateTestEmail())
-    await dialog.locator('#lat-password').fill('TestPass123!')
     // Leave fullname empty
     await dialog.getByRole('button', { name: 'Join Lend & Tend' }).click()
 
@@ -46,7 +53,6 @@ test.describe('Sign-up flow', () => {
     }
 
     await dialog.locator('#lat-fullname').fill('Test User')
-    await dialog.locator('#lat-password').fill('TestPass123!')
     // Leave email empty
     await dialog.getByRole('button', { name: 'Join Lend & Tend' }).click()
 
@@ -64,7 +70,9 @@ test.describe('Sign-up flow', () => {
     await page.goto('/')
     await signUpViaModal(page)
     await expect(page.getByRole('link', { name: 'Messages' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Lend', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Lend', exact: true })
+    ).toBeVisible()
     await expect(logoutLink(page)).toBeVisible()
   })
 
@@ -79,7 +87,9 @@ test.describe('Sign-up flow', () => {
     }
 
     await expect(dialog.getByRole('link', { name: 'Terms' })).toBeVisible()
-    await expect(dialog.getByRole('link', { name: 'Privacy Policy' })).toBeVisible()
+    await expect(
+      dialog.getByRole('link', { name: 'Privacy Policy' })
+    ).toBeVisible()
   })
 
   test('marketing consent checkbox is checked by default', async ({ page }) => {
@@ -106,9 +116,14 @@ test.describe('Sign-up flow', () => {
     if (await joinBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await joinBtn.click()
     }
-    await expect(dialog.getByRole('heading', { name: 'Join Lend & Tend' })).toBeVisible()
+    await expect(
+      dialog.getByRole('heading', { name: 'Join Lend & Tend' })
+    ).toBeVisible()
 
-    await dialog.getByRole('button', { name: 'Log in' }).click()
-    await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    // "Already a member? Sign in" is a link-style button in the footer.
+    await dialog.locator('button.link-btn', { hasText: 'Sign in' }).click()
+    await expect(
+      dialog.getByRole('heading', { name: 'Welcome back' })
+    ).toBeVisible()
   })
 })
