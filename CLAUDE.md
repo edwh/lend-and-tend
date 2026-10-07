@@ -1,4 +1,4 @@
-**See also: [codingstandards.md](codingstandards.md)** for coding rules. **Use the `ralph` skill** for any non-trivial development task. For automated execution: `./ralph.sh -t "task description"`
+**See also: [codingstandards.md](codingstandards.md)** for coding rules, and [docs/lend-and-tend/README.md](docs/lend-and-tend/README.md) for the member and admin functional guides (with auto-generated screenshots). **Use the `ralph` skill** for any non-trivial development task. For automated execution: `./ralph.sh -t "task description"`
 
 ## Lend & Tend Architecture (READ THIS FIRST)
 
