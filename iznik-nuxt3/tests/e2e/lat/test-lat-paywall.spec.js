@@ -1,5 +1,33 @@
 // @ts-check
-const { test, expect, signUpViaModal, logoutLink } = require('./lat-fixtures')
+const {
+  test,
+  expect,
+  signUpViaModal,
+  logoutLink,
+  markUserAsPaid,
+  fillLocationPicker,
+} = require('./lat-fixtures')
+
+const API_BASE = process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2'
+const WORLD_GROUPID = process.env.LAT_WORLD_GROUPID || 1000000
+
+/** Posts the smallest valid garden and returns its id. */
+async function postMinimalGarden(page) {
+  await page.goto('/lend')
+  await expect(logoutLink(page)).toBeVisible({ timeout: 15_000 })
+  await page.locator('#subject').fill('Paywall test garden')
+  await page.locator('#about').fill('A small plot for the paywall test.')
+  await fillLocationPicker(page)
+  await page.locator('#phone').fill('07700 900100')
+  const created = page.waitForResponse(
+    (r) => r.url().includes('/apiv2/message') && r.request().method() === 'PUT',
+    { timeout: 30_000 }
+  )
+  await page.getByRole('button', { name: 'Post my garden' }).click()
+  const id = (await (await created).json())?.id
+  await expect(page).toHaveURL(/\/profile/, { timeout: 25_000 })
+  return id
+}
 
 test.describe('Paywall', () => {
   test('join page renders tabs: Pay and Concession', async ({ page }) => {
@@ -46,38 +74,35 @@ test.describe('Paywall', () => {
 
   test('unpaid user sees "Join to send message" on garden page', async ({
     page,
+    request,
   }) => {
-    await page.goto('/')
-    await signUpViaModal(page)
-
-    // Navigate to any garden listing - we need an actual listing ID
-    // Try to find a listing from the map
-    await page.goto('/map')
-    await expect(logoutLink(page)).toBeVisible({ timeout: 10_000 })
-
-    // Try to navigate to /garden/1 (may not exist, but checks the paywall logic)
-    await page.goto('/garden/1')
-    await page.waitForTimeout(3_000)
-
-    // If listing exists, unpaid user should see join CTA
-    const hasJoinCta = await page
-      .getByRole('link', { name: /Join to send message/ })
-      .isVisible()
-      .catch(() => false)
-    const hasSendBtn = await page
-      .getByRole('button', { name: 'Send message' })
-      .isVisible()
-      .catch(() => false)
-    const hasNotFound = await page
-      .getByText(/could not be found/i)
-      .isVisible()
-      .catch(() => false)
-
-    // If listing doesn't exist, test passes trivially
-    if (!hasNotFound) {
-      // An unpaid user should see "Join to send message", not the direct "Send message" button
-      expect(hasJoinCta || !hasSendBtn).toBeTruthy()
+    // Open a real approved garden (the world group lists them publicly),
+    // posting one first if this stack has none yet.
+    const res = await request.get(`${API_BASE}/messages`, {
+      params: { groupid: WORLD_GROUPID, collection: 'Approved', limit: 10 },
+    })
+    let offer = ((await res.json()).messages || []).find(
+      (m) => m.type === 'Offer'
+    )
+    if (!offer) {
+      await page.goto('/')
+      await signUpViaModal(page, { role: 'lender' })
+      await markUserAsPaid(page)
+      offer = { id: await postMinimalGarden(page) }
+      await logoutLink(page).click()
     }
+
+    await page.goto('/')
+    await signUpViaModal(page) // a brand-new, unpaid member
+    await page.goto(`/garden/${offer.id}`)
+
+    // Unpaid: the join call to action, never the direct Send message button.
+    await expect(
+      page.getByRole('link', { name: /Join to send message/ })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.getByRole('button', { name: 'Send message' })
+    ).toHaveCount(0)
   })
 
   test('join success page renders', async ({ page }) => {
