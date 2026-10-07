@@ -65,8 +65,8 @@ When you have talked things through, put it in writing. Either of you can start:
 **Sign agreement** under the message box. The agreement is attached to the garden listing
 and to the two of you.
 
-If the garden was posted less than a minute ago, the button tells you the listing is not
-findable yet and asks you to try again shortly, rather than doing nothing.
+If the garden was posted only a minute or two ago, the button tells you the listing is
+not findable yet and asks you to try again shortly, rather than doing nothing.
 
 1. **Fill in the terms.** What will be grown, the agreed access times (when the tender
    will visit), and any other terms in your own words. Details from the garden listing are
@@ -80,7 +80,8 @@ findable yet and asks you to try again shortly, rather than doing nothing.
 
 ![A proposed agreement, waiting to be accepted](assets/agreement-proposed.png)
 
-The other person gets a card in the chat. They open it, read the terms, and either click
+The other person gets a card in the chat (and their chat list shows **Agreement sent**
+against the conversation). They open it, read the terms, and either click
 **Accept and confirm**, or edit the text and click **Suggest changes** to send it back (or
 simply talk it over in the chat). Once accepted the
 agreement is **confirmed**: both of you see it, the garden shows as matched under **My

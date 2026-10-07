@@ -38,7 +38,6 @@ const {
   openLoginModal,
   markUserAsPaid,
   fillLocationPicker,
-  logoutLink,
   LAT_BASE_URL,
 } = require('./lat-fixtures')
 
@@ -91,6 +90,8 @@ const MASK = [
   '.lat-admin-at td:has-text("@test.lat")',
   '.lat-admin-value:has-text("@")',
   '.info-row span:has-text("@")',
+  // The redesigned member detail page lists fields as dt/dd pairs.
+  'dd:has-text("@test.lat")',
 ]
 
 /**
@@ -247,6 +248,9 @@ const SHOTS = [
 
 // Ids discovered as the journey runs, substituted into `{NAME}` in paths.
 const ids = {}
+// DOCS_IDS='{"LENDER_ID":154}' seeds ids the member journey would otherwise
+// discover, so DOCS_AUDIENCE=admins can regenerate the admin set alone.
+Object.assign(ids, JSON.parse(process.env.DOCS_IDS || '{}'))
 function subst(s, { strict = true } = {}) {
   let missing = false
   const out = s.replace(/\{([A-Z_]+)\}/g, (_, k) => {
@@ -310,12 +314,35 @@ async function ensurePaid(page, ctx) {
   ctx.paid = true
 }
 
+/**
+ * Like the fixtures' fillLocationPicker, but copes with whichever path the
+ * picker takes after "Find": a PAF address dropdown (when the database has
+ * data for the postcode) or the manual-address fallback. postcodes.io can be
+ * slow, so the wait is generous.
+ */
+async function fillLocationResilient(page, postcode = 'SW1A 1AA') {
+  await page.locator('#lat-postcode-input').fill(postcode)
+  await page.getByRole('button', { name: 'Find →' }).click()
+  const select = page.locator('#lat-address-select')
+  const manual = page.locator('#lat-address-manual')
+  await expect(select.or(manual)).toBeVisible({ timeout: 45000 })
+  if (await select.isVisible().catch(() => false)) {
+    const value = await select
+      .locator('option')
+      .evaluateAll((opts) => (opts.find((o) => o.value) || {}).value || '')
+    if (value) await select.selectOption(value)
+  } else {
+    await manual.fill('10 Test Street')
+  }
+  await expect(page.locator('.status-ok')).toBeVisible({ timeout: 10000 })
+}
+
 async function payThenFillLendForm(page, ctx) {
   await ensurePaid(page, ctx)
   await page.goto(cfg.base + '/lend', { waitUntil: 'networkidle' })
   await expect(page.locator('#subject')).toBeVisible({ timeout: 15000 })
   await page.locator('#subject').fill(GARDEN.subject)
-  await fillLocationPicker(page)
+  await fillLocationResilient(page)
   await page.locator('#phone').fill(GARDEN.phone)
   await page.locator('#about').fill(GARDEN.about)
   await page.locator('#gardenSize').selectOption('medium')
@@ -466,10 +493,30 @@ async function tidyForShot(page) {
   }
   await page
     .addStyleTag({
+      // The join page's "Pretend to pay" box (.dev-bypass) exists only on dev
+      // stacks; a member guide must not show it.
       content:
-        '#nuxt-devtools-container, #nuxt-devtools-anchor, nuxt-devtools-frame, [id^="nuxt-devtools"] { display: none !important; }',
+        '#nuxt-devtools-container, #nuxt-devtools-anchor, nuxt-devtools-frame, [id^="nuxt-devtools"], .dev-bypass { display: none !important; }',
     })
     .catch(() => {})
+}
+
+/**
+ * Something only a signed-in person sees. On member pages that is a visible
+ * "Logout" control. The admin layout has no such control (its Log out is a
+ * button), so there we use the admin sidebar.
+ */
+function signedInMarker(page, ctxName) {
+  // The admin bar is server-rendered even for a signed-out visitor, so it
+  // proves nothing; the sidebar only appears once the signed-in admin has
+  // hydrated.
+  if (ctxName === 'admin') {
+    return page.getByRole('link', { name: 'Dashboard' }).first()
+  }
+  return page
+    .getByText('Logout', { exact: true })
+    .filter({ visible: true })
+    .first()
 }
 
 async function capture(ctx, shot) {
@@ -496,7 +543,7 @@ async function capture(ctx, shot) {
   if (ctx.name !== 'none') {
     // A page that rendered without the navbar (a transient render error)
     // gets one reload before we give up on it.
-    const loggedIn = logoutLink(page).first()
+    const loggedIn = signedInMarker(page, ctx.name)
     if (!(await loggedIn.isVisible().catch(() => false))) {
       await page.waitForTimeout(2000)
       if (!(await loggedIn.isVisible().catch(() => false))) {
@@ -571,11 +618,37 @@ async function run() {
 
   let failures = 0
   for (const shot of SHOTS) {
+    // DOCS_AUDIENCE=members|admins runs one audience's shots only.
+    if (
+      process.env.DOCS_AUDIENCE &&
+      shot.audience !== process.env.DOCS_AUDIENCE
+    ) {
+      continue
+    }
     shot.capture = !only || only.has(shot.name)
     let ctx
     try {
       ctx = await contextFor(shot.as)
-      await capture(ctx, shot)
+      // Under load the app's hydration races make a first attempt flaky
+      // (a swallowed click, a slow sign-in link). Try each shot up to three
+      // times before giving up; the setups are safe to repeat on test data.
+      let lastErr = null
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await capture(ctx, shot)
+          lastErr = null
+          break
+        } catch (e) {
+          lastErr = e
+          console.warn(
+            `  retry ${attempt}/3 ${shot.audience}/${shot.name}: ${
+              String(e.message).split('\n')[0]
+            }`
+          )
+          await ctx.page.waitForTimeout(3000)
+        }
+      }
+      if (lastErr) throw lastErr
     } catch (err) {
       failures++
       console.error(`  FAILED ${shot.audience}/${shot.name}: ${err.message}`)

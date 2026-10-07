@@ -21,19 +21,21 @@ covers:
 
 ![The members list](assets/members.png)
 
-**Members > All members** (`/admin/members`) lists everyone who has joined, by id and
-name, with **Refresh** to reload. **View** opens the member's detail page.
+**Members > All members** (`/admin/members`) lists everyone who has joined: id, name,
+email, a **Membership** badge (**Paid**, **Concession** or **Not joined**) and the date
+they joined, with **Refresh** to reload. **View** opens the member's detail page.
 
 ## A member's detail page
 
 ![A member's detail page](assets/member-detail.png)
 
-The detail page (`/admin/users/<id>`) shows the member's name, email, the role they chose
-(lender, tender or both), their **payment** status, and their system role.
+The detail page (`/admin/users/<id>`) shows the member's id, name, email, the role they
+chose (lender, tender or both), their **Membership** (Paid, Concession or Not joined),
+and their system role.
 
-### Setting payment status
+### Setting membership status
 
-Under **Edit payment status** you can set a member to:
+Under **Set membership status** you can set a member to:
 
 - **Not joined** - they have not paid and cannot message.
 - **Paid** - as if they had paid the £12 fee.
@@ -53,11 +55,19 @@ enforced by the API's `PROTECTED_SETTINGS_KEYS` setting; see
 ![Concessions](assets/concessions.png)
 
 **Concessions** (`/admin/concessions`) lists every member on a free membership, with the
-reason they gave and when it was granted. A concession takes effect the moment a member
-claims it on the Join page; this page is where you see them afterwards.
+reason they gave and the date it was **Claimed**, and a **View** link to their detail
+page. A concession takes effect the moment a member claims it on the Join page; this page
+is where you see them afterwards.
 
 **Revoke** clears the member's membership: they go back to "not joined" and are asked to
 pay the next time they try to message. Use it sparingly, and tell the member why.
+
+## Finding one member
+
+**Members > Search** (`/admin/users`) finds a member by name or email address. Type part
+of either and press Enter (or the search button); each result shows the member's name,
+email, membership status and role, with a **View** link to their detail page. The page asks for a search term first,
+so it never lists everyone (use **All members** for that).
 
 ## Flagged members
 

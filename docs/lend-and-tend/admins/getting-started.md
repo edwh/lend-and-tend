@@ -39,9 +39,9 @@ one-row insert into `memberships` (role Owner, collection Approved) on the world
 ## Signing in
 
 There is no separate admin login. Sign in to the site as any member does - ask for a
-sign-in link, open it from your email - then go to `/admin`. The **L&T Admin** bar across
-the top and the menu down the left tell you that you are in the admin area; **Logout**
-is in both.
+sign-in link, open it from your email - then go to `/admin`. The admin area has its own
+look: an **L&T Admin** bar across the top, with **View site** to go back to the member
+pages and **Log out**, and the menu down the left.
 
 ## The dashboard
 
@@ -54,17 +54,18 @@ The dashboard (`/admin`) shows four counts and a table:
 - **Approved Gardens** - live listings, lenders and tenders together.
 - **Total Members** - everyone who has joined the site.
 - **Active Agreements** - live listings that have an agreement proposed or confirmed.
-- **Recently Approved Gardens** - the ten newest live listings, each with a **View** link
+- **Recently approved gardens** - the ten newest live listings, each with a **View** link
   to the public listing page.
 
 ## The menu
 
 - **Dashboard**
 - **Gardens**: **Pending** and **Approved**
-- **Members**: **All members** and **Flagged**
+- **Members**: **All members**, **Flagged** and **Search** (find a member by name or
+  email address)
 - **Review queue** - chat messages held by the word filter or reported by members
 - **Chats** - conversations between members and the team
-- **Agreements** - every proposed or sealed agreement
+- **Agreements** - every live listing with a garden-sharing agreement in place
 - **Concessions** - members on a free membership
 - **Settings** - what this deployment is pointed at
 

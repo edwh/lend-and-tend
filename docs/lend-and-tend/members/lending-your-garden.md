@@ -48,6 +48,17 @@ photo or two, and it appears on the map for tenders near you.
    helps tenders decide whether the garden is right for them.
 9. Click **Post my garden**.
 
+### What to look out for when adding photos
+
+- The **first** photo is the main one: it is the picture shown on your listing and in
+  the map's summary. To make a different photo the main one, drag its thumbnail onto the
+  big picture.
+- Each photo is uploaded as soon as you choose it. While that is happening the button at
+  the bottom reads **Uploading photo...** and cannot be pressed; wait for it to say
+  **Post my garden** again before posting, or the photo will not be attached.
+- Phone photos are fine. A rotate button appears on each photo once it has uploaded if
+  one has come out sideways.
+
 You are taken to **My Garden**, where your listing now appears. It shows on the map, and
 to other members, within a minute or so: the index behind the map is refreshed every
 minute.

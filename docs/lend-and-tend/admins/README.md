@@ -17,7 +17,7 @@ This guide is organised around what you actually do:
    lists, why listings normally go live without you, and the review queue of held chat
    messages.
 3. **[Managing members](managing-members.md)** - the members list, a member's detail
-   page, setting payment status, concessions, flagged members and chats with the team.
+   page, setting membership status, concessions, flagged members and chats with the team.
 4. **[Running the service](running-the-service.md)** - agreements, the settings page,
    the switches that change how the site behaves, payments, email, and where to go for
    the technical side.

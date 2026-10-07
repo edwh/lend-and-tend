@@ -59,12 +59,22 @@ Environment variables:
 | `LAT_BATCH_CONTAINER` | `lat-batch-worker` | Used to publish chat messages immediately instead of waiting for the once-a-minute schedule. Optional: without Docker access the run just waits. |
 | `DOCS_OUT` | `docs/lend-and-tend` | Where to write the images (CI copies them out of a container). |
 | `DOCS_SHOT` | all | Comma-separated names to write, for example `DOCS_SHOT=join,settings`. The journey still runs in full, because later shots depend on earlier state, but only the named images are rewritten. |
+| `DOCS_AUDIENCE` | both | `members` or `admins`: run one audience's shots only. The admin pages need no member journey except for the member-detail page, so pair it with `DOCS_IDS`. |
+| `DOCS_IDS` | none | JSON of ids the member journey would otherwise discover, for example `DOCS_IDS='{"LENDER_ID":154}'`, so `DOCS_AUDIENCE=admins` can regenerate the admin set in a couple of minutes. |
 
 Images are written to `docs/lend-and-tend/<audience>/assets/<name>.png`. Review the diff
 and commit the images alongside whatever UI change prompted them.
 
 A full run takes several minutes, most of it waiting for sign-in emails: the batch worker
 sends queued mail on a once-a-minute schedule.
+
+Each shot is attempted up to three times before it is reported as failed: on a busy
+machine the app's first render can swallow a click or arrive after a sign-in link. A shot
+that fails leaves the previous image in place, so a failed run never writes a broken
+picture - check the run's output for `FAILED` lines and re-run those shots.
+
+The dev-only "Pretend to pay" box on the Join page is hidden in the pictures, as are the
+Nuxt dev-tools controls: neither exists on the live site.
 
 ## How the images stay deterministic
 

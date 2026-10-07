@@ -41,9 +41,6 @@ Your current address is shown. To change it, type a new one and click **Save ema
 Because sign-in links go to this address, make sure you can read mail there before you
 switch.
 
-There is also a **Change password** section. You do not need a password to use Lend &
-Tend - signing in is always by emailed link - so you can leave it alone.
-
 ## Local activity alerts
 
 Turn on **Email me when new listings appear nearby** to hear about new gardens (or new
@@ -57,12 +54,12 @@ Alerts are sent each morning, and you are never told about the same listing twic
 
 ## Travel radius
 
-How far you are prepared to travel, from **1** to **50 miles**. It drives the activity
-alerts above and the "still interested?" reminders below.
+How far you are prepared to travel: choose **up to 1, 2, 5, 10, 20 or 50 miles**. It
+drives the activity alerts above and the "still interested?" reminders below.
 
 ## Waiting list reminders
 
-While you are unmatched, Lend & Tend sends an occasional **"still interested?"** email
+While you are unmatched, Lend & Tend sends a **"still interested?"** email once a month
 with recent listings near you. Turn it off here if you would rather not get it. When you
 are matched the reminders stop and we ask instead whether you are
 [still looking](tending-a-garden.md#once-you-are-matched) or have

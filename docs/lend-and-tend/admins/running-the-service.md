@@ -28,10 +28,11 @@ switches that change how the site behaves, and where the technical material live
 
 ![Agreements](assets/agreements.png)
 
-**Agreements** (`/admin/agreements`) lists every garden-sharing agreement across the site:
-the listing it belongs to, whether it is **Proposed** (sent, not yet accepted) or
-**Sealed** (accepted by both), and the dates. The listing id links to the public listing
-and **View** opens the agreement itself, read-only for you.
+**Agreements** (`/admin/agreements`) lists every live listing that has a garden-sharing
+agreement attached: the **Listing** (a link to the public post), the **Lender** (a link
+to their member page), **In place** under Agreement, and when the listing was posted.
+**View** opens the public listing. The terms of an agreement are private to the two
+members who made it; the admin area can see that one exists, not what it says.
 
 Use it to answer "how many active arrangements do we have?" and to find the agreement
 behind a mediation request. Members ask for mediation through the **Not working** option
@@ -79,7 +80,7 @@ member's browser also confirms on return, so a slow webhook does not leave them 
 Lend & Tend never sees card details.
 
 Refunds are made in the Stripe dashboard, not in the admin area. After refunding, set the
-member's payment status back to **Not joined** on their
+member's membership status back to **Not joined** on their
 [detail page](managing-members.md#setting-payment-status) if that is what was agreed.
 
 The hand-off guide for whoever holds the Stripe account - which keys to create and where
