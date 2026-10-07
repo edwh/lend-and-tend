@@ -3,7 +3,8 @@
     <h2 class="lat-admin-title">Chats</h2>
 
     <p class="lat-admin-subtitle">
-      Monitor and review chat messages and conversations.
+      Conversations between members and the Lend &amp; Tend team. Reported
+      messages are under Moderation.
     </p>
 
     <div style="display: flex; gap: 10px; margin-bottom: 18px">
@@ -32,12 +33,12 @@
           <tr v-for="chat in chats" :key="chat.id">
             <td class="lat-admin-muted">{{ chat.id }}</td>
             <td>{{ getParticipants(chat) }}</td>
-            <td class="lat-admin-muted">{{ truncate(chat.lastmessage, 40) }}</td>
+            <td class="lat-admin-muted">
+              {{ truncate(chat.lastmessage, 40) }}
+            </td>
             <td class="lat-admin-muted">{{ fmtDate(chat.lastdate) }}</td>
             <td>
-              <NuxtLink
-                :to="`/chats/${chat.id}`"
-                class="lat-admin-btn-link"
+              <NuxtLink :to="`/chats/${chat.id}`" class="lat-admin-btn-link"
                 >View</NuxtLink
               >
             </td>
@@ -65,11 +66,14 @@ async function loadChats() {
   loading.value = true
   error.value = ''
   try {
-    const data = await $fetch(`${config.public.APIv2}/chats`, {
-      params: { limit: 100 },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+    // /chat/rooms lists the chats this (admin) account is party to. Member-to-
+    // member chats are private and not listable; reported ones appear under
+    // Moderation.
+    const data = await $fetch(`${config.public.APIv2}/chat/rooms`, {
+      params: { chattypes: 'User2Mod,Mod2Mod', limit: 100 },
+      headers: { Authorization: authStore.auth.jwt },
     })
-    chats.value = Array.isArray(data) ? data : data?.chats ?? []
+    chats.value = Array.isArray(data) ? data : data?.chatrooms ?? []
   } catch {
     error.value = 'Failed to load chats.'
   }

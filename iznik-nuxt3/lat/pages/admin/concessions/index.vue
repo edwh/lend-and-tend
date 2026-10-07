@@ -2,12 +2,14 @@
   <div>
     <h2 class="lat-admin-title">Concessions</h2>
 
-    <p class="lat-admin-subtitle">
-      Users with approved payment concessions.
-    </p>
+    <p class="lat-admin-subtitle">Users with approved payment concessions.</p>
 
     <div style="display: flex; gap: 10px; margin-bottom: 18px">
-      <button class="lat-admin-sbtn" :disabled="loading" @click="loadConcessions">
+      <button
+        class="lat-admin-sbtn"
+        :disabled="loading"
+        @click="loadConcessions"
+      >
         {{ loading ? 'Loading…' : 'Refresh' }}
       </button>
     </div>
@@ -70,14 +72,34 @@ async function loadConcessions() {
   loading.value = true
   error.value = ''
   try {
-    const data = await $fetch(`${config.public.APIv2}/user/search`, {
-      params: { q: '', modtools: true, limit: 1000 },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+    // /user/search needs a real query (an empty one is a 400) and the member
+    // list carries no settings, so: list the world group's members, then
+    // fetch each one's full record (settings included for admins) in small
+    // batches and keep those with a pending concession claim.
+    const headers = { Authorization: authStore.auth.jwt }
+    const groupid = config.public.LAT_WORLD_GROUPID
+    const list = await $fetch(`${config.public.APIv2}/memberships`, {
+      params: { groupid, collection: 'Approved', limit: 1000 },
+      headers,
     })
-    const allUsers = Array.isArray(data) ? data : data?.users ?? []
-    concessions.value = allUsers.filter(
-      (u) => u.settings?.lat_payment?.status === 'concession'
+    const ids = (Array.isArray(list) ? list : list?.members ?? []).map(
+      (m) => m.userid
     )
+    const found = []
+    for (let i = 0; i < ids.length; i += 10) {
+      const batch = await Promise.all(
+        ids.slice(i, i + 10).map((id) =>
+          $fetch(`${config.public.APIv2}/user/${id}`, {
+            params: { modtools: true },
+            headers,
+          }).catch(() => null)
+        )
+      )
+      for (const u of batch) {
+        if (u?.settings?.lat_payment?.status === 'concession') found.push(u)
+      }
+    }
+    concessions.value = found
   } catch {
     error.value = 'Failed to load concessions.'
   }
@@ -87,13 +109,15 @@ async function loadConcessions() {
 async function revoke(u) {
   processing[u.id] = true
   try {
-    await $fetch(`${config.public.APIv2}/session`, {
+    // PATCH /user edits ANOTHER member (moderator-only) and merges settings;
+    // PATCH /session would have replaced the ADMIN's own settings instead.
+    await $fetch(`${config.public.APIv2}/user`, {
       method: 'PATCH',
       body: {
         id: u.id,
         settings: { lat_payment: null },
       },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     concessions.value = concessions.value.filter((item) => item.id !== u.id)
   } catch {

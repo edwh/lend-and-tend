@@ -135,7 +135,7 @@ async function loadListings() {
     // eslint-disable-next-line no-undef
     const data = await $fetch(`${config.public.APIv2}/messages`, {
       params,
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     listings.value = Array.isArray(data) ? data : data?.messages ?? []
   } catch {

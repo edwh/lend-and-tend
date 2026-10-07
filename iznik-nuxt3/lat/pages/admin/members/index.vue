@@ -2,9 +2,7 @@
   <div>
     <h2 class="lat-admin-title">Members</h2>
 
-    <p class="lat-admin-subtitle">
-      All members in the Lend & Tend community.
-    </p>
+    <p class="lat-admin-subtitle">All members in the Lend & Tend community.</p>
 
     <div style="display: flex; gap: 10px; margin-bottom: 18px">
       <button class="lat-admin-sbtn" :disabled="loading" @click="loadMembers">
@@ -64,9 +62,10 @@ async function loadMembers() {
   error.value = ''
   try {
     const groupid = config.public.LAT_WORLD_GROUPID
-    const data = await $fetch(`${config.public.APIv2}/groups/${groupid}/members`, {
-      params: { limit: 200 },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+    // GET /memberships is the API's member list (there is no /groups/:id/members).
+    const data = await $fetch(`${config.public.APIv2}/memberships`, {
+      params: { groupid, collection: 'Approved', limit: 200 },
+      headers: { Authorization: authStore.auth.jwt },
     })
     members.value = Array.isArray(data) ? data : data?.members ?? []
   } catch {

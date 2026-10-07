@@ -51,7 +51,7 @@ async function search() {
   try {
     const data = await $fetch(`${config.public.APIv2}/user/search`, {
       params: { q: query.value.trim(), modtools: true },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     results.value = Array.isArray(data) ? data : data?.users ?? []
   } catch { searchError.value = 'Search failed.' }

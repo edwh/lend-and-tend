@@ -2,9 +2,7 @@
   <div>
     <h2 class="lat-admin-title">Flagged Members</h2>
 
-    <p class="lat-admin-subtitle">
-      Members flagged for review or moderation.
-    </p>
+    <p class="lat-admin-subtitle">Members flagged for review or moderation.</p>
 
     <div style="display: flex; gap: 10px; margin-bottom: 18px">
       <button class="lat-admin-sbtn" :disabled="loading" @click="loadMembers">
@@ -67,15 +65,24 @@ async function loadMembers() {
   loading.value = true
   error.value = ''
   try {
-    const groupid = config.public.LAT_WORLD_GROUPID
-    const data = await $fetch(
-      `${config.public.APIv2}/groups/${groupid}/members`,
-      {
-        params: { limit: 200, status: 'flagged' },
-        headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+    // The API has no "flagged member" list. What it does have is chat
+    // messages held for review (reports, filter hits): list the distinct
+    // members whose messages are in that queue.
+    const data = await $fetch(`${config.public.APIv2}/chatmessages`, {
+      params: { reviewrequired: 1, limit: 200 },
+      headers: { Authorization: authStore.auth.jwt },
+    })
+    const byId = new Map()
+    for (const m of data?.chatmessages ?? []) {
+      if (m.fromuser && !byId.has(m.fromuser)) {
+        byId.set(m.fromuser, {
+          id: m.fromuser,
+          displayname: m.fromname || m.fromuser,
+          email: m.fromemail || '',
+        })
       }
-    )
-    members.value = Array.isArray(data) ? data : data?.members ?? []
+    }
+    members.value = [...byId.values()]
   } catch {
     error.value = 'Failed to load flagged members.'
   }

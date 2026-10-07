@@ -56,7 +56,7 @@ onMounted(async () => {
   try {
     const data = await $fetch(`${config.public.APIv2}/user/${userId}`, {
       params: { modtools: true },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     user.value = data?.user ?? data
     editStatus.value = user.value?.settings?.lat_payment?.status ?? ''
@@ -69,13 +69,15 @@ async function savePayment() {
   saveError.value = ''
   saveOk.value = false
   try {
-    await $fetch(`${config.public.APIv2}/session`, {
+    // PATCH /user edits ANOTHER member (moderator-only) and merges settings;
+    // PATCH /session would have replaced the ADMIN's own settings instead.
+    await $fetch(`${config.public.APIv2}/user`, {
       method: 'PATCH',
       body: {
         id: parseInt(userId as string),
         settings: { lat_payment: editStatus.value ? { status: editStatus.value, updatedByAdmin: true, updatedAt: new Date().toISOString() } : null },
       },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     if (user.value) user.value.settings = { ...user.value.settings, lat_payment: editStatus.value ? { status: editStatus.value } : null }
     saveOk.value = true

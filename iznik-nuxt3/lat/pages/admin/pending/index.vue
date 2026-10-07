@@ -99,7 +99,7 @@ async function loadListings() {
         limit: 200,
         collection: 'Pending',
       },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     listings.value = Array.isArray(data) ? data : data?.messages ?? []
   } catch {

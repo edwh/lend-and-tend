@@ -83,9 +83,9 @@ async function loadAgreements() {
         groupid,
         types: 'Offer,Wanted',
         limit: 200,
-        collection: 'Promised',
+        collection: 'Approved',
       },
-      headers: { Authorization: `Bearer ${authStore.auth.jwt}` },
+      headers: { Authorization: authStore.auth.jwt },
     })
     const msgs = Array.isArray(data) ? data : data?.messages ?? []
     promises.value = msgs.flatMap((m) =>
