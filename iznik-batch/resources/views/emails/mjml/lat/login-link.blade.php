@@ -7,7 +7,7 @@
       <mj-section background-color="#ffffff" padding="28px 24px 6px 24px">
         <mj-column>
           <mj-text font-size="24px" font-weight="bold" mj-class="text-header">
-            Here's your sign-in link 🌱
+            Here's your sign-in&nbsp;link&nbsp;🌱
           </mj-text>
           <mj-text font-size="16px" color="#333322" line-height="1.6" padding-top="6px">
             No password needed — that's how {{ config('freegle.branding.name') }} works.

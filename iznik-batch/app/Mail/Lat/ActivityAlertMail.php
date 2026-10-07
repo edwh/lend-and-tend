@@ -72,6 +72,7 @@ class ActivityAlertMail extends MjmlMailable
                 'itemName' => $l['subject'] ?? 'A garden',
                 'isOffer' => $isOffer,
                 'distance_km' => $l['distance_km'] ?? null,
+                'distance' => LatDistance::miles(isset($l['distance_km']) ? (float) $l['distance_km'] : null),
                 'text' => $l['text'] ?? null,
                 'imageUrl' => $l['imageUrl'] ?? $placeholder,
                 'url' => $this->trackedUrl($site . '/garden/' . ($l['id'] ?? ''), 'cta_listing', 'cta'),

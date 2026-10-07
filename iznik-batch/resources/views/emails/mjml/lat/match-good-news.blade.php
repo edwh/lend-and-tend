@@ -7,10 +7,10 @@
       <mj-section mj-class="bg-green-light" padding="30px 24px">
         <mj-column>
           <mj-text font-size="26px" font-weight="bold" mj-class="text-header" align="center">
-            A garden is being shared near you 🌻
+            A garden is being shared near&nbsp;you&nbsp;🌻
           </mj-text>
           <mj-text font-size="16px" color="#333322" line-height="1.6" align="center" padding-top="8px">
-            {{ $firstName ? $firstName . ', some' : 'Some' }} lovely news: a neighbour{{ !is_null($distanceKm) ? ' about ' . $distanceKm . ' km away' : ' near you' }} has just paired up to share a garden on {{ config('freegle.branding.name') }}. Somewhere that was sitting unloved is about to be growing again.
+            {{ $firstName ? $firstName . ', some' : 'Some' }} lovely news: a neighbour{{ !empty($distance) ? ' about ' . $distance . ' away' : ' near you' }} has just paired up to share a garden on {{ config('freegle.branding.name') }}. Somewhere that was sitting unloved is about to be growing again.
           </mj-text>
         </mj-column>
       </mj-section>

@@ -7,7 +7,7 @@
       <mj-section background-color="#ffffff" padding="28px 24px 8px 24px">
         <mj-column>
           <mj-text font-size="24px" font-weight="bold" mj-class="text-header">
-            Wonderful news{{ $firstName ? ', ' . $firstName : '' }}! 🌷
+            Wonderful news{{ $firstName ? ', ' . $firstName : '' }}!&nbsp;🌷
           </mj-text>
           <mj-text font-size="16px" color="#333322" line-height="1.6" padding-top="6px">
             <strong>{{ $otherName }}</strong> is going to help tend your garden. Thank you for sharing your space — it makes a real difference.

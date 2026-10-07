@@ -7,7 +7,7 @@
       <mj-section background-color="#ffffff" padding="28px 24px 8px 24px">
         <mj-column>
           <mj-text font-size="24px" font-weight="bold" mj-class="text-header">
-            Congratulations{{ $firstName ? ', ' . $firstName : '' }}! 🌿
+            Congratulations{{ $firstName ? ', ' . $firstName : '' }}!&nbsp;🌿
           </mj-text>
           <mj-text font-size="16px" color="#333322" line-height="1.6" padding-top="6px">
             You and <strong>{{ $otherName }}</strong> have agreed to share a garden. We hope it's the start of something lovely.

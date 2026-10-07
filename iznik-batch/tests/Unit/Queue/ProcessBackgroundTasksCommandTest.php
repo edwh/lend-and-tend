@@ -5,6 +5,7 @@ namespace Tests\Unit\Queue;
 use App\Mail\Chat\ReferToSupportMail;
 use App\Mail\Donation\DonateExternalMail;
 use App\Mail\Newsfeed\ChitchatReportMail;
+use App\Mail\Lat\LoginLinkMail;
 use App\Mail\Session\ForgotPasswordMail;
 use App\Mail\Session\MergeOfferMail;
 use App\Mail\Session\UnsubscribeConfirmMail;
@@ -399,10 +400,13 @@ class ProcessBackgroundTasksCommandTest extends TestCase
         ])->assertSuccessful();
 
         // Verify email was sent with correct data.
-        Mail::assertSent(ForgotPasswordMail::class, function (ForgotPasswordMail $mail) {
+        // Lend & Tend is passwordless: the forgot-password task sends the
+        // sign-in link email, carrying the same u/k token as a magic link.
+        Mail::assertSent(LoginLinkMail::class, function (LoginLinkMail $mail) {
             return $mail->userId === 11111
                 && $mail->email === 'forgetful@test.com'
-                && $mail->resetUrl === 'https://www.ilovefreegle.org/settings?u=11111&k=abc123&src=forgotpass';
+                && str_contains($mail->loginUrl, 'u=11111')
+                && str_contains($mail->loginUrl, 'k=abc123');
         });
 
         // Verify task was marked as processed.

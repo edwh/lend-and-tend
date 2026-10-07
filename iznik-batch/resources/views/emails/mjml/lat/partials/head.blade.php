@@ -14,7 +14,7 @@
   @endif
   <mj-attributes>
     {{-- Modern system font stack --}}
-    <mj-all font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"></mj-all>
+    <mj-all font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"></mj-all>
     {{-- Lend & Tend brand palette (from lat/branding.config.ts) --}}
     <mj-class name="bg-success" background-color="#329732" />        {{-- brand green --}}
     <mj-class name="bg-header" background-color="#4F6642" />         {{-- forest green --}}

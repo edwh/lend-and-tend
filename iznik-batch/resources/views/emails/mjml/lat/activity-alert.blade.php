@@ -7,7 +7,7 @@
       <mj-section background-color="#ffffff" padding="28px 24px 8px 24px">
         <mj-column>
           <mj-text font-size="24px" font-weight="bold" mj-class="text-header">
-            {{ $firstName ? $firstName . ', there' : 'There' }}'{{ $count === 1 ? 's a new garden' : 're new gardens' }} near you 🌱
+            {{ $firstName ? $firstName . ', there' : 'There' }}'{{ $count === 1 ? 's a new garden' : 're new gardens' }} near&nbsp;you&nbsp;🌱
           </mj-text>
           <mj-text font-size="16px" color="#333322" line-height="1.5" padding-top="6px">
             {{ $count === 1 ? 'A new listing has' : $count . ' new listings have' }} just appeared within your patch on {{ config('freegle.branding.name') }}.

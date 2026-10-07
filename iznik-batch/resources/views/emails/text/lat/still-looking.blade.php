@@ -1,4 +1,4 @@
-Congratulations{{ $firstName ? ', ' . $firstName : '' }}!
+Congratulations{!! $firstName ? ', ' . $firstName : '' !!}!
 
 You and {!! $otherName !!} have agreed to share a garden. We hope it's the start of something lovely.
 
@@ -13,8 +13,8 @@ No — I'm sorted for now:
 You can change your mind any time in your settings: {!! $settingsUrl !!}
 
 --
-This email was sent to {{ $email }}
+This email was sent to {!! $email !!}
 Manage your notifications: {!! $settingsUrl !!}
 
-{{ config('freegle.branding.name') }} helps neighbours share gardens. Run by volunteers.
-{{ config('freegle.branding.registered_address') }}
+{!! config('freegle.branding.name') !!} helps neighbours share gardens. Run by volunteers.
+{!! config('freegle.branding.registered_address') !!}

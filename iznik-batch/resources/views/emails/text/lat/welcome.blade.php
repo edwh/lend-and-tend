@@ -1,6 +1,6 @@
-Welcome{{ $firstName ? ', ' . $firstName : '' }}!
+Welcome{!! $firstName ? ', ' . $firstName : '' !!}!
 
-You've joined {{ config('freegle.branding.name') }} — a community of neighbours sharing gardens. Someone has space to lend; someone else would love to grow. We help you find each other.
+You've joined {!! config('freegle.branding.name') !!} — a community of neighbours sharing gardens. Someone has space to lend; someone else would love to grow. We help you find each other.
 
 @if($role === 'lender')
 You've got a garden to share. Pop it on the map and a nearby tender can help bring it to life.
@@ -26,8 +26,8 @@ How it works:
 New to this? Our ground rules & safety tips are a two-minute read worth having: {!! $rulesUrl !!}
 
 --
-This email was sent to {{ $email }}
+This email was sent to {!! $email !!}
 Manage your notifications: {!! $settingsUrl !!}
 
-{{ config('freegle.branding.name') }} helps neighbours share gardens. Run by volunteers.
-{{ config('freegle.branding.registered_address') }}
+{!! config('freegle.branding.name') !!} helps neighbours share gardens. Run by volunteers.
+{!! config('freegle.branding.registered_address') !!}

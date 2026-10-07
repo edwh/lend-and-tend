@@ -65,6 +65,7 @@ class MatchGoodNewsMail extends MjmlMailable
                 'email' => $this->recipientEmail,
                 'firstName' => LatNames::first($this->recipientName),
                 'distanceKm' => $this->distanceKm,
+                'distance' => LatDistance::miles($this->distanceKm),
                 'lendUrl' => $this->trackedUrl($site . '/lend', 'cta_lend', 'cta'),
                 'tendUrl' => $this->trackedUrl($site . '/tend', 'cta_tend', 'cta'),
                 'mapUrl' => $this->trackedUrl($site . '/map', 'cta_map', 'cta'),

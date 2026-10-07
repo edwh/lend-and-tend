@@ -7,10 +7,10 @@
       <mj-section background-color="#ffffff" padding="28px 24px 8px 24px">
         <mj-column>
           <mj-text font-size="24px" font-weight="bold" mj-class="text-header">
-            How's it growing{{ $firstName ? ', ' . $firstName : '' }}? 🌿
+            How's it growing{{ $firstName ? ', ' . $firstName : '' }}?&nbsp;🌿
           </mj-text>
           <mj-text font-size="16px" color="#333322" line-height="1.5" padding-top="6px">
-            It's been <strong>{{ $intervalLabel }}</strong> since you and <strong>{{ $otherName }}</strong> started sharing a garden on {{ config('freegle.branding.name') }}. We'd love to know how it's going — one tap is all it takes.
+            It's been <strong>{{ $intervalSentence }}</strong> since you and <strong>{{ $otherName }}</strong> started sharing a garden on {{ config('freegle.branding.name') }}. We'd love to know how it's going — one tap is all it takes.
           </mj-text>
         </mj-column>
       </mj-section>

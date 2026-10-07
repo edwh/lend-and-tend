@@ -37,6 +37,21 @@ class CheckinReminderMail extends MjmlMailable
         }
     }
 
+    /**
+     * The label the scheduler uses ("2-week") as it reads in a sentence
+     * ("two weeks"), for "It's been two weeks since ...".
+     */
+    public static function intervalSentence(string $label): string
+    {
+        return match ($label) {
+            '2-week' => 'two weeks',
+            '1-month' => 'a month',
+            '3-month' => 'three months',
+            '6-month' => 'six months',
+            default => str_replace('-', ' ', $label),
+        };
+    }
+
     protected function getRecipientUserId(): ?int
     {
         return $this->userId;
@@ -67,6 +82,7 @@ class CheckinReminderMail extends MjmlMailable
                 'firstName' => LatNames::first($this->recipientName),
                 'otherName' => $this->otherName,
                 'intervalLabel' => $this->intervalLabel,
+                'intervalSentence' => self::intervalSentence($this->intervalLabel),
                 'growingUrl' => $this->trackedUrl($base . '?status=growing', 'checkin_growing', 'cta'),
                 'okUrl' => $this->trackedUrl($base . '?status=ok', 'checkin_ok', 'cta'),
                 'notWorkingUrl' => $this->trackedUrl($base . '?status=not_working', 'checkin_not_working', 'cta'),

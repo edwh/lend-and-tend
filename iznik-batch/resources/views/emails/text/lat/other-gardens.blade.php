@@ -1,4 +1,4 @@
-Wonderful news{{ $firstName ? ', ' . $firstName : '' }}!
+Wonderful news{!! $firstName ? ', ' . $firstName : '' !!}!
 
 {!! $otherName !!} is going to help tend your garden. Thank you for sharing your space — it makes a real difference.
 
@@ -13,8 +13,8 @@ That's all for now:
 Either way, we'll check in as the season goes on.
 
 --
-This email was sent to {{ $email }}
+This email was sent to {!! $email !!}
 Manage your notifications: {!! $settingsUrl !!}
 
-{{ config('freegle.branding.name') }} helps neighbours share gardens. Run by volunteers.
-{{ config('freegle.branding.registered_address') }}
+{!! config('freegle.branding.name') !!} helps neighbours share gardens. Run by volunteers.
+{!! config('freegle.branding.registered_address') !!}

@@ -106,19 +106,36 @@ class LatMailService
         } catch (\Throwable $e) {
             return null;
         }
-        if (!$att) {
-            return null;
-        }
-        $base = rtrim((string) config('freegle.delivery.base_url'), '/');
+
+        return $att ? self::imageUrlForAttachment($att) : null;
+    }
+
+    /**
+     * Thumbnail URL for one messages_attachments row, served by L&T's own image
+     * proxy (config/lat.php) - never Freegle's delivery or images hosts.
+     *
+     * Uploads go to L&T's tusd store and are recorded as externaluid
+     * "freegletusd-<id>", which the proxy fetches from <uploads_url><id>.
+     * An attachment with an external URL is proxied as-is. Anything else (an
+     * attachment kind this deployment does not store) gets no photo, so the
+     * email falls back to its placeholder rather than a broken image.
+     */
+    public static function imageUrlForAttachment(object $att): ?string
+    {
+        $delivery = rtrim((string) config('lat.image_delivery_url'), '/');
+        $source = null;
+
         if (!empty($att->externalurl)) {
-            return $base . '?url=' . urlencode($att->externalurl) . '&w=300';
-        }
-        if (!empty($att->id)) {
-            $imagesDomain = rtrim((string) config('freegle.images.domain'), '/');
-            return $base . '?url=' . urlencode("{$imagesDomain}/timg_{$att->id}.jpg") . '&w=300';
+            $source = (string) $att->externalurl;
+        } elseif (!empty($att->externaluid) && str_starts_with((string) $att->externaluid, 'freegletusd-')) {
+            $source = config('lat.uploads_url') . substr((string) $att->externaluid, strlen('freegletusd-'));
         }
 
-        return null;
+        if ($source === null || $delivery === '') {
+            return null;
+        }
+
+        return $delivery . '?url=' . urlencode($source) . '&w=300';
     }
 
     /**
