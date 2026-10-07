@@ -60,6 +60,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useOurModal } from '~/composables/useOurModal'
 import Api from '~/api'
+import { privateDetailsFor } from '~/composables/useLatPrivateGarden'
 
 const emit = defineEmits(['hidden', 'sent', 'sentWithAddressId'])
 
@@ -137,15 +138,22 @@ onMounted(async () => {
     const detailed = await Promise.all(
       filtered.map((m) => api.message.fetch(m.id).catch(() => null))
     )
+    // The address lives in the member's private settings (useLatPrivateGarden).
+    // Older listings still carry it in the textbody; fall back to that so they
+    // keep working until the owner re-saves them.
+    const settings = authStore.user?.settings
     gardens.value = detailed
       .filter((m) => m !== null)
-      .map((m) => ({
-        id: m.id,
-        title: stripPrefix(m.subject),
-        address: parseAddress(m.textbody),
-        pafid: parsePafId(m.textbody),
-        ...parseLatLng(m),
-      }))
+      .map((m) => {
+        const priv = privateDetailsFor(settings, m.id) || {}
+        return {
+          id: m.id,
+          title: stripPrefix(m.subject),
+          address: priv.address || priv.postcode || parseAddress(m.textbody),
+          pafid: priv.pafid || parsePafId(m.textbody),
+          ...parseLatLng(m),
+        }
+      })
     if (gardensWithAddress.value.length) {
       selectedId.value = gardensWithAddress.value[0].id
     }

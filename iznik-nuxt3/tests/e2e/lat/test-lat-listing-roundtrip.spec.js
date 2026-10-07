@@ -184,8 +184,31 @@ test.describe('Lend listing — full round-trip', () => {
     expect(body.accessRoute).toBe(LEND_FIELDS.accessRoute.value)
     expect(body.arrangement).toBe(LEND_FIELDS.arrangement)
     expect(body.restrictions).toBe(LEND_FIELDS.restrictions)
-    expect(body.address, 'address should persist in textbody').toBeTruthy()
-    expect(body.postcode).toBeTruthy()
+    // Privacy: the textbody is public API data, so the address, postcode and
+    // phone number must NOT be in it...
+    expect(
+      body.address,
+      'address must not be in the public textbody'
+    ).toBeUndefined()
+    expect(
+      body.postcode,
+      'postcode must not be in the public textbody'
+    ).toBeUndefined()
+    expect(
+      body.phone,
+      'phone must not be in the public textbody'
+    ).toBeUndefined()
+    expect(body.pafid).toBeUndefined()
+
+    // ...but the owner still sees their address when editing (it is kept in
+    // their private settings and read back from there).
+    await page.goto(`/garden/${gardenId}/edit`)
+    await expect(page.locator('.existing-address')).toContainText(
+      '10 Test Street',
+      {
+        timeout: 30_000,
+      }
+    )
   })
 })
 
@@ -242,8 +265,14 @@ test.describe('Tend listing — full round-trip', () => {
     expect(body.tools).toBe(TEND_FIELDS.tools.value)
     expect(body.availability).toBe(TEND_FIELDS.availability.value)
     expect(body.honestyDeclaration).toBe(true)
-    expect(body.address).toBeTruthy()
-    expect(body.postcode).toBeTruthy()
+    expect(
+      body.address,
+      'address must not be in the public textbody'
+    ).toBeUndefined()
+    expect(
+      body.postcode,
+      'postcode must not be in the public textbody'
+    ).toBeUndefined()
   })
 })
 

@@ -78,6 +78,10 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth'
 import api from '~/api'
+import {
+  useLatPrivateGarden,
+  splitListingBody,
+} from '~/composables/useLatPrivateGarden'
 import GardenFormFields from '~/components/lat/GardenFormFields.vue'
 import GardenLocationPicker from '~/components/lat/GardenLocationPicker.vue'
 
@@ -86,6 +90,7 @@ definePageMeta({ layout: 'default' })
 const route = useRoute()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const privateGarden = useLatPrivateGarden()
 
 useHead({
   title: 'Edit listing — Lend & Tend',
@@ -165,8 +170,14 @@ async function fetchMessage() {
     form.value.availability = parsed.availability || ''
     form.value.honestyDeclaration = parsed.honestyDeclaration || false
 
-    existingAddress.value = parsed.address || parsed.postcode || ''
-    existingPostcode.value = parsed.postcode || ''
+    // Address details live in the member's private settings. Listings made
+    // before that change still carry them in the (public) textbody; read
+    // those as a fallback so the owner can still see and re-save them, after
+    // which they are stored privately and dropped from the textbody.
+    const priv = privateGarden.get(msgId) || {}
+    existingAddress.value =
+      priv.address || priv.postcode || parsed.address || parsed.postcode || ''
+    existingPostcode.value = priv.postcode || parsed.postcode || ''
 
     if (data.attachments && data.attachments.length) {
       attachments.value = data.attachments
@@ -187,17 +198,34 @@ function parseTextbody(textbody) {
   }
 }
 
-function buildTextbody() {
-  // Start from the existing textbody so fields the user didn't touch (like an
-  // address loaded from server but not re-entered through the picker) survive.
-  const existing = parseTextbody(message.value?.textbody)
-  const body = { ...existing, description: form.value.about }
-
-  if (location.value?.address) body.address = location.value.address
-  if (location.value?.postcode) body.postcode = location.value.postcode
+// The private half of the listing: what is already stored for it, with any
+// newly picked address on top. Saved to the member's settings, never to the
+// textbody.
+function buildPrivateDetails() {
+  const msgId = parseInt(route.params.id, 10)
+  // Listings created before the split still have these in the textbody;
+  // pick them up here so one re-save moves them to private storage.
+  const { privateDetails: legacy } = splitListingBody(
+    parseTextbody(message.value?.textbody)
+  )
+  const details = { ...(legacy || {}), ...(privateGarden.get(msgId) || {}) }
+  if (location.value?.address) details.address = location.value.address
+  if (location.value?.postcode) details.postcode = location.value.postcode
   // PAF id when the user picked from the PAF dropdown — used by
   // LatSendAddressModal to create a proper Freegle Address record on send.
-  if (location.value?.pafid) body.pafid = location.value.pafid
+  if (location.value?.pafid) details.pafid = location.value.pafid
+  return Object.keys(details).length ? details : null
+}
+
+function buildTextbody() {
+  // Start from the existing textbody so fields the user didn't touch survive,
+  // but never carry address / postcode / PAF id / phone into it: the textbody
+  // is public API data (see useLatPrivateGarden). Stripping here also cleans
+  // up listings created before that split.
+  const { publicBody: existing } = splitListingBody(
+    parseTextbody(message.value?.textbody)
+  )
+  const body = { ...existing, description: form.value.about }
 
   if (message.value?.type === 'Offer') {
     body.gardenSize = form.value.gardenSize || ''
@@ -269,6 +297,7 @@ async function submit() {
     }
 
     await msgApi.save(updatePayload)
+    await privateGarden.save(msgId, buildPrivateDetails())
 
     navigateTo(`/garden/${msgId}`)
   } catch (e) {

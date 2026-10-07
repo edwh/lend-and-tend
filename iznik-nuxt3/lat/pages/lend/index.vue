@@ -201,6 +201,10 @@ import { useAuthStore } from '~/stores/auth'
 import { useNavbar } from '~/composables/useNavbar'
 import api from '~/api'
 import { useMessageStore } from '~/stores/message'
+import {
+  useLatPrivateGarden,
+  splitListingBody,
+} from '~/composables/useLatPrivateGarden'
 import PaymentModal from '~/components/lat/PaymentModal.vue'
 import GardenLocationPicker from '~/components/lat/GardenLocationPicker.vue'
 import VisibilityHint from '~/components/lat/VisibilityHint.vue'
@@ -212,6 +216,7 @@ useHead({ title: 'Share your garden — Lend & Tend' })
 const authStore = useAuthStore()
 const { requestLogin } = useNavbar()
 const config = useRuntimeConfig()
+const privateGarden = useLatPrivateGarden()
 
 const hasPaid = computed(() => {
   const status = authStore.user?.settings?.lat_payment?.status
@@ -258,7 +263,10 @@ const location = ref(null)
 const error = ref('')
 const submitting = ref(false)
 
-function buildTextbody() {
+// Everything the form collects, as one object. splitListingBody() then keeps
+// address / postcode / PAF id / phone OUT of the public textbody (anyone can
+// read a message body via the API) and in the member's private settings.
+function buildListingBody() {
   const body = { description: form.about }
   if (location.value?.address) body.address = location.value.address
   if (location.value?.postcode) body.postcode = location.value.postcode
@@ -272,7 +280,7 @@ function buildTextbody() {
   if (form.accessRoute) body.accessRoute = form.accessRoute
   if (form.arrangement) body.arrangement = form.arrangement
   if (form.restrictions) body.restrictions = form.restrictions
-  return JSON.stringify(body)
+  return body
 }
 
 async function submit() {
@@ -296,16 +304,18 @@ async function submit() {
     const msgApi = api(config).message
     const groupid = parseInt(config.public.LAT_WORLD_GROUPID)
     const attids = attachments.value.filter((a) => a.id).map((a) => a.id)
+    const { publicBody, privateDetails } = splitListingBody(buildListingBody())
     const putResp = await msgApi.put({
       groupid,
       messagetype: 'Offer',
       item: form.subject,
-      textbody: buildTextbody(),
+      textbody: JSON.stringify(publicBody),
       email: authStore.user.email,
       ...(attids.length ? { attachments: attids } : {}),
     })
     const msgId = putResp?.id
     if (!msgId) throw new Error('Failed to create garden listing.')
+    if (privateDetails) await privateGarden.save(msgId, privateDetails)
     await msgApi.save({
       id: msgId,
       lat: location.value.lat,
