@@ -29,8 +29,19 @@
           any CVC.
         </div>
 
+        <!-- Already a member: nothing to pay, so don't show a pay button -->
+        <div v-if="alreadyPaid" class="join-panel">
+          <p class="panel-desc">
+            <strong>You're all set.</strong> Your membership is active, so you
+            can send and receive messages.
+          </p>
+          <NuxtLink to="/map" class="btn btn-primary btn-lg btn-full">
+            Explore the map
+          </NuxtLink>
+        </div>
+
         <!-- Tabs -->
-        <div class="join-tabs">
+        <div v-if="!alreadyPaid" class="join-tabs">
           <button
             class="join-tab"
             :class="{ 'join-tab--active': activeTab === 'pay' }"
@@ -48,7 +59,7 @@
         </div>
 
         <!-- Pay panel -->
-        <div v-if="activeTab === 'pay'" class="join-panel">
+        <div v-if="!alreadyPaid && activeTab === 'pay'" class="join-panel">
           <p class="panel-desc">
             Pay securely via Stripe. You'll be able to send and receive messages
             immediately after payment.
@@ -63,7 +74,10 @@
         </div>
 
         <!-- Concession panel -->
-        <div v-if="activeTab === 'concession'" class="join-panel">
+        <div
+          v-if="!alreadyPaid && activeTab === 'concession'"
+          class="join-panel"
+        >
           <p class="panel-desc">{{ branding.fee.concessionText }}</p>
           <div v-if="concessionSent" class="alert-success">
             <VIcon :icon="['fas', 'check-circle']" class="btn-icon" />
@@ -193,9 +207,11 @@ async function startPayment() {
   checkingOut.value = true
   paymentError.value = ''
   try {
+    // The server identifies us from our own session token, never from a
+    // user id in the body (anyone could send any id).
     const { url } = await $fetch<{ url: string }>('/api/checkout', {
       method: 'POST',
-      body: { userId: authStore.user.id },
+      headers: { Authorization: authStore.auth.jwt },
     })
     if (url) window.location.href = url
   } catch {

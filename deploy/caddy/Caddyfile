@@ -36,7 +36,7 @@ lat.lend-and-tend.katapult.cloud, new.lendandtend.com {
         # Nuxt server API routes (contact form, Stripe) run in lat-nuxt, NOT the
         # Go API. Caddy uses the first matching handle, so match these BEFORE the
         # /api* -> Go rule below; otherwise Caddy hands /api/contact to Go -> 404.
-        @nuxtapi path /api/contact /api/checkout /api/stripe-webhook
+        @nuxtapi path /api/contact /api/checkout /api/checkout-confirm /api/stripe-webhook
         handle @nuxtapi {
                 reverse_proxy 127.0.0.1:4002
         }

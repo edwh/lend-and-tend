@@ -269,6 +269,9 @@ services:
       - ./iznik-nuxt3/lat/public:/app/lat/public:rw
       - ./iznik-nuxt3/lat/nuxt.config.ts:/app/lat/nuxt.config.ts:rw
       - ./iznik-nuxt3/lat/branding.config.ts:/app/lat/branding.config.ts:rw
+      # Nitro server routes/utils (contact, checkout, Stripe webhook). Without
+      # this mount, edits under lat/server need a rebuild or docker cp.
+      - ./iznik-nuxt3/lat/server:/app/lat/server:rw
     ports:
       - "${PORT_LAT_NUXT:-4002}:4002"
     extra_hosts:
@@ -300,6 +303,9 @@ services:
       CONTACT_EMAIL: "hello@lendandtend.com"
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      # Shared with lat-api: /api/checkout verifies the member's token and the
+      # Stripe webhook mints a short-lived one to mark them paid via the API.
+      JWT_SECRET: "${JWT_SECRET:-dev-lat-secret}"
       STRIPE_SUCCESS_URL: "${STRIPE_SUCCESS_URL:-http://localhost:4002/join/success}"
       STRIPE_CANCEL_URL: "${STRIPE_CANCEL_URL:-http://localhost:4002/join}"
     depends_on:

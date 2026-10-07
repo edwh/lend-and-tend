@@ -2,7 +2,8 @@
 #   Deploy: fly deploy ./iznik-nuxt3 -c deploy/fly/nuxt.fly.toml
 #   Private IP: fly ips allocate-v6 --private -a lat-nuxt
 #   Secrets: fly secrets set SMTP_USERNAME=… SMTP_PASSWORD=… \
-#            STRIPE_SECRET_KEY=… STRIPE_WEBHOOK_SECRET=… -a lat-nuxt
+#            STRIPE_SECRET_KEY=… STRIPE_WEBHOOK_SECRET=… \
+#            JWT_SECRET=<same value as lat-api> -a lat-nuxt
 #
 # Uses deploy/fly/nuxt/Dockerfile, which bakes `.output` at IMAGE-build time
 # (on Fly's remote builder). Cold starts are seconds, so this app scales to
@@ -44,6 +45,12 @@ primary_region = "lhr"
   # Contact-form + Stripe secrets (SMTP_* map from LAT_MAIL_*): via fly secrets.
   SMTP_HOST = "smtp.mailgun.org"
   SMTP_PORT = "587"
+  # Where Stripe Checkout sends the member back to. Without these the server
+  # route falls back to its localhost:4002 dev defaults, so a live payment would
+  # bounce the member to a dead URL. Not secrets; STRIPE_SECRET_KEY and
+  # STRIPE_WEBHOOK_SECRET stay in fly secrets.
+  STRIPE_SUCCESS_URL = "https://new.lendandtend.com/join/success"
+  STRIPE_CANCEL_URL = "https://new.lendandtend.com/join"
 
 [[services]]
   protocol = "tcp"

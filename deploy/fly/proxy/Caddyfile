@@ -22,7 +22,7 @@
 
 	# Nuxt server API routes (contact form, Stripe) live in lat-nuxt, NOT the
 	# Go API — match them BEFORE the /api* -> Go rule below.
-	@nuxtapi path /api/contact /api/checkout /api/stripe-webhook
+	@nuxtapi path /api/contact /api/checkout /api/checkout-confirm /api/stripe-webhook
 	handle @nuxtapi {
 		reverse_proxy lat-nuxt.flycast:4002
 	}

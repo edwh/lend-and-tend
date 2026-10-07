@@ -75,7 +75,9 @@ fly secrets set MYSQL_ROOT_PASSWORD=… MYSQL_PASSWORD=… -a lat-mysql
 fly secrets set MYSQL_PASSWORD=… JWT_SECRET=… -a lat-api
 fly secrets set SMTP_USERNAME=lendandtend@mg.lendandtend.com SMTP_PASSWORD=… \
                 STRIPE_SECRET_KEY=… STRIPE_WEBHOOK_SECRET=… \
-                LAT_SENTRY_DSN=… LAT_BLUR_SECRET=… -a lat-nuxt
+                JWT_SECRET=… LAT_SENTRY_DSN=… LAT_BLUR_SECRET=… -a lat-nuxt
+# (JWT_SECRET on lat-nuxt must be the SAME value as on lat-api: /api/checkout
+#  verifies the member's token with it and the Stripe webhook mints one.)
 fly secrets set DB_PASSWORD=… MAIL_PASSWORD=… LAT_BATCH_APP_KEY=base64:… -a lat-batch
 # (MYSQL_PASSWORD / DB_PASSWORD / MAIL_PASSWORD must match the mysql + Mailgun creds.)
 ```
