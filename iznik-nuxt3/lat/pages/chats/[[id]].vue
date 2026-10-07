@@ -87,7 +87,8 @@
                     <v-icon icon="comments" class="empty-state-icon" />
                     <p class="empty-state-text">No chats to show.</p>
                     <p class="empty-state-hint">
-                      Start a conversation by replying to someone from the Map page.
+                      Start a conversation by replying to someone from the Map
+                      page.
                     </p>
                   </div>
                 </div>
@@ -182,23 +183,10 @@
                   </button>
                 </div>
               </div>
-              <VisibleWhen
-                v-if="!selectedChatId"
-                :at="['md', 'lg']"
-                class="chatda"
-              >
-                <ExternalDa
-                  ad-unit-path="/22794232631/freegle_chat_app"
-                  max-height="50px"
-                  max-width="300px"
-                  div-id="div-gpt-ad-1691925773522-0"
-                  class="mt-2"
-                />
-              </VisibleWhen>
             </div>
           </VisibleWhen>
         </b-col>
-        <b-col cols="12" md="7" lg="8" xl="6" class="chatback p-0">
+        <b-col cols="12" md="7" lg="8" xl="9" class="chatback p-0">
           <VisibleWhen
             :at="
               selectedChatId
@@ -229,15 +217,6 @@
             />
           </VisibleWhen>
         </b-col>
-        <b-col cols="0" xl="3" class="p-0 ps-1">
-          <VisibleWhen :at="['xl', 'xxl']">
-            <SidebarRight
-              show-job-opportunities
-              ad-unit-path="/22794232631/freegle_chat_app"
-              ad-div-id="div-gpt-ad-1691925773522-0"
-            />
-          </VisibleWhen>
-        </b-col>
       </b-row>
       <ChatHideModal
         v-if="showHideAllModal"
@@ -251,6 +230,7 @@
 import dayjs from 'dayjs'
 
 import { storeToRefs } from 'pinia'
+import ChatListEntry from '../../components/ChatListEntry.vue'
 import { buildHead } from '~/composables/useBuildHead'
 import { useMe } from '~/composables/useMe'
 import { useAuthStore } from '~/stores/auth'
@@ -258,13 +238,17 @@ import { ref, nextTick, useRoute, useRouter } from '#imports'
 import VisibleWhen from '~/components/VisibleWhen'
 import InfiniteLoading from '~/components/InfiniteLoading'
 import { useChatStore } from '~/stores/chat'
-import SidebarRight from '~/components/SidebarRight'
+// No SidebarRight: it is Freegle's ads + job-opportunities column, and its ad
+// slot's config lookup is not a public key on this API (uncaught 403s).
 import ChatMobileNavbar from '~/components/ChatMobileNavbar.vue'
-import ExternalDa from '~/components/ExternalDa.vue'
+// No ExternalDa here: Lend & Tend carries no advertising (the cookie banner
+// promises as much), and the ad slot's config lookup (`/config/ads_enabled`)
+// is not a public key on this API, so it threw an uncaught error on every
+// chat page load.
 
 // We can't use async on ChatListEntry else the infinite scroll kicks in and tries to load everything while we are
 // still waiting for the import to complete.
-import ChatListEntry from '~/components/ChatListEntry.vue'
+// Relative so the lat override is used (a ~/components import can resolve to upstream).
 import { useMiscStore } from '~/stores/misc'
 
 const ContactDetailsAskModal = defineAsyncComponent(() =>
@@ -678,13 +662,13 @@ async function searchMore() {
 @import 'assets/css/navbar.scss';
 
 .chatback {
-  background-color: #EDE5D6;
+  background-color: #ede5d6;
 }
 
 :deep(.chatContent),
 :deep(.empty-state-pane) {
   background-image: none !important;
-  background-color: #EDE5D6;
+  background-color: #ede5d6;
 }
 
 .chat {
@@ -917,11 +901,6 @@ async function searchMore() {
     overflow-y: scroll;
     overflow-x: hidden;
     scrollbar-gutter: stable;
-  }
-
-  .chatda {
-    display: flex;
-    flex-direction: column;
   }
 }
 
