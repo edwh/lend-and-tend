@@ -1,17 +1,13 @@
 import nodemailer from 'nodemailer'
+import { validateContactBody, buildContactMail } from '../utils/contactMail'
 
-interface ContactBody {
-  name: string
-  email: string
-  topic: string
-  message: string
-}
-
+// Public, unauthenticated. All validation and rendering lives in
+// ../utils/contactMail (unit-tested): no line breaks in header-bound fields,
+// HTML escaped, sizes bounded. This file only wires it to SMTP.
 export default defineEventHandler(async (event) => {
-  const body = await readBody<ContactBody>(event)
-
-  if (!body.name?.trim() || !body.email?.trim() || !body.message?.trim()) {
-    throw createError({ statusCode: 400, statusMessage: 'name, email and message are required' })
+  const result = validateContactBody(await readBody(event))
+  if (!result.ok) {
+    throw createError({ statusCode: 400, statusMessage: result.error })
   }
 
   const smtpHost = process.env.SMTP_HOST || '127.0.0.1'
@@ -19,6 +15,7 @@ export default defineEventHandler(async (event) => {
   const smtpUser = process.env.SMTP_USERNAME || ''
   const smtpPass = process.env.SMTP_PASSWORD || ''
   const contactEmail = process.env.CONTACT_EMAIL || 'hello@lendandtend.com'
+  const fromEmail = process.env.CONTACT_FROM_EMAIL || 'noreply@lendandtend.com'
 
   // Dev sends to Mailpit (1025, plaintext, no auth); prod sends via Mailgun
   // SMTP, which REQUIRES auth + TLS. Force STARTTLS whenever credentials are
@@ -33,17 +30,13 @@ export default defineEventHandler(async (event) => {
       : { ignoreTLS: true }),
   })
 
-  await transporter.sendMail({
-    from: `"Lend & Tend" <noreply@lendandtend.com>`,
-    to: contactEmail,
-    replyTo: `"${body.name}" <${body.email}>`,
-    subject: `[Contact] ${body.topic || 'General enquiry'} — from ${body.name}`,
-    text: `Name: ${body.name}\nEmail: ${body.email}\nTopic: ${body.topic}\n\n${body.message}`,
-    html: `<p><strong>From:</strong> ${body.name} &lt;${body.email}&gt;</p>
-<p><strong>Topic:</strong> ${body.topic || 'General'}</p>
-<hr>
-<p>${body.message.replace(/\n/g, '<br>')}</p>`,
-  })
+  await transporter.sendMail(
+    buildContactMail(result.value, {
+      from: fromEmail,
+      to: contactEmail,
+      siteName: 'Lend & Tend',
+    })
+  )
 
   return { ok: true }
 })
