@@ -48,6 +48,12 @@ fi
 if echo "$COMMAND" | grep -qE 'tests/e2e/lat'; then
   IS_DATA_COMMAND=true
 fi
+# Same for the Lend & Tend unit suite (tests/unit/lat): the L&T status
+# container's unit runner targets a *-modtools-dev-local container the L&T
+# stack does not have, so these have no status-API path either.
+if echo "$COMMAND" | grep -qE 'tests/unit/lat'; then
+  IS_DATA_COMMAND=true
+fi
 if echo "$COMMAND" | grep -qE '\bcurl\b.*localhost:[0-9]+/api/tests.*/status'; then
   IS_DATA_COMMAND=true
 fi
