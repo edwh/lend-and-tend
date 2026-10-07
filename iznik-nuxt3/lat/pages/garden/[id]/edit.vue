@@ -59,9 +59,9 @@
             <button
               type="submit"
               class="btn btn-primary btn-lg"
-              :disabled="submitting"
+              :disabled="submitState.disabled"
             >
-              {{ submitting ? 'Saving…' : 'Save changes' }}
+              {{ submitState.label }}
             </button>
           </div>
         </form>
@@ -77,6 +77,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth'
+import { listingSubmitState } from '~/composables/latListingSubmit'
 import api from '~/api'
 import {
   useLatPrivateGarden,
@@ -131,6 +132,15 @@ const location = ref(null)
 const existingAddress = ref('')
 const existingPostcode = ref('')
 const attachments = ref([])
+// Saving mid-upload would drop the new photo; wait for uploads to register.
+const submitState = computed(() =>
+  listingSubmitState({
+    submitting: submitting.value,
+    attachments: attachments.value,
+    idleLabel: 'Save changes',
+    busyLabel: 'Saving…',
+  })
+)
 
 async function fetchMessage() {
   try {

@@ -1,34 +1,52 @@
 // @ts-check
-const { test, expect, signUpViaModal, loginViaModal, logoutLink } = require('./lat-fixtures')
+const { test, expect, signUpViaModal, logoutLink } = require('./lat-fixtures')
 
 test.describe('Paywall', () => {
   test('join page renders tabs: Pay and Concession', async ({ page }) => {
     await page.goto('/join')
     // Use the join-tab class selector to target the tab buttons specifically (avoid the action button)
-    await expect(page.locator('.join-tab', { hasText: /Pay £/ })).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator('.join-tab', { hasText: 'Concession' })).toBeVisible()
+    await expect(page.locator('.join-tab', { hasText: /Pay £/ })).toBeVisible({
+      timeout: 10_000,
+    })
+    await expect(
+      page.locator('.join-tab', { hasText: 'Concession' })
+    ).toBeVisible()
   })
 
   test('join page shows fee amount', async ({ page }) => {
     await page.goto('/join')
-    await expect(page.getByText(/£\d+\.\d{2}/).first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText(/£\d+\.\d{2}/).first()).toBeVisible({
+      timeout: 10_000,
+    })
   })
 
   test('concession tab shows text area', async ({ page }) => {
     await page.goto('/join')
-    await expect(page.locator('.join-tab', { hasText: 'Concession' })).toBeVisible({ timeout: 10_000 })
+    await expect(
+      page.locator('.join-tab', { hasText: 'Concession' })
+    ).toBeVisible({ timeout: 10_000 })
     await page.locator('.join-tab', { hasText: 'Concession' }).click()
     await expect(page.locator('textarea')).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByRole('button', { name: 'Apply for concession' })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Apply for concession' })
+    ).toBeVisible()
   })
 
   test('skip button redirects to map', async ({ page }) => {
     await page.goto('/join')
-    await page.getByRole('button', { name: /Skip for now/ }).click()
-    await expect(page).toHaveURL(/\/map/, { timeout: 10_000 })
+    // The button is server-rendered before Vue hydrates and attaches its
+    // handler, so a single early click can be swallowed: re-click until the
+    // navigation happens (same cure as clickUntilHydrated in the fixtures).
+    const skip = page.getByRole('button', { name: /Skip for now/ })
+    await expect(async () => {
+      await skip.click()
+      await expect(page).toHaveURL(/\/map/, { timeout: 1_500 })
+    }).toPass({ timeout: 15_000 })
   })
 
-  test('unpaid user sees "Join to send message" on garden page', async ({ page }) => {
+  test('unpaid user sees "Join to send message" on garden page', async ({
+    page,
+  }) => {
     await page.goto('/')
     await signUpViaModal(page)
 
@@ -42,9 +60,18 @@ test.describe('Paywall', () => {
     await page.waitForTimeout(3_000)
 
     // If listing exists, unpaid user should see join CTA
-    const hasJoinCta = await page.getByRole('link', { name: /Join to send message/ }).isVisible().catch(() => false)
-    const hasSendBtn = await page.getByRole('button', { name: 'Send message' }).isVisible().catch(() => false)
-    const hasNotFound = await page.getByText(/could not be found/i).isVisible().catch(() => false)
+    const hasJoinCta = await page
+      .getByRole('link', { name: /Join to send message/ })
+      .isVisible()
+      .catch(() => false)
+    const hasSendBtn = await page
+      .getByRole('button', { name: 'Send message' })
+      .isVisible()
+      .catch(() => false)
+    const hasNotFound = await page
+      .getByText(/could not be found/i)
+      .isVisible()
+      .catch(() => false)
 
     // If listing doesn't exist, test passes trivially
     if (!hasNotFound) {
@@ -55,7 +82,11 @@ test.describe('Paywall', () => {
 
   test('join success page renders', async ({ page }) => {
     await page.goto('/join/success')
-    await expect(page.getByRole('heading', { name: /Welcome to/ })).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByRole('link', { name: 'Explore the map' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Welcome to/ })).toBeVisible(
+      { timeout: 10_000 }
+    )
+    await expect(
+      page.getByRole('link', { name: 'Explore the map' })
+    ).toBeVisible()
   })
 })

@@ -21,6 +21,8 @@ const {
   logoutLink,
   markUserAsPaid,
   fillLocationPicker,
+  loginViaModal,
+  LAT_BASE_URL,
 } = require('./lat-fixtures')
 
 // CC0 photo (see pr-walkthrough/prs/lat-journey/PHOTO-CREDIT.md).
@@ -50,6 +52,11 @@ async function postGardenWithPhoto(page, subject) {
   await expect(page.locator('.featured-photo img').first()).toBeVisible({
     timeout: 30_000,
   })
+  // The Post button stays disabled ("Uploading photo…") until the photo is
+  // registered, so waiting for it to be enabled proves the upload finished.
+  await expect(
+    page.getByRole('button', { name: 'Post my garden' })
+  ).toBeEnabled({ timeout: 60_000 })
 
   const created = page.waitForResponse(
     (r) => r.url().includes('/apiv2/message') && r.request().method() === 'PUT',
@@ -85,12 +92,27 @@ test.describe('Walkthrough golden flows', () => {
     const photo = page.locator('.garden-photo').first()
     await expect(photo).toBeVisible({ timeout: 20_000 })
     // The image must be served by L&T's own delivery and must have decoded.
-    const info = await photo.evaluate((img) => ({
-      src: img.currentSrc || img.src,
-      ok: img.complete && img.naturalWidth > 0,
-    }))
+    // .garden-photo is the <picture> rendered by OurUploadedImage; read its <img>.
+    // The first request for a fresh upload makes lat-delivery fetch and resize
+    // it, so give the image time to actually decode.
+    const imgState = () =>
+      photo.evaluate((el) => {
+        const img = el.tagName === 'IMG' ? el : el.querySelector('img')
+        return {
+          src: (img && (img.currentSrc || img.src)) || '',
+          ok: !!img && img.complete && img.naturalWidth > 0,
+        }
+      })
+    await expect
+      .poll(async () => (await imgState()).ok, {
+        timeout: 45_000,
+        message: 'garden photo never decoded',
+      })
+      .toBe(true)
+    const info = await imgState()
+    // The image must be served by L&T's own delivery, never Freegle's.
     expect(info.src).toMatch(DELIVERY_HOST_RE)
-    expect(info.ok, `photo did not load: ${info.src}`).toBe(true)
+    expect(info.src).not.toMatch(/ilovefreegle/)
   })
 
   test('a tender gets in touch and the lender can reach the agreement from the chat', async ({
@@ -99,7 +121,11 @@ test.describe('Walkthrough golden flows', () => {
     expect(gardenId, 'needs the listing from the previous test').toBeTruthy()
 
     // The tender, in their own browser context.
-    const tenderCtx = await browser.newContext()
+    const tenderCtx = await browser.newContext({
+      baseURL: LAT_BASE_URL,
+      storageState: { cookies: [], origins: [] },
+      viewport: { width: 1280, height: 720 },
+    })
     const tender = await tenderCtx.newPage()
     await tender.goto('/')
     await signUpViaModal(tender, { role: 'tender', fullname: 'Golden Tender' })
@@ -117,10 +143,13 @@ test.describe('Walkthrough golden flows', () => {
     })
 
     // The lender, signed in again by magic link in a fresh context.
-    const lenderCtx = await browser.newContext()
+    const lenderCtx = await browser.newContext({
+      baseURL: LAT_BASE_URL,
+      storageState: { cookies: [], origins: [] },
+      viewport: { width: 1280, height: 720 },
+    })
     const lender = await lenderCtx.newPage()
     await lender.goto('/')
-    const { loginViaModal } = require('./lat-fixtures')
     await loginViaModal(lender, lenderEmail)
     await lender.goto(`/chats/${chatId}`)
     await expect(lender.locator('#chatmessage')).toBeVisible({
@@ -130,20 +159,26 @@ test.describe('Walkthrough golden flows', () => {
     // "Sign agreement" either opens the agreement page, or (if the batch
     // spatial-index job has not run yet) explains itself. It must never do
     // nothing. Keep trying until the job has run (it is scheduled every minute).
+    const onAgreementPage = () => /\/agreement\/\d+/.test(lender.url())
+    const notice = lender.getByTestId('agreement-notice')
     await expect(async () => {
-      await lender
-        .getByRole('button', { name: 'Sign agreement' })
-        .first()
-        .click()
-      const notice = lender.getByTestId('agreement-notice')
-      await expect(lender.locator('body').locator(':scope')).toHaveCount(1) // keeps the poll alive while we check the two outcomes
-      const onAgreement = /\/agreement\/\d+/.test(lender.url())
+      if (!onAgreementPage()) {
+        await lender
+          .getByRole('button', { name: 'Sign agreement' })
+          .first()
+          .click()
+        // Either the lookup navigates, or the notice explains why not yet.
+        await Promise.race([
+          lender.waitForURL(/\/agreement\/\d+/, { timeout: 8_000 }),
+          notice.waitFor({ state: 'visible', timeout: 8_000 }),
+        ]).catch(() => {})
+      }
       const noticeShown = await notice.isVisible().catch(() => false)
       expect(
-        onAgreement || noticeShown,
+        onAgreementPage() || noticeShown,
         'Sign agreement neither navigated nor explained'
       ).toBe(true)
-      expect(onAgreement, 'listing not indexed yet').toBe(true)
+      expect(onAgreementPage(), 'listing not indexed yet').toBe(true)
     }).toPass({ timeout: 4 * 60_000, intervals: [10_000] })
 
     await expect(lender.locator('#whatToGrow')).toBeVisible({ timeout: 15_000 })

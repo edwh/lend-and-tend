@@ -186,9 +186,9 @@
           <button
             type="submit"
             class="btn btn-primary btn-lg"
-            :disabled="submitting || !location"
+            :disabled="submitState.disabled"
           >
-            {{ submitLabel }}
+            {{ submitState.label }}
           </button>
         </div>
       </form>
@@ -198,6 +198,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth'
+import { listingSubmitState } from '~/composables/latListingSubmit'
 import { useNavbar } from '~/composables/useNavbar'
 import api from '~/api'
 import { useMessageStore } from '~/stores/message'
@@ -228,11 +229,19 @@ const feeFormatted = computed(() => (branding.fee.amountPence / 100).toFixed(2))
 // Put the price on the button so the one-time cost is unmissable, and so the
 // payment request lands at the end of the form rather than as a dead, greyed
 // submit button the user clicks to no effect.
-const submitLabel = computed(() => {
-  if (submitting.value) return 'Posting…'
-  if (!hasPaid.value) return `Pay £${feeFormatted.value} to post my garden`
-  return 'Post my garden'
-})
+// The button also waits for photo uploads to finish: posting mid-upload
+// would silently drop the photo (only registered photos are sent).
+const submitState = computed(() =>
+  listingSubmitState({
+    submitting: submitting.value,
+    hasLocation: !!location.value,
+    attachments: attachments.value,
+    idleLabel: hasPaid.value
+      ? 'Post my garden'
+      : `Pay £${feeFormatted.value} to post my garden`,
+    busyLabel: 'Posting…',
+  })
+)
 
 const showPayModal = ref(false)
 

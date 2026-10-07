@@ -26,6 +26,16 @@ in Freegle. There is no self-service way to become an admin: an existing admin, 
 with database access, grants the role. On a development stack the migrations seed a demo
 admin (`admin@test.com`); production has no demo accounts.
 
+### One more thing an admin needs
+
+Behind the scenes an admin must also be an **Owner of the world group** (the one
+Freegle "group" that holds every Lend & Tend listing). The software only shows another
+member's details - membership status, role, email - to someone who moderates a group.
+A new migration (`2026_10_07_000001_lat_admins_own_world_group`) adds that membership for
+every Admin and Support account when it runs; if an admin ever sees everyone as
+"Not joined" and an empty Concessions page, this is what is missing, and it is a
+one-row insert into `memberships` (role Owner, collection Approved) on the world group.
+
 ## Signing in
 
 There is no separate admin login. Sign in to the site as any member does - ask for a
