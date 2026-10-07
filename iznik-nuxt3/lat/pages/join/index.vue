@@ -79,7 +79,7 @@
           class="join-panel"
         >
           <p class="panel-desc">{{ branding.fee.concessionText }}</p>
-          <div v-if="concessionSent" class="alert-success">
+          <div v-if="concessionSent || concessionPending" class="alert-success">
             <VIcon :icon="['fas', 'check-circle']" class="btn-icon" />
             Request received — we'll be in touch shortly.
           </div>
@@ -140,7 +140,6 @@ import { ref, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useNavbar } from '~/composables/useNavbar'
 import branding from '~/branding.config'
-import Api from '~/api'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: `Join ${branding.siteName}` })
@@ -148,7 +147,6 @@ useHead({ title: `Join ${branding.siteName}` })
 const authStore = useAuthStore()
 const { requestLogin } = useNavbar()
 const config = useRuntimeConfig()
-const api = Api(config)
 
 // Auth is only required when taking action (pay/concession), not for viewing
 
@@ -160,10 +158,14 @@ const concessionSent = ref(false)
 const paymentError = ref('')
 const checkingOut = ref(false)
 
-const alreadyPaid = computed(() => {
-  const status = authStore.user?.settings?.lat_payment?.status
-  return status === 'paid' || status === 'concession'
-})
+const paymentStatus = computed(
+  () => authStore.user?.settings?.lat_payment?.status
+)
+// Paid members have nothing to do here. A pending concession claim is not
+// "paid": the tabs stay (they can still choose to pay) and the concession
+// panel shows the request-received notice.
+const alreadyPaid = computed(() => paymentStatus.value === 'paid')
+const concessionPending = computed(() => paymentStatus.value === 'concession')
 
 const allowFakePayment = computed(() => config.public.LAT_ALLOW_FAKE_PAYMENT)
 const stripeTestMode = computed(() => config.public.LAT_STRIPE_TEST_MODE)
@@ -176,15 +178,11 @@ async function fakePayment() {
   }
   fakePaying.value = true
   try {
-    await api.session.save({
-      settings: {
-        ...(authStore.user?.settings ?? {}),
-        lat_payment: {
-          status: 'paid',
-          method: 'dev_bypass',
-          paidAt: new Date().toISOString(),
-        },
-      },
+    // Server-side (dev-only route): lat_payment is never written from the
+    // browser, so this keeps working once the API protects that key.
+    await $fetch('/api/dev-fake-payment', {
+      method: 'POST',
+      headers: { Authorization: authStore.auth.jwt },
     })
     await authStore.fetchUser()
     navigateTo(returnTo.value)
@@ -229,15 +227,12 @@ async function submitConcession() {
   }
   concessionSubmitting.value = true
   try {
-    await api.session.save({
-      settings: {
-        ...(authStore.user?.settings ?? {}),
-        lat_payment: {
-          status: 'concession',
-          reason: concessionReason.value || 'not_specified',
-          claimedAt: new Date().toISOString(),
-        },
-      },
+    // Server-side: the route can only ever set status 'concession', and the
+    // API protects lat_payment from the member's own writes.
+    await $fetch('/api/concession-claim', {
+      method: 'POST',
+      headers: { Authorization: authStore.auth.jwt },
+      body: { reason: concessionReason.value || 'not_specified' },
     })
     await authStore.fetchUser()
     concessionSent.value = true

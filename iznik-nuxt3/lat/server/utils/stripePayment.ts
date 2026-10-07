@@ -62,7 +62,7 @@ export function paidCheckoutFromSession(session: unknown, now: Date = new Date()
  * lat_payment replaced. Tolerates the API's representations (object, JSON
  * string, null) and never mutates its input.
  */
-export function mergePaidSettings(existing: unknown, payment: LatPaymentRecord): Record<string, unknown> {
+export function mergePaidSettings(existing: unknown, payment: Record<string, unknown>): Record<string, unknown> {
   let base: unknown = existing
   if (typeof base === 'string') {
     try {
@@ -81,7 +81,8 @@ export interface MarkMemberPaidArgs {
   apiBase: string
   /** A token the API accepts for the member (their own, or one minted for them). */
   token: string
-  payment: LatPaymentRecord
+  /** The lat_payment record to store: a Stripe payment, a concession claim, or the dev bypass. */
+  payment: Record<string, unknown>
   fetcher: Fetcher
 }
 

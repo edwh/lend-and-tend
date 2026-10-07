@@ -364,8 +364,15 @@ test.describe('Edit listing — every field persists after refresh', () => {
     expect(body.accessRoute).toBe(LEND_EDITS.accessRoute.value)
     expect(body.arrangement).toBe(LEND_EDITS.arrangement)
     expect(body.restrictions).toBe(LEND_EDITS.restrictions)
-    expect(body.address).toContain('New Edit Lane')
-    expect(body.postcode).toContain('EC1A')
+    // Privacy: the new address is NOT in the public textbody...
+    expect(body.address).toBeUndefined()
+    expect(body.postcode).toBeUndefined()
+    // ...but the owner sees it on the edit page (kept in their private settings).
+    await page.goto(`/garden/${gardenId}/edit`)
+    await expect(page.locator('.existing-address')).toContainText(
+      'New Edit Lane',
+      { timeout: 30_000 }
+    )
 
     // Now confirm the UI reflects the new state too.
     await page.goto(`/profile`)
@@ -420,8 +427,15 @@ test.describe('Edit listing — every field persists after refresh', () => {
     // Hard reload + read directly from API
     const apiResp = await fetchMessageFromApi(page, gardenId)
     const body = JSON.parse(apiResp.textbody || '{}')
-    expect(body.address).toContain('Persistence Avenue')
-    expect(body.postcode).toContain('EC1A')
+    // Privacy: the new address is NOT in the public textbody...
+    expect(body.address).toBeUndefined()
+    expect(body.postcode).toBeUndefined()
+    // ...but the owner sees it on the edit page (kept in their private settings).
+    await page.goto(`/garden/${gardenId}/edit`)
+    await expect(page.locator('.existing-address')).toContainText(
+      'Persistence Avenue',
+      { timeout: 30_000 }
+    )
   })
 
   test('edit page pre-fills postcode from existing listing', async ({

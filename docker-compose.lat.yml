@@ -213,7 +213,10 @@ services:
       MYSQL_PASSWORD: lat
       MYSQL_PROTOCOL: tcp
       USER_SITE: .localhost
-      JWT_SECRET: dev-lat-secret
+      # Same expression as lat-nuxt's, so a JWT_SECRET in the host env or .env
+      # reaches BOTH (a literal here let them disagree and every token the API
+      # signed failed to verify in the Nuxt server routes).
+      JWT_SECRET: "${JWT_SECRET:-dev-lat-secret}"
       # Members may not set their own payment status; only server-minted
       # tokens (Stripe webhook / checkout-confirm) and admins may. Honoured
       # by Go API builds that include the PROTECTED_SETTINGS_KEYS switch.

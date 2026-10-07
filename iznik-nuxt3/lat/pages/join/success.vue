@@ -88,18 +88,17 @@ const state = ref('confirming')
 // bookmark) fall back to whatever the account already says.
 async function confirm() {
   state.value = 'confirming'
-  await authStore.fetchUser().catch(() => {})
-  if (!authStore.user) {
-    state.value = 'signed-out'
-    return
-  }
   const sessionId =
     typeof route.query.session_id === 'string' ? route.query.session_id : ''
   if (!sessionId) {
-    state.value =
-      authStore.user?.settings?.lat_payment?.status === 'paid'
-        ? 'confirmed'
-        : 'pending'
+    // No checkout to confirm (an old link or a direct visit): just the
+    // generic welcome page, as before.
+    state.value = 'confirmed'
+    return
+  }
+  await authStore.fetchUser().catch(() => {})
+  if (!authStore.user) {
+    state.value = 'signed-out'
     return
   }
   try {
