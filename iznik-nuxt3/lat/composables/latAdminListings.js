@@ -9,6 +9,15 @@
  * pending and 0 approved while the API returned dozens.
  */
 
+/** True if `message` is in `groupid` (nested `groups[]` or flattened `groupid`). */
+export function messageInGroup(message, groupid) {
+  if (!message) return false
+  const gid = Number(groupid)
+  const groups = Array.isArray(message.groups) ? message.groups : []
+  if (groups.some((g) => g && Number(g.groupid) === gid)) return true
+  return Number(message.groupid) === gid
+}
+
 /** True if `message` is in `groupid` with the given collection (e.g. 'Pending'). */
 export function messageInCollection(message, groupid, collection) {
   if (!message) return false

@@ -49,6 +49,17 @@ if (getenv('LAT_BATCH_ONLY') === 'true') {
         ->withoutOverlapping()
         ->sendOutputTo(cronLog('messages:contentcheck'))
         ->runInBackground();
+    // Keep messages_spatial (the public map / browse index) in step with
+    // Approved listings. The Go API no longer writes this index when a post
+    // is created (upstream 4f52b1d3b: pending posts must not leak to the
+    // public map), so without this job a new garden never appears on the map
+    // and the chat's "Sign agreement" cannot find it. Every minute, not the
+    // Freegle five, so a lender's garden is findable almost at once.
+    Schedule::command('messages:update-spatial-index')
+        ->everyMinute()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('messages:update-spatial-index'))
+        ->runInBackground();
 
     // Alert existing users when a new garden listing appears within their radius.
     Schedule::command('lat:send-activity-alerts')

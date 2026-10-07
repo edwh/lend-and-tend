@@ -139,6 +139,22 @@
       v-if="!otheruser?.spammer && !otheruser?.deleted"
       class="bg-white pt-1 pb-1"
     >
+      <div
+        v-if="agreementNotice"
+        class="agreement-notice"
+        role="status"
+        data-testid="agreement-notice"
+      >
+        {{ agreementNotice }}
+        <button
+          type="button"
+          class="agreement-notice-close"
+          aria-label="Dismiss"
+          @click="agreementNotice = ''"
+        >
+          &times;
+        </button>
+      </div>
       <div class="d-none d-lg-flex action-bar">
         <div
           v-if="chat && chat.chattype === 'User2User' && otheruser"
@@ -301,6 +317,10 @@ import { useMiscStore } from '~/stores/misc'
 import { useMessageStore } from '~/stores/message'
 import { fetchOurOffers } from '~/composables/useThrottle'
 import { useAuthStore } from '~/stores/auth'
+import {
+  findAgreementListing,
+  AGREEMENT_LISTING_NOT_FOUND,
+} from '~/composables/latAgreementListing'
 import { useAddressStore } from '~/stores/address'
 import { untwem } from '~/composables/useTwem'
 import 'floating-vue/dist/style.css'
@@ -365,29 +385,26 @@ const existingAgreement = computed(() =>
   chatmessages.value.some((m) => m.type === 'Promised')
 )
 
+// Shown under the action bar when "Sign agreement" cannot find the garden this
+// chat is about (a newly posted garden is not in the public index for a few
+// minutes). Silently doing nothing here was a UAT trap.
+const agreementNotice = ref('')
+
 const goToAgreement = async () => {
   if (!otheruser.value?.id) return
   const config = useRuntimeConfig()
-  const groupid = config.public.LAT_WORLD_GROUPID
+  agreementNotice.value = ''
 
-  // Search both participants for a LAT Offer listing (the garden to agree on)
-  for (const userId of [otheruser.value.id, myid.value]) {
-    try {
-      const data = await $fetch(
-        `${config.public.APIv2}/user/${userId}/message`,
-        { params: { active: true } }
-      )
-      const msgs = Array.isArray(data) ? data : []
-      const offer = msgs.find(
-        (m) => Number(m.groupid) === Number(groupid) && m.type === 'Offer'
-      )
-      if (offer) {
-        router.push(`/agreement/${offer.id}?userId=${otheruser.value.id}`)
-        return
-      }
-    } catch {
-      /* ignore */
-    }
+  // Search both participants for a L&T garden offer (the garden to agree on).
+  const found = await findAgreementListing({
+    apiBase: config.public.APIv2,
+    groupid: config.public.LAT_WORLD_GROUPID,
+    userIds: [otheruser.value.id, myid.value],
+  })
+  if (found) {
+    router.push(`/agreement/${found.id}?userId=${otheruser.value.id}`)
+  } else {
+    agreementNotice.value = AGREEMENT_LISTING_NOT_FOUND
   }
 }
 const showProfileModal = ref(false)
@@ -1041,5 +1058,27 @@ onMounted(() => {
       background-color: $color-gray--lighter;
     }
   }
+}
+.agreement-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0.5rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d9c66a;
+  border-radius: 6px;
+  background: #fff8dc;
+  color: #4a3f00;
+  font-size: 0.9rem;
+}
+
+.agreement-notice-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
 }
 </style>
