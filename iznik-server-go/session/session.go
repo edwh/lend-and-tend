@@ -423,9 +423,9 @@ func handleUnsubscribe(c *fiber.Ctx, email string) error {
 
 	// Queue the unsubscribe confirmation email.
 	if err := queue.QueueTask(queue.TaskEmailUnsubscribe, map[string]interface{}{
-		"user_id":    userID,
-		"email":      preferredEmail,
-		"unsub_url":  unsubURL,
+		"user_id":   userID,
+		"email":     preferredEmail,
+		"unsub_url": unsubURL,
 	}); err != nil {
 		stdlog.Printf("Failed to queue unsubscribe email for user %d: %v", userID, err)
 	}
@@ -713,19 +713,19 @@ func GetSession(c *fiber.Ctx) error {
 
 	// Parallel fetches for user data.
 	type UserRow struct {
-		ID            uint64          `json:"id"`
-		Fullname      *string         `json:"fullname"`
-		Firstname     *string         `json:"firstname"`
-		Lastname      *string         `json:"lastname"`
-		Systemrole    string          `json:"systemrole"`
-		Settings      json.RawMessage `json:"settings"`
-		Lastaccess    *time.Time      `json:"lastaccess"`
-		Added         *time.Time      `json:"added"`
-		Lastlocation  *uint64         `json:"lastlocation"`
-		Onholidaytill *string         `json:"onholidaytill"`
-		Source        *string         `json:"source"`
-		Deleted       *time.Time      `json:"deleted"`
-		Forgotten     *time.Time      `json:"forgotten"`
+		ID                 uint64          `json:"id"`
+		Fullname           *string         `json:"fullname"`
+		Firstname          *string         `json:"firstname"`
+		Lastname           *string         `json:"lastname"`
+		Systemrole         string          `json:"systemrole"`
+		Settings           json.RawMessage `json:"settings"`
+		Lastaccess         *time.Time      `json:"lastaccess"`
+		Added              *time.Time      `json:"added"`
+		Lastlocation       *uint64         `json:"lastlocation"`
+		Onholidaytill      *string         `json:"onholidaytill"`
+		Source             *string         `json:"source"`
+		Deleted            *time.Time      `json:"deleted"`
+		Forgotten          *time.Time      `json:"forgotten"`
 		Trustlevel         *string         `json:"trustlevel"`
 		Permissions        *string         `json:"permissions"`
 		Marketingconsent   bool            `json:"marketingconsent"`
@@ -751,9 +751,9 @@ func GetSession(c *fiber.Ctx) error {
 		Volunteeringallowed      int     `json:"volunteeringallowed"`
 		Microvolunteeringallowed int     `json:"microvolunteeringallowed"`
 		Configid                 *uint64 `json:"configid"`
-		Active                   int     `json:"active"`  // 1=active mod, 0=backup mod
-		Type                     string  `json:"-"`        // Used server-side for moderator detection, not returned to client
-		Settings                 *string `json:"-"`        // Per-group membership settings JSON, used to determine active/inactive
+		Active                   int     `json:"active"` // 1=active mod, 0=backup mod
+		Type                     string  `json:"-"`      // Used server-side for moderator detection, not returned to client
+		Settings                 *string `json:"-"`      // Per-group membership settings JSON, used to determine active/inactive
 	}
 
 	type LocationRow struct {
@@ -761,7 +761,6 @@ func GetSession(c *fiber.Ctx) error {
 		Lat  float64 `json:"lat"`
 		Lng  float64 `json:"lng"`
 	}
-
 
 	type SessionRow struct {
 		ID     uint64 `json:"id"`
@@ -1159,8 +1158,8 @@ func GetSession(c *fiber.Ctx) error {
 		go func() {
 			defer wg2.Done()
 			if auth.HasPermission(myid, auth.PERM_NEWSLETTER) {
-				db.Raw("SELECT COUNT(*) FROM users_stories "+
-					"INNER JOIN users ON users.id = users_stories.userid AND users.deleted IS NULL "+
+				db.Raw("SELECT COUNT(*) FROM users_stories " +
+					"INNER JOIN users ON users.id = users_stories.userid AND users.deleted IS NULL " +
 					"WHERE reviewed = 1 AND public = 1 AND newsletterreviewed = 0").Scan(&newsletterstories)
 			}
 		}()
@@ -1285,20 +1284,20 @@ func GetSession(c *fiber.Ctx) error {
 			"pendingadmins":        pendingadmins,
 			"editreview":           editreview,
 			"pendingvolunteering":  pendingvolunteering,
-			"stories":             stories,
+			"stories":              stories,
 			"spammerpendingadd":    spammerpendingadd,
 			"spammerpendingremove": spammerpendingremove,
-			"chatreview":          chatreview,
-			"chatreviewother":     chatreviewother,
-			"newsletterstories":   newsletterstories,
-			"giftaid":             giftaid,
-			"happiness":           happiness,
-			"relatedmembers":      relatedmembers,
-			"housekeeping":        housekeeping,
-			"cronjobs":            cronjobs,
-			"emailin":             emailin,
-			"emailout":            emailout,
-			"total":               total,
+			"chatreview":           chatreview,
+			"chatreviewother":      chatreviewother,
+			"newsletterstories":    newsletterstories,
+			"giftaid":              giftaid,
+			"happiness":            happiness,
+			"relatedmembers":       relatedmembers,
+			"housekeeping":         housekeeping,
+			"cronjobs":             cronjobs,
+			"emailin":              emailin,
+			"emailout":             emailout,
+			"total":                total,
 		}
 	}
 
@@ -1759,7 +1758,52 @@ func DeleteSession(c *fiber.Ctx) error {
 
 	if myid > 0 {
 		db := database.DBConn
-		db.Exec("DELETE FROM sessions WHERE userid = ?", myid)
+
+		// Log out the current login SERIES only (Discourse #9748: logout was
+		// clearing every session, so logging out of Freegle also logged you out
+		// of ModTools and every other device). Freegle and ModTools each get
+		// their own random series at login, so deleting by series closes only the
+		// current app and leaves the other app logged in.
+		//
+		// Identify the current session ROW authoritatively, then resolve its
+		// series SERVER-SIDE. Do NOT trust a series value supplied by the client:
+		// a persistent token minted before the 53-bit series mask (or otherwise
+		// stale) can carry a 0 / wrong series, which previously dropped logout
+		// into a "delete everything" fallback — the actual cause of #9748 still
+		// failing. The session row id, by contrast, is a small stable integer
+		// that survives a JSON round-trip through the browser intact.
+		var sessionId uint64
+
+		// Prefer the JWT (server-verified). It carries the session row id.
+		if _, sid, _ := user.GetJWTFromRequest(c); sid > 0 {
+			sessionId = sid
+		}
+
+		// Fall back to the persistent token's id (NOT its series).
+		if sessionId == 0 {
+			if persistent := c.Get("Authorization2"); persistent != "" {
+				var pt auth.PersistentToken
+				if json.Unmarshal([]byte(persistent), &pt) == nil {
+					sessionId = pt.ID
+				}
+			}
+		}
+
+		var series uint64
+		if sessionId > 0 {
+			db.Raw("SELECT series FROM sessions WHERE id = ? AND userid = ?", sessionId, myid).Scan(&series)
+		}
+
+		if series > 0 {
+			// Close the whole current login series (all its tabs/token rotations).
+			db.Exec("DELETE FROM sessions WHERE userid = ? AND series = ?", myid, series)
+		} else if sessionId > 0 {
+			// Series unavailable but the row is known — delete just that row.
+			db.Exec("DELETE FROM sessions WHERE id = ? AND userid = ?", sessionId, myid)
+		}
+		// If the current session cannot be identified at all, do NOT delete every
+		// session for the user. A logout that can't scope itself must no-op rather
+		// than evict the user from every device and app (Discourse #9748).
 	}
 
 	return c.JSON(fiber.Map{
