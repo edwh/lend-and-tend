@@ -3,7 +3,7 @@
     <h1 class="lat-admin-title">Agreements</h1>
 
     <p class="lat-admin-subtitle">
-      Proposed and sealed garden-sharing agreements.
+      Listings with a garden-sharing agreement in place. The terms are private to the two members.
     </p>
 
     <div class="lat-admin-toolbar">

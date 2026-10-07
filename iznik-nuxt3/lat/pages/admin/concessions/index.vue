@@ -2,7 +2,7 @@
   <div>
     <h1 class="lat-admin-title">Concessions</h1>
 
-    <p class="lat-admin-subtitle">Users with approved payment concessions.</p>
+    <p class="lat-admin-subtitle">Members whose membership is a free concession.</p>
 
     <div class="lat-admin-toolbar">
       <button
