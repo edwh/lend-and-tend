@@ -2,6 +2,7 @@
   <client-only>
     <div
       v-if="!hasChosen"
+      ref="bar"
       class="lat-cookie-consent"
       role="region"
       aria-label="Cookie choices"
@@ -30,11 +31,47 @@
 </template>
 
 <script setup>
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useCookieConsent } from '../composables/useCookieConsent'
 import branding from '~/branding.config'
 
 const siteName = branding.siteName
 const { hasChosen, acceptAll, essentialOnly } = useCookieConsent()
+
+// The bar is fixed to the bottom of the viewport, so it would cover whatever
+// is at the foot of a long page (the agreement form's "Send to tender" button,
+// the footer links). Reserve that height on <body> while the bar is showing
+// and give it back as soon as a choice is made. Client-only: the bar itself
+// is <client-only>, and body padding set after mount cannot cause a hydration
+// mismatch.
+const bar = ref(null)
+let observer = null
+
+function reserveSpace() {
+  if (typeof document === 'undefined') return
+  const h = bar.value ? bar.value.offsetHeight : 0
+  document.body.style.paddingBottom = h ? `${h}px` : ''
+}
+
+function observe() {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+  if (bar.value && typeof ResizeObserver !== 'undefined') {
+    observer = new ResizeObserver(reserveSpace)
+    observer.observe(bar.value)
+  }
+  reserveSpace()
+}
+
+onMounted(observe)
+watch(hasChosen, () => nextTick(observe))
+onBeforeUnmount(() => {
+  if (observer) observer.disconnect()
+  observer = null
+  if (typeof document !== 'undefined') document.body.style.paddingBottom = ''
+})
 </script>
 
 <style scoped>
