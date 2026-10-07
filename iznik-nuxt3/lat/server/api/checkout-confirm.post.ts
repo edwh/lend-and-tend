@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { verifyLatJwt } from '../utils/latJwt'
+import { signLatJwt, verifyLatJwt } from '../utils/latJwt'
 import { paidCheckoutFromSession, markMemberPaid } from '../utils/stripePayment'
 
 // Called by /join/success with the Checkout Session id Stripe put in the
@@ -48,7 +48,10 @@ export default defineEventHandler(async (event) => {
   try {
     await markMemberPaid({
       apiBase,
-      token: rawToken,
+      // Mint a service token for the same member+session rather than reusing
+      // the member's own: the API protects lat_payment from the member's own
+      // writes, and only a server-minted token (or a system mod) may set it.
+      token: signLatJwt({ id: claims.id, sessionid: claims.sessionid, service: true }, jwtSecret),
       payment: paid.payment,
       fetcher: (url, opts) => $fetch(url, opts as never),
     })

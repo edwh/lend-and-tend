@@ -54,6 +54,12 @@ fi
 if echo "$COMMAND" | grep -qE 'tests/unit/lat'; then
   IS_DATA_COMMAND=true
 fi
+# And the Go API suite run inside the L&T stack's own API container: the L&T
+# status container's Go runner targets a *-apiv2 container the L&T stack names
+# lat-api, so there is no status-API path for it either.
+if echo "$COMMAND" | grep -qE '\bdocker exec\b.*\blat-api\b'; then
+  IS_DATA_COMMAND=true
+fi
 if echo "$COMMAND" | grep -qE '\bcurl\b.*localhost:[0-9]+/api/tests.*/status'; then
   IS_DATA_COMMAND=true
 fi

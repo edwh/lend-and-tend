@@ -76,7 +76,25 @@ describe('verifyLatJwt', () => {
       id: '42',
       sessionid: '7',
       exp: expect.any(Number),
+      service: false,
     })
+  })
+
+  it('marks a server-minted token with the svc claim, and reports it on verify', () => {
+    const token = signLatJwt({ id: 42, sessionid: 7, service: true }, SECRET)
+    const payload = JSON.parse(b64urlDecode(token.split('.')[1]))
+    // The Go API accepts exactly svc === "1" (a string) as the service claim.
+    expect(payload.svc).toBe('1')
+    expect(verifyLatJwt(token, SECRET)).toMatchObject({
+      id: '42',
+      service: true,
+    })
+
+    // Absent unless asked for, so a member-shaped token never carries it.
+    const plain = JSON.parse(
+      b64urlDecode(signLatJwt({ id: 42, sessionid: 7 }, SECRET).split('.')[1])
+    )
+    expect(plain).not.toHaveProperty('svc')
   })
 
   it('accepts a token wrapped in double quotes, as the web client sends it', () => {

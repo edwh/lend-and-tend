@@ -214,6 +214,10 @@ services:
       MYSQL_PROTOCOL: tcp
       USER_SITE: .localhost
       JWT_SECRET: dev-lat-secret
+      # Members may not set their own payment status; only server-minted
+      # tokens (Stripe webhook / checkout-confirm) and admins may. Honoured
+      # by Go API builds that include the PROTECTED_SETTINGS_KEYS switch.
+      PROTECTED_SETTINGS_KEYS: lat_payment
       IMAGE_DOMAIN: localhost
       GROUP_DOMAIN: localhost
       PASSWORD_SALT: lat-dev-salt

@@ -48,7 +48,9 @@ export default defineEventHandler(async (event) => {
   try {
     await markMemberPaid({
       apiBase,
-      token: signLatJwt({ id: paid.userId, sessionid: paid.sessionId }, jwtSecret),
+      // service: a server-minted token may write lat_payment even when the
+      // API protects that key from the member's own writes.
+      token: signLatJwt({ id: paid.userId, sessionid: paid.sessionId, service: true }, jwtSecret),
       payment: paid.payment,
       fetcher: (url, opts) => $fetch(url, opts as never),
     })

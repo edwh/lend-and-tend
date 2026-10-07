@@ -17,6 +17,8 @@ export interface LatJwtClaims {
   id: string
   sessionid: string
   exp: number
+  /** True when the token carries the server-minted `svc: "1"` claim. */
+  service: boolean
 }
 
 export interface LatJwtInput {
@@ -24,6 +26,12 @@ export interface LatJwtInput {
   sessionid: number | string
   /** Seconds until expiry. Default 120: long enough for one API call. */
   ttlSeconds?: number
+  /**
+   * Mark the token as minted by this server (claim `svc: "1"`). The Go API
+   * lets such tokens write PROTECTED_SETTINGS_KEYS (e.g. lat_payment) that
+   * the member themselves may not; only a holder of JWT_SECRET can produce it.
+   */
+  service?: boolean
 }
 
 const DEFAULT_TTL_SECONDS = 120
@@ -52,13 +60,13 @@ export function signLatJwt(input: LatJwtInput, secret: string): string {
   }
   const ttl = input.ttlSeconds ?? DEFAULT_TTL_SECONDS
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = b64url(
-    JSON.stringify({
-      id: String(input.id),
-      sessionid: String(input.sessionid),
-      exp: Math.floor(Date.now() / 1000) + ttl,
-    })
-  )
+  const claims: Record<string, string | number> = {
+    id: String(input.id),
+    sessionid: String(input.sessionid),
+    exp: Math.floor(Date.now() / 1000) + ttl,
+  }
+  if (input.service) claims.svc = '1'
+  const payload = b64url(JSON.stringify(claims))
   const signingInput = `${header}.${payload}`
   return `${signingInput}.${hmac(signingInput, secret)}`
 }
@@ -99,7 +107,12 @@ export function verifyLatJwt(token: unknown, secret: string): LatJwtClaims | nul
     }
     if (payload.exp <= Math.floor(Date.now() / 1000)) return null
 
-    return { id: payload.id, sessionid: payload.sessionid, exp: payload.exp }
+    return {
+      id: payload.id,
+      sessionid: payload.sessionid,
+      exp: payload.exp,
+      service: payload.svc === '1',
+    }
   } catch {
     return null
   }

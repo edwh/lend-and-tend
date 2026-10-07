@@ -17,6 +17,10 @@ primary_region = "lhr"
   USER_SITE = "new.lendandtend.com"
   IMAGE_DELIVERY = "https://new.lendandtend.com/lat-delivery/"
   UPLOADS = "https://new.lendandtend.com/lat-uploads/files/"
+  # Members may not set their own payment status; only the Stripe webhook /
+  # checkout-confirm (server-minted tokens) and admins may. Needs a Go API
+  # build that includes the PROTECTED_SETTINGS_KEYS switch (upstream PR #1490).
+  PROTECTED_SETTINGS_KEYS = "lat_payment"
 
 [[services]]
   protocol = "tcp"
