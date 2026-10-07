@@ -68,9 +68,15 @@
 
 <script setup lang="ts">
 import { useMessageStore } from '~/stores/message'
+import { useAuthStore } from '~/stores/auth'
+import {
+  messageInCollection,
+  messageHasAgreement,
+} from '~/composables/latAdminListings'
 
 const config = useRuntimeConfig()
 const messageStore = useMessageStore()
+const authStore = useAuthStore()
 definePageMeta({ layout: 'admin' })
 useHead({ title: 'Admin Dashboard — Lend & Tend' })
 
@@ -95,8 +101,10 @@ onMounted(async () => {
         collection: 'Pending',
         limit: 200,
       })
-      stats.pending = Object.values(messageStore.list).filter(
-        (m) => m.groupid === groupid && m.collection === 'Pending'
+      // The API nests group/collection under each message's `groups`; the
+      // helper understands that (and the flattened shape).
+      stats.pending = Object.values(messageStore.list).filter((m) =>
+        messageInCollection(m, groupid, 'Pending')
       ).length
     } catch (e) {
       console.error('Error loading pending listings:', e)
@@ -111,9 +119,11 @@ onMounted(async () => {
         limit: 200,
       })
       // Get the full messages from the store
-      const approvedMessages = Object.values(messageStore.list).filter(
-        (m) => m.groupid === groupid && m.collection === 'Approved'
+      const approvedMessages = Object.values(messageStore.list).filter((m) =>
+        messageInCollection(m, groupid, 'Approved')
       )
+      // Agreements in progress or confirmed: approved listings with a promise.
+      stats.agreements = approvedMessages.filter(messageHasAgreement).length
       listings.value = approvedMessages.slice(0, 10).map((m) => ({
         id: m.id,
         subject: m.subject || '',
@@ -126,11 +136,18 @@ onMounted(async () => {
       stats.approved = 0
     }
 
-    // Load members count (optional - may not be available)
-    stats.members = 0
-
-    // Load agreements count (optional - may not be available)
-    stats.agreements = 0
+    // Members of the world group (GET /memberships is the API's member list).
+    try {
+      const list: any = await $fetch(`${config.public.APIv2}/memberships`, {
+        params: { groupid, collection: 'Approved', limit: 1000 },
+        headers: { Authorization: authStore.auth.jwt },
+      })
+      const members = Array.isArray(list) ? list : list?.members ?? []
+      stats.members = members.length
+    } catch (e) {
+      console.error('Error loading member count:', e)
+      stats.members = 0
+    }
   } catch (e) {
     console.error('Error loading dashboard stats:', e)
     error.value = 'Failed to load dashboard data.'
