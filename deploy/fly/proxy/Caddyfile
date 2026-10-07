@@ -19,11 +19,32 @@
 :8080 {
 	encode zstd gzip
 	header X-Robots-Tag "noindex, nofollow"
+	# Security headers. Fly's edge terminates TLS, so HSTS is safe to assert
+	# here (the hostname only ever answers over HTTPS). The CSP is REPORT-ONLY
+	# for now: it is written for what the app actually loads (same-origin
+	# scripts/styles with Nuxt's inline bootstrap, OpenStreetMap tiles,
+	# same-origin uploads/delivery, Sentry EU) and should be promoted to
+	# Content-Security-Policy once the browser console on a UAT run shows no
+	# reports. frame-ancestors is enforced via X-Frame-Options regardless.
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), interest-cohort=()"
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com; font-src 'self' data:; connect-src 'self' https://*.ingest.de.sentry.io https://*.tile.openstreetmap.org https://api.postcodes.io; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+	}
 
 	# Nuxt server API routes (contact form, Stripe) live in lat-nuxt, NOT the
-	# Go API — match them BEFORE the /api* -> Go rule below.
+	# Go API — match them BEFORE the /api* -> Go rule below. They take small
+	# JSON bodies (the Stripe webhook is a few KB), so cap the body here as
+	# well as in the routes; photo uploads go to /lat-uploads, not here.
 	@nuxtapi path /api/contact /api/checkout /api/checkout-confirm /api/concession-claim /api/dev-fake-payment /api/stripe-webhook
 	handle @nuxtapi {
+		request_body {
+			max_size 1MB
+		}
 		reverse_proxy lat-nuxt.flycast:4002
 	}
 
@@ -33,10 +54,11 @@
 		reverse_proxy lat-api.flycast:8192
 	}
 
-	# Moderator interface
-	handle /admin* {
-		reverse_proxy lat-admin.flycast:4003
-	}
+	# NOTE: there is deliberately NO /admin* rule. The Lend & Tend admin area
+	# is part of the Nuxt app (lat/pages/admin/**, gated on systemrole) and is
+	# served by the catch-all below. Routing /admin* to the separate lat-admin
+	# (ModTools) app, which is not deployed, made every admin page answer with
+	# the "starting up" 503.
 
 	# Photo uploads (tusd) and image delivery (weserv), prefix-stripped.
 	handle_path /lat-uploads/* {

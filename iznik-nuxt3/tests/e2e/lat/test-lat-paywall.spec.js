@@ -6,6 +6,7 @@ const {
   logoutLink,
   markUserAsPaid,
   fillLocationPicker,
+  clickUntilHydrated,
 } = require('./lat-fixtures')
 
 const API_BASE = process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2'
@@ -53,7 +54,12 @@ test.describe('Paywall', () => {
     await expect(
       page.locator('.join-tab', { hasText: 'Concession' })
     ).toBeVisible({ timeout: 10_000 })
-    await page.locator('.join-tab', { hasText: 'Concession' }).click()
+    // Server-rendered tab: re-click until hydration has attached the handler
+    // and the panel actually appears (same cure as the skip button above).
+    await clickUntilHydrated(
+      page.locator('.join-tab', { hasText: 'Concession' }),
+      page.locator('textarea')
+    )
     await expect(page.locator('textarea')).toBeVisible({ timeout: 10_000 })
     await expect(
       page.getByRole('button', { name: 'Apply for concession' })

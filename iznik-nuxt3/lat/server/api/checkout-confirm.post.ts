@@ -1,6 +1,11 @@
 import Stripe from 'stripe'
 import { signLatJwt, verifyLatJwt } from '../utils/latJwt'
 import { paidCheckoutFromSession, markMemberPaid } from '../utils/stripePayment'
+import {
+  guardBrowserPost,
+  createRateLimiter,
+  rateLimitOrThrow,
+} from '../utils/requestGuard'
 
 // Called by /join/success with the Checkout Session id Stripe put in the
 // return URL. Confirms with Stripe that THIS member's checkout is paid and
@@ -8,23 +13,41 @@ import { paidCheckoutFromSession, markMemberPaid } from '../utils/stripePayment'
 // unlock immediate on returning from Stripe (the webhook can lag by seconds),
 // and it still works if the webhook could not (e.g. the member had logged out
 // elsewhere and the webhook's minted token was refused).
+//
+// Each call is a Stripe lookup, so it is braked per member (the success page
+// may ask "check again" a few times) and must come from our own page.
+const limiter = createRateLimiter({ max: 30, windowMs: 10 * 60 * 1000 })
+
 export default defineEventHandler(async (event) => {
+  guardBrowserPost(event, { maxBytes: 4 * 1024 })
+
   const secretKey = process.env.STRIPE_SECRET_KEY
   const jwtSecret = process.env.JWT_SECRET
   if (!secretKey || !jwtSecret) {
-    throw createError({ statusCode: 503, statusMessage: 'Payment not configured' })
+    throw createError({
+      statusCode: 503,
+      statusMessage: 'Payment not configured',
+    })
   }
 
   const rawToken = getHeader(event, 'authorization')
   const claims = verifyLatJwt(rawToken, jwtSecret)
   if (!claims || !rawToken) {
-    throw createError({ statusCode: 401, statusMessage: 'Sign in to confirm your payment' })
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Sign in to confirm your payment',
+    })
   }
+  rateLimitOrThrow(event, limiter, `user:${claims.id}`)
 
   const body = await readBody<{ sessionId?: unknown }>(event)
-  const sessionId = typeof body?.sessionId === 'string' ? body.sessionId.trim() : ''
+  const sessionId =
+    typeof body?.sessionId === 'string' ? body.sessionId.trim() : ''
   if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing checkout session' })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Missing checkout session',
+    })
   }
 
   const stripe = new Stripe(secretKey)
@@ -41,7 +64,10 @@ export default defineEventHandler(async (event) => {
   }
   if (paid.userId !== claims.id) {
     // Someone else's checkout id. Never credit the caller for it.
-    throw createError({ statusCode: 403, statusMessage: 'That payment is not yours' })
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'That payment is not yours',
+    })
   }
 
   const apiBase = process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2'
@@ -51,7 +77,10 @@ export default defineEventHandler(async (event) => {
       // Mint a service token for the same member+session rather than reusing
       // the member's own: the API protects lat_payment from the member's own
       // writes, and only a server-minted token (or a system mod) may set it.
-      token: signLatJwt({ id: claims.id, sessionid: claims.sessionid, service: true }, jwtSecret),
+      token: signLatJwt(
+        { id: claims.id, sessionid: claims.sessionid, service: true },
+        jwtSecret
+      ),
       payment: paid.payment,
       fetcher: (url, opts) => $fetch(url, opts as never),
     })
@@ -61,7 +90,11 @@ export default defineEventHandler(async (event) => {
       stripeSessionId: paid.payment.stripeSessionId,
       error: String(err),
     })
-    throw createError({ statusCode: 502, statusMessage: 'Paid, but we could not update your account yet. Please refresh in a moment.' })
+    throw createError({
+      statusCode: 502,
+      statusMessage:
+        'Paid, but we could not update your account yet. Please refresh in a moment.',
+    })
   }
 
   return { paid: true }

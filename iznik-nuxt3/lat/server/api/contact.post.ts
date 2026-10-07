@@ -1,10 +1,26 @@
 import nodemailer from 'nodemailer'
 import { validateContactBody, buildContactMail } from '../utils/contactMail'
+import {
+  guardBrowserPost,
+  clientIp,
+  createRateLimiter,
+  rateLimitOrThrow,
+} from '../utils/requestGuard'
 
 // Public, unauthenticated. All validation and rendering lives in
 // ../utils/contactMail (unit-tested): no line breaks in header-bound fields,
 // HTML escaped, sizes bounded. This file only wires it to SMTP.
+//
+// Being public and relaying to the team's inbox, it is the obvious spam
+// target, so it also insists on the shape our own page sends (JSON, same
+// origin: a cross-site form POST is refused) and brakes floods per address.
+const CONTACT_MAX_BYTES = 64 * 1024
+const limiter = createRateLimiter({ max: 20, windowMs: 10 * 60 * 1000 })
+
 export default defineEventHandler(async (event) => {
+  guardBrowserPost(event, { maxBytes: CONTACT_MAX_BYTES })
+  rateLimitOrThrow(event, limiter, clientIp(event))
+
   const result = validateContactBody(await readBody(event))
   if (!result.ok) {
     throw createError({ statusCode: 400, statusMessage: result.error })

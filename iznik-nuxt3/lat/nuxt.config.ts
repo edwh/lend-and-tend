@@ -1,7 +1,12 @@
 import { fileURLToPath } from 'node:url'
+import { fakePaymentAllowed } from './server/utils/devGate'
 
-const latColorVarsPath = fileURLToPath(new URL('./assets/css/_color-vars.scss', import.meta.url))
-const latGlobalCssPath = fileURLToPath(new URL('./assets/css/global.scss', import.meta.url))
+const latColorVarsPath = fileURLToPath(
+  new URL('./assets/css/_color-vars.scss', import.meta.url)
+)
+const latGlobalCssPath = fileURLToPath(
+  new URL('./assets/css/global.scss', import.meta.url)
+)
 
 // Lend & Tend hosts its own uploads and image delivery. The parent config.js
 // reads TUS_UPLOADER / IMAGE_DELIVERY from the environment and otherwise falls
@@ -14,8 +19,12 @@ process.env.TUS_UPLOADER =
   'http://localhost:4080/files/'
 process.env.IMAGE_DELIVERY =
   process.env.IMAGE_DELIVERY ||
-  (process.env.LAT_DELIVERY_PUBLIC_URL || 'http://localhost:4081').replace(/\/+$/, '')
-const latUserSite = process.env.LAT_USER_SITE || process.env.USER_SITE || 'http://localhost:4002'
+  (process.env.LAT_DELIVERY_PUBLIC_URL || 'http://localhost:4081').replace(
+    /\/+$/,
+    ''
+  )
+const latUserSite =
+  process.env.LAT_USER_SITE || process.env.USER_SITE || 'http://localhost:4002'
 
 export default defineNuxtConfig({
   extends: ['../'],
@@ -24,7 +33,10 @@ export default defineNuxtConfig({
     // Remove Freegle's global.scss from the merged CSS array — it imports
     // Freegle-specific files (sticky-banner etc.) that don't exist in lat/.
     // Add lat's own global.scss (Bootstrap-only) in its place.
-    function (_options: Record<string, never>, nuxt: { options: { css: string[] } }) {
+    function (
+      _options: Record<string, never>,
+      nuxt: { options: { css: string[] } }
+    ) {
       nuxt.options.css = [
         ...nuxt.options.css.filter((c) => !String(c).includes('global.scss')),
         latGlobalCssPath,
@@ -74,7 +86,9 @@ export default defineNuxtConfig({
       IMAGE_SITE: process.env.IMAGE_SITE || latUserSite,
       USER_DOMAIN: process.env.USER_DOMAIN || 'lendandtend.com',
       MODTOOLS_SITE: process.env.MODTOOLS_SITE || '',
-      OSM_TILE: process.env.OSM_TILE || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      OSM_TILE:
+        process.env.OSM_TILE ||
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       // Freegle's geocoder only when explicitly switched on; the map otherwise
       // uses the L&T API's own typeahead plus postcodes.io.
       GEOCODE:
@@ -82,12 +96,10 @@ export default defineNuxtConfig({
           ? process.env.GEOCODE || 'https://geocode.ilovefreegle.org/api'
           : '',
       LAT_WORLD_GROUPID: parseInt(process.env.LAT_WORLD_GROUPID || '0'),
-      // Dev-only "pretend to pay" bypass. Fail SAFE: never enabled in
-      // production regardless of the env var, so a forgotten flag can't hand
-      // out free membership on the live site. In dev it defaults on.
-      LAT_ALLOW_FAKE_PAYMENT:
-        process.env.LAT_ALLOW_FAKE_PAYMENT !== 'false' &&
-        process.env.NODE_ENV !== 'production',
+      // Dev-only "pretend to pay" bypass. Fail SAFE (see server/utils/devGate):
+      // never in production, off when NODE_ENV is unset, on in a development
+      // server unless switched off. The server route uses the same rule.
+      LAT_ALLOW_FAKE_PAYMENT: fakePaymentAllowed(process.env),
       // Surface whether Stripe is in TEST mode (key prefix sk_test_) so the
       // join/success pages can flag "no real charge" — Stripe's own checkout
       // shows a TEST banner, but our pages otherwise look identical live vs test.
@@ -129,7 +141,9 @@ export default defineNuxtConfig({
         // so the lat ChatFooter.vue is loaded instead of the upstream one.
         {
           find: /^\/app\/components\/ChatFooter(\.vue)?$/,
-          replacement: fileURLToPath(new URL('./components/ChatFooter.vue', import.meta.url)),
+          replacement: fileURLToPath(
+            new URL('./components/ChatFooter.vue', import.meta.url)
+          ),
         },
       ],
     },
@@ -241,7 +255,7 @@ export default defineNuxtConfig({
         {
           children: `
             :root {
-              --lat-color-primary: #329732;
+              --lat-color-primary: #287528;
               --lat-color-primary-dark: #4F6642;
               --lat-color-primary-light: #8CC63F;
               --lat-color-secondary: #BB68CA;
@@ -254,11 +268,11 @@ export default defineNuxtConfig({
               --lat-color-text: #333322;
               --lat-color-text-muted: #5A3B1F;
               --lat-color-alert: #CC3F00;
-              --lat-color-success: #329732;
+              --lat-color-success: #287528;
               --lat-color-lender-bg: #f3e8f7;
-              --lat-color-lender-text: #BB68CA;
+              --lat-color-lender-text: #8e3f9d;
               --lat-color-tender-bg: #e8f5e9;
-              --lat-color-tender-text: #4F6642;
+              --lat-color-tender-text: #3f5236;
               --lat-font-body: inherit;
               --lat-font-heading: inherit;
               --radius-md: 0.5rem;
@@ -302,6 +316,11 @@ export default defineNuxtConfig({
     // register the FOUC-fix nitro plugin explicitly.
     plugins: [
       fileURLToPath(new URL('./server/plugins/fouc-fix.ts', import.meta.url)),
+      // Keeps stack traces out of production error responses (the parent
+      // layer's log-ssr-errors plugin puts them in error.data).
+      fileURLToPath(
+        new URL('./server/plugins/sanitize-errors.ts', import.meta.url)
+      ),
     ],
   },
 

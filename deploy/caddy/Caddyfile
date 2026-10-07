@@ -32,12 +32,32 @@ lat.lend-and-tend.katapult.cloud, new.lendandtend.com {
         # that genuinely needs hiding, so basic auth lives ONLY on /mail (testers
         # never visit it, so the origin is never poisoned for them).
         header X-Robots-Tag "noindex, nofollow"
+        # Security headers. Caddy serves HTTPS with Let's Encrypt here, so HSTS
+        # is safe to assert. The CSP is REPORT-ONLY
+        # for now: it is written for what the app actually loads (same-origin
+        # scripts/styles with Nuxt's inline bootstrap, OpenStreetMap tiles,
+        # same-origin uploads/delivery, Sentry EU) and should be promoted to
+        # Content-Security-Policy once the browser console on a UAT run shows no
+        # reports. frame-ancestors is enforced via X-Frame-Options regardless.
+        header {
+                -Server
+                Strict-Transport-Security "max-age=31536000; includeSubDomains"
+                X-Content-Type-Options "nosniff"
+                X-Frame-Options "SAMEORIGIN"
+                Referrer-Policy "strict-origin-when-cross-origin"
+                Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), interest-cohort=()"
+                Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com; font-src 'self' data:; connect-src 'self' https://*.ingest.de.sentry.io https://*.tile.openstreetmap.org https://api.postcodes.io; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        }
 
         # Nuxt server API routes (contact form, Stripe) run in lat-nuxt, NOT the
         # Go API. Caddy uses the first matching handle, so match these BEFORE the
         # /api* -> Go rule below; otherwise Caddy hands /api/contact to Go -> 404.
+        # Small JSON bodies only (uploads go to /lat-uploads), so cap them here.
         @nuxtapi path /api/contact /api/checkout /api/checkout-confirm /api/concession-claim /api/dev-fake-payment /api/stripe-webhook
         handle @nuxtapi {
+                request_body {
+                        max_size 1MB
+                }
                 reverse_proxy 127.0.0.1:4002
         }
 
@@ -47,10 +67,10 @@ lat.lend-and-tend.katapult.cloud, new.lendandtend.com {
                 reverse_proxy 127.0.0.1:4001
         }
 
-        # Moderator interface
-        handle /admin* {
-                reverse_proxy 127.0.0.1:4003
-        }
+        # NOTE: deliberately NO /admin* rule. The Lend & Tend admin area is part
+        # of the Nuxt app (lat/pages/admin/**, gated on systemrole) and is served
+        # by the catch-all below; sending /admin* to the separate lat-admin
+        # (ModTools) container hid every admin page behind a 502.
 
         # Mailpit web UI — behind basic auth (lendandtend / beta) since it's the
         # one thing that must not be public. Safe here because Mailpit uses no

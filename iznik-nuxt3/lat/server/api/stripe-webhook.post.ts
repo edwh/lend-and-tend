@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { signLatJwt } from '../utils/latJwt'
 import { paidCheckoutFromSession, markMemberPaid } from '../utils/stripePayment'
+import { guardBrowserPost } from '../utils/requestGuard'
 
 // Stripe calls this after a Checkout completes. We verify the signature, work
 // out which member paid (from the metadata /api/checkout wrote), then act as
@@ -13,19 +14,34 @@ export default defineEventHandler(async (event) => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
   const jwtSecret = process.env.JWT_SECRET
   if (!secretKey || !webhookSecret || !jwtSecret) {
-    throw createError({ statusCode: 503, statusMessage: 'Payment not configured' })
+    throw createError({
+      statusCode: 503,
+      statusMessage: 'Payment not configured',
+    })
   }
+
+  // Stripe events are a few KB; refuse anything absurd before reading it.
+  // (No JSON or same-site check: Stripe is server to server and the
+  // signature below is what proves the caller.)
+  guardBrowserPost(event, { maxBytes: 1024 * 1024, requireJson: false })
 
   const rawBody = await readRawBody(event)
   const signature = getHeader(event, 'stripe-signature')
   if (!rawBody || !signature) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing body or signature' })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Missing body or signature',
+    })
   }
 
   const stripe = new Stripe(secretKey)
   let stripeEvent: Stripe.Event
   try {
-    stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
+    stripeEvent = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      webhookSecret
+    )
   } catch {
     throw createError({ statusCode: 400, statusMessage: 'Invalid signature' })
   }
@@ -50,7 +66,10 @@ export default defineEventHandler(async (event) => {
       apiBase,
       // service: a server-minted token may write lat_payment even when the
       // API protects that key from the member's own writes.
-      token: signLatJwt({ id: paid.userId, sessionid: paid.sessionId, service: true }, jwtSecret),
+      token: signLatJwt(
+        { id: paid.userId, sessionid: paid.sessionId, service: true },
+        jwtSecret
+      ),
       payment: paid.payment,
       fetcher: (url, opts) => $fetch(url, opts as never),
     })
@@ -64,7 +83,10 @@ export default defineEventHandler(async (event) => {
       stripeSessionId: paid.payment.stripeSessionId,
       error: String(err),
     })
-    throw createError({ statusCode: 502, statusMessage: 'Could not record payment; Stripe will retry' })
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Could not record payment; Stripe will retry',
+    })
   }
 
   return { received: true }
