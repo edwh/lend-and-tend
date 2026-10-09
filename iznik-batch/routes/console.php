@@ -97,6 +97,14 @@ if (getenv('LAT_BATCH_ONLY') === 'true') {
         ->withoutOverlapping()
         ->sendOutputTo(cronLog('lat:send-monthly-checkin'))
         ->runInBackground();
+    // Welcome every new member once, a few minutes after they join (the
+    // command records users.settings.lat_welcome_sent_at, so it never sends
+    // twice; the 48 h lookback only bounds the query).
+    Schedule::command('lat:send-welcome')
+        ->everyFiveMinutes()
+        ->withoutOverlapping()
+        ->sendOutputTo(cronLog('lat:send-welcome'))
+        ->runInBackground();
 
     // Consume tasks the Go API queues in `background_tasks` (magic-link sign-in
     // emails, push notifications). WITHOUT this the passwordless login never
