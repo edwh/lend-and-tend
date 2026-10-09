@@ -451,8 +451,12 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await waitForChatEntry(page, 'Hello!')
     await page.getByText('Hello!').first().click()
 
-    // Lender proposes agreement
-    await page.getByRole('button', { name: 'Propose agreement' }).click()
+    // Lender proposes agreement (re-clicks until the new listing is in the
+    // public index) and waits for the draft form before filling it.
+    await openAgreementFromChat(page)
+    await expect(page.locator('.status-banner.draft')).toBeVisible({
+      timeout: 15_000,
+    })
     await page.locator('#whatToGrow').fill('Original terms')
     await page.locator('#accessTimes').fill('Original times')
     await page.getByRole('button', { name: 'Send to tender' }).click()
@@ -481,12 +485,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await expect(page.locator('#whatToGrow')).toHaveValue('Updated vegetables')
   })
 
-  // SKIPPED — same Go API privacy filter as "tender can accept agreement"
-  // above. See plans/active/lat-adversarial-review.md.
-  test.skip('tender can suggest changes to agreement', async ({
-    page,
-    browser,
-  }) => {
+  test('tender can suggest changes to agreement', async ({ page, browser }) => {
     // Direct-nav pattern (same as "tender can accept agreement"):
     // sign up both parties, propose from lender, navigate tender straight
     // to the agreement page. Avoids fragile chat batch propagation.
@@ -535,6 +534,9 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
 
       // Tender views & modifies
       await tenderPage.goto(`/agreement/${gardenMessageId}?userId=${lenderId}`)
+      await expect(tenderPage.locator('.status-banner.proposed')).toBeVisible({
+        timeout: 15_000,
+      })
       await expect(tenderPage.locator('#whatToGrow')).toHaveValue(
         'Tomatoes only',
         { timeout: 10_000 }
@@ -545,11 +547,35 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
       await expect(
         tenderPage.getByRole('button', { name: 'Suggest changes' })
       ).toBeVisible()
+      // The suggestion goes to the lender as a chat message (the tender may
+      // not edit the lender's listing); surface the send's status if it fails.
+      const sent = tenderPage.waitForResponse(
+        (r) => /\/apiv2\/chat/.test(r.url()) && r.request().method() === 'POST',
+        { timeout: 15_000 }
+      )
       await tenderPage.getByRole('button', { name: 'Suggest changes' }).click()
-
+      const sendResp = await sent
+      expect(
+        sendResp.status(),
+        `suggestion chat send: ${sendResp.status()} ${(
+          await sendResp.text()
+        ).slice(0, 200)}`
+      ).toBeLessThan(400)
       await expect(tenderPage.getByText(/Changes sent/)).toBeVisible({
-        timeout: 10_000,
+        timeout: 15_000,
       })
+
+      // The lender receives the suggestion in the chat, with the new values.
+      await tenderPage.getByRole('button', { name: /Back to chat/ }).click()
+      await expect(tenderPage).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
+      await expect(
+        tenderPage
+          .getByText(/suggest some changes to the agreement terms/)
+          .first()
+      ).toBeVisible({ timeout: 15_000 })
+      await expect(
+        tenderPage.getByText(/What will be grown: Tomatoes and herbs/).first()
+      ).toBeVisible()
     } finally {
       await tenderCtx.close()
     }
@@ -626,11 +652,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await expect(page).toHaveURL(/\/chats/, { timeout: 10_000 })
   })
 
-  // SKIPPED — depends on the tender being able to accept the agreement,
-  // which in turn depends on the Go API change documented above (see
-  // plans/active/lat-adversarial-review.md → "Tender can't see Garden
-  // Sharing Agreement via /message API"). Un-skip when that's resolved.
-  test.skip('ChatMessagePromised shows confirmed status with checkmark', async ({
+  test('ChatMessagePromised shows confirmed status with checkmark', async ({
     page,
     browser,
   }) => {
@@ -645,54 +667,67 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     const tenderPage = await tenderCtx.newPage()
 
     try {
+      // Tender gets in touch from the listing.
       await tenderPage.goto('/')
       await signUpViaModal(tenderPage)
       await markUserAsPaid(tenderPage)
       await tenderPage.goto(`/garden/${gardenMessageId}`)
       await tenderPage.getByRole('button', { name: 'Send message' }).click()
-
-      const msg = `Message (${Date.now()})`
-      await tenderPage.locator('#chatmessage').fill(msg)
+      await expect(tenderPage).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
+      // Unique text: "Message" alone would also match the "Messages" nav link.
+      const stamp = `Card check ${Date.now()}`
+      await tenderPage.locator('#chatmessage').fill(stamp)
       await tenderPage
         .getByRole('button', { name: 'Send', exact: true })
         .click()
+
+      // Lender opens the chat and proposes the agreement.
+      await waitForChatEntry(page, stamp)
+      await page.getByText(stamp).first().click()
+      await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
+      await openAgreementFromChat(page)
+      await expect(page.locator('.status-banner.draft')).toBeVisible({
+        timeout: 15_000,
+      })
+      await page.locator('#whatToGrow').fill('Confirmed test terms')
+      await page.getByRole('button', { name: 'Send to tender' }).click()
+      await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
+
+      // The promised card (ChatMessagePromised) renders "View →" as
+      // a.btn-view-agreement once the chat batch job has delivered it.
+      const agreementLink = tenderPage.locator('a.btn-view-agreement').first()
+      await expect(async () => {
+        await tenderPage.reload()
+        await expect(agreementLink).toBeVisible({ timeout: 8_000 })
+      }).toPass({ timeout: 120_000 })
+      await expect(tenderPage.getByText('Awaiting acceptance')).toBeVisible()
+
+      // Tender accepts.
+      await agreementLink.click()
+      await expect(tenderPage).toHaveURL(/\/agreement\/\d+/, {
+        timeout: 15_000,
+      })
+      await tenderPage
+        .getByRole('button', { name: 'Accept and confirm' })
+        .click()
+      await expect(
+        tenderPage.getByText(/Agreement confirmed/).first()
+      ).toBeVisible({ timeout: 10_000 })
+
+      // Back in the chat the card shows the confirmed status and "View ✓".
+      await tenderPage.getByRole('button', { name: /Back to chat/ }).click()
+      await expect(tenderPage).toHaveURL(/\/chats/, { timeout: 10_000 })
+      await expect(async () => {
+        await expect(
+          tenderPage.getByText('Both parties agreed').first()
+        ).toBeVisible({ timeout: 5_000 })
+      }).toPass({ timeout: 60_000 })
+      await expect(
+        tenderPage.locator('a.btn-view-agreement', { hasText: 'View ✓' })
+      ).toBeVisible()
     } finally {
       await tenderCtx.close()
     }
-
-    await waitForChatEntry(page, 'Message')
-    await page.getByText('Message').first().click()
-
-    // Lender proposes and sends agreement
-    await page.getByRole('button', { name: 'Propose agreement' }).click()
-    await page.locator('#whatToGrow').fill('Confirmed test terms')
-    await page.getByRole('button', { name: 'Send to tender' }).click()
-
-    // Tender accepts. The promised card (ChatMessagePromised) renders "View →"
-    // as a.btn-view-agreement; wait for it to propagate into the tender's chat.
-    const agreementLink = tenderPage.locator('a.btn-view-agreement').first()
-    await expect(async () => {
-      await tenderPage.reload()
-      await expect(agreementLink).toBeVisible({ timeout: 8_000 })
-    }).toPass({ timeout: 120_000 })
-    await agreementLink.click()
-    await tenderPage.getByRole('button', { name: 'Accept and confirm' }).click()
-    await expect(
-      tenderPage.getByText(/Agreement confirmed/).first()
-    ).toBeVisible({
-      timeout: 10_000,
-    })
-
-    // Go back to chat, should see confirmed status in card
-    await tenderPage.getByRole('button', { name: /Back to chat/ }).click()
-    await expect(tenderPage).toHaveURL(/\/chats/, { timeout: 10_000 })
-
-    // The Promised card should now show the confirmed status and "View ✓".
-    await expect(tenderPage.getByText('Both parties agreed')).toBeVisible()
-    const viewBtn = tenderPage.locator('a.btn-view-agreement', {
-      hasText: 'View ✓',
-    })
-    await expect(viewBtn).toBeVisible()
   })
 
   test('agreement draft shows structured ground-rule toggles and a review date', async ({

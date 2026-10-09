@@ -282,6 +282,7 @@
 </template>
 
 <script setup>
+import { suggestionMessage } from '../../composables/latAgreementSuggestion'
 import { useMessageStore } from '~/stores/message'
 import { useAuthStore } from '~/stores/auth'
 import { useChatStore } from '~/stores/chat'
@@ -642,19 +643,17 @@ async function suggestChanges() {
   error.value = null
   saveSuccess.value = null
   try {
-    await api.message.save({
-      id: props.messageId,
-      textbody: buildUpdatedTextbody(),
-    })
-    await messageStore.fetch(props.messageId, true)
-    originalTerms.value = snapshotTerms()
-    // Let lender know via chat
+    // The listing belongs to the lender and the API refuses edits by anyone
+    // else (403), so the suggestion goes to the lender as a chat message
+    // listing what changed; they apply it with "Update terms".
+    const text = suggestionMessage(originalTerms.value, snapshotTerms())
+    if (!text) {
+      saveSuccess.value = 'Nothing has changed yet.'
+      return
+    }
     const chatId = await chatStore.openChat({ userid: props.otherUserId })
-    if (chatId)
-      await chatStore.send(
-        chatId,
-        "I've suggested some changes to the agreement terms — please take a look."
-      )
+    if (!chatId) throw new Error('Could not open the chat with the lender.')
+    await chatStore.send(chatId, text)
     saveSuccess.value = 'Changes sent. The lender has been notified in chat.'
   } catch (e) {
     error.value = e?.message || 'Failed to send suggestions.'
