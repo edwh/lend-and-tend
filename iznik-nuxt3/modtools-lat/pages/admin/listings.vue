@@ -43,7 +43,7 @@
             <td class="text-muted">{{ m.location?.name || '—' }}</td>
             <td class="text-muted">{{ formatDate(m.arrival) }}</td>
             <td style="display:flex;gap:6px;">
-              <a :href="`/garden/${m.id}`" target="_blank" class="btn btn-sm btn-primary">View</a>
+              <a :href="`${memberSite}/garden/${m.id}`" target="_blank" rel="noopener" class="btn btn-sm btn-primary">View</a>
               <button v-if="!confirming[m.id]" class="btn btn-sm btn-danger" @click="confirming[m.id] = true">Delete</button>
               <template v-else>
                 <button class="btn btn-sm btn-danger" :disabled="deleting[m.id]" @click="deleteListing(m.id)">Confirm</button>
@@ -67,6 +67,9 @@ definePageMeta({ layout: 'default' })
 useHead({ title: 'Listings — L&T Admin' })
 
 const config = useRuntimeConfig()
+// The console serves no member pages (see nuxt.config.ts), so the public
+// listing opens on the member site.
+const memberSite = (config.public.USER_SITE || '').replace(/\/$/, '')
 const authStore = useAuthStore()
 
 const typeFilter = ref('')

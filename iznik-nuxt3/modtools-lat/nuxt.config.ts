@@ -56,6 +56,31 @@ export default defineNuxtConfig({
 
   css: ['/assets/css/admin.css'],
 
+  // The console serves ONLY its own pages. Extending ../lat would otherwise
+  // make every member page and lat's full /admin area (gardens queues,
+  // members, flagged, review queue, agreements, settings, user detail, search)
+  // reachable here under lat's sidebar layout. A moderator using this console
+  // needs the dashboard, users, listings and concessions, and nothing else;
+  // the member site's own /admin area remains where the richer tools live.
+  // Sign-in links (/?u=&k=) are consumed by the root app.vue on mount, so no
+  // member page is needed for login.
+  hooks: {
+    'pages:extend'(pages) {
+      const own = resolve(here, 'pages') + '/'
+      const keepOwn = (list: Array<{ file?: string; children?: unknown[] }>) =>
+        list.filter((page) => {
+          if (page.children && Array.isArray(page.children)) {
+            page.children = keepOwn(page.children as typeof list)
+          }
+          return typeof page.file === 'string' && page.file.startsWith(own)
+        })
+      const kept = keepOwn(
+        pages as Array<{ file?: string; children?: unknown[] }>
+      )
+      pages.splice(0, pages.length, ...(kept as typeof pages))
+    },
+  },
+
   vite: {
     plugins: [
       {
