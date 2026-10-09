@@ -266,6 +266,9 @@ services:
       - ./iznik-nuxt3/lat/pages:/app/lat/pages:rw
       - ./iznik-nuxt3/lat/stores:/app/lat/stores:rw
       - ./iznik-nuxt3/lat/layouts:/app/lat/layouts:rw
+      # error.vue is resolved at startup from the layer root; mount it so the
+      # dev server sees the L&T error page (restart after changing it).
+      - ./iznik-nuxt3/lat/error.vue:/app/lat/error.vue
       - ./iznik-nuxt3/lat/plugins:/app/lat/plugins:rw
       - ./iznik-nuxt3/lat/assets:/app/lat/assets:rw
       # Mount lat/public so any .output rebuild copies the real L&T logo (and
