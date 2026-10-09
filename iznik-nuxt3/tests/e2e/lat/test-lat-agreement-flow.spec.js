@@ -180,7 +180,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Interested in your garden!').first().click()
     await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 10_000 })
 
-    // Lender clicks "Sign agreement" (re-clicking until the new listing is
+    // Lender clicks "Propose agreement" (re-clicking until the new listing is
     // in the public index) and lands on the agreement page.
     await openAgreementFromChat(page)
 
@@ -304,7 +304,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Interested!').first().click()
     await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 10_000 })
 
-    // Click "Sign agreement" (waits for the listing to be indexed)
+    // Click "Propose agreement" (waits for the listing to be indexed)
     await openAgreementFromChat(page)
 
     // Fill and send agreement
@@ -452,7 +452,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Hello!').first().click()
 
     // Lender proposes agreement
-    await page.getByRole('button', { name: 'Sign agreement' }).click()
+    await page.getByRole('button', { name: 'Propose agreement' }).click()
     await page.locator('#whatToGrow').fill('Original terms')
     await page.locator('#accessTimes').fill('Original times')
     await page.getByRole('button', { name: 'Send to tender' }).click()
@@ -586,7 +586,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Hi!').first().click()
 
     // Propose agreement
-    await page.getByRole('button', { name: 'Sign agreement' }).click()
+    await page.getByRole('button', { name: 'Propose agreement' }).click()
     await page.locator('#whatToGrow').fill('Some terms')
     await page.getByRole('button', { name: 'Send to tender' }).click()
     await expect(page).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
@@ -664,7 +664,7 @@ test.describe('Agreement flow: form, persistence, and chat integration', () => {
     await page.getByText('Message').first().click()
 
     // Lender proposes and sends agreement
-    await page.getByRole('button', { name: 'Sign agreement' }).click()
+    await page.getByRole('button', { name: 'Propose agreement' }).click()
     await page.locator('#whatToGrow').fill('Confirmed test terms')
     await page.getByRole('button', { name: 'Send to tender' }).click()
 

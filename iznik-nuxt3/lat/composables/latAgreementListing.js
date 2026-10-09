@@ -1,5 +1,5 @@
 /**
- * Finding the garden a chat is about, so "Sign agreement" knows which listing
+ * Finding the garden a chat is about, so "Propose agreement" knows which listing
  * to open.
  *
  * The API's `GET /user/:id/message?active=true` only lists a member's

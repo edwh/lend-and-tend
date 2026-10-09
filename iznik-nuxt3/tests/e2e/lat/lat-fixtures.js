@@ -156,13 +156,13 @@ async function loginViaModal(page, email, _password) {
 }
 
 /**
- * Clicks "Sign agreement" in an open chat and waits to land on the agreement
+ * Clicks "Propose agreement" in an open chat and waits to land on the agreement
  * page. A newly posted garden only becomes findable once the batch job
  * messages:update-spatial-index has run (every minute), and until then the
  * button shows a notice instead of navigating, so re-click until it does.
  */
 async function openAgreementFromChat(page, { timeout = 4 * 60_000 } = {}) {
-  const button = page.getByRole('button', { name: 'Sign agreement' }).first()
+  const button = page.getByRole('button', { name: 'Propose agreement' }).first()
   await expect(button).toBeVisible({ timeout: 30_000 })
   const notice = page.getByTestId('agreement-notice')
   await expect(async () => {

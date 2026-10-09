@@ -264,7 +264,7 @@ test.describe('Conversation-side accessibility', () => {
     const page = await ctx.newPage()
     await page.goto(`/chats/${seeded.chatId}`)
     await expect(page.locator('#chatmessage')).toBeVisible({ timeout: 20_000 })
-    for (const name of ['Sign agreement', 'Send address', 'Photo']) {
+    for (const name of ['Propose agreement', 'Send address', 'Photo']) {
       const btn = page.getByRole('button', { name }).first()
       await expect(btn).toBeVisible()
       const box = await btn.boundingBox()

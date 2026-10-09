@@ -62,7 +62,8 @@ Tend team for review.
 ![A draft agreement, ready to send](assets/agreement-draft.png)
 
 When you have talked things through, put it in writing. Either of you can start: click
-**Sign agreement** under the message box. The agreement is attached to the garden listing
+**Propose agreement** under the message box (once an agreement exists the same button
+reads **View agreement** and opens it). The agreement is attached to the garden listing
 and to the two of you.
 
 If the garden was posted only a minute or two ago, the button tells you the listing is

@@ -112,7 +112,7 @@ async function main() {
     await waitForChatEntry(lp, 'Verify interest')
     await lp.getByText('Verify interest').first().click()
     await expect(lp).toHaveURL(/\/chats\/\d+/, { timeout: 15_000 })
-    await lp.getByRole('button', { name: 'Sign agreement' }).click()
+    await lp.getByRole('button', { name: 'Propose agreement' }).click()
     await expect(lp).toHaveURL(/\/agreement\/\d+/, { timeout: 15_000 })
     await lp.locator('#whatToGrow').fill('Verify tomatoes')
     await lp.locator('#accessTimes').fill('Verify weekends')

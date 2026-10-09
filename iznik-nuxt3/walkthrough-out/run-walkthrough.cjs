@@ -421,12 +421,12 @@ async function main() {
       await settle(page, 'a:has-text("Logout")', 700)
 
       const chatUrl = chatId ? `/chats/${chatId}` : '/chats'
-      await reveal(page, chatUrl, 'button:has-text("Sign agreement")')
+      await reveal(page, chatUrl, 'button:has-text("Propose agreement")')
       await wait(page, 800)
       await caption(page, "Priya reads Sam's message.", 3400)
 
       await fadeOutCaption(page)
-      await page.getByRole('button', { name: 'Sign agreement' }).click()
+      await page.getByRole('button', { name: 'Propose agreement' }).click()
       await settle(page, '#whatToGrow', 700)
       await caption(
         page,

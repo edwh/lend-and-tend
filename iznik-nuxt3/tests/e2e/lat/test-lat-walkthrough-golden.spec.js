@@ -7,7 +7,7 @@
 //   1. A lender offers a garden with a REAL photo. The upload goes through
 //      lat-tusd, the listing carries the attachment, and the garden page
 //      actually renders it through lat-delivery (not a broken image).
-//   2. A tender gets in touch, the lender replies, and "Sign agreement" in the
+//   2. A tender gets in touch, the lender replies, and "Propose agreement" in the
 //      chat reaches the agreement page. That lookup depends on the batch job
 //      `messages:update-spatial-index` (scheduled every minute in the L&T
 //      worker). Until it has run, the button must TELL the member rather than
@@ -156,7 +156,7 @@ test.describe('Walkthrough golden flows', () => {
       timeout: 30_000,
     })
 
-    // "Sign agreement" either opens the agreement page, or (if the batch
+    // "Propose agreement" either opens the agreement page, or (if the batch
     // spatial-index job has not run yet) explains itself. It must never do
     // nothing. Keep trying until the job has run (it is scheduled every minute).
     const onAgreementPage = () => /\/agreement\/\d+/.test(lender.url())
@@ -164,7 +164,7 @@ test.describe('Walkthrough golden flows', () => {
     await expect(async () => {
       if (!onAgreementPage()) {
         await lender
-          .getByRole('button', { name: 'Sign agreement' })
+          .getByRole('button', { name: 'Propose agreement' })
           .first()
           .click()
         // Either the lookup navigates, or the notice explains why not yet.
@@ -176,7 +176,7 @@ test.describe('Walkthrough golden flows', () => {
       const noticeShown = await notice.isVisible().catch(() => false)
       expect(
         onAgreementPage() || noticeShown,
-        'Sign agreement neither navigated nor explained'
+        'Propose agreement neither navigated nor explained'
       ).toBe(true)
       expect(onAgreementPage(), 'listing not indexed yet').toBe(true)
     }).toPass({ timeout: 4 * 60_000, intervals: [10_000] })

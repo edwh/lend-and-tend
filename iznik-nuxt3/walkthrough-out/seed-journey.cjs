@@ -7,7 +7,7 @@
  *               lender replies, lender proposes the agreement (PROPOSED)
  *   journey 2 → the same, and the tender accepts (CONFIRMED + timeline)
  *   journey 3 → tender messages, lender replies, nothing proposed yet
- *               (the lender's "respond" screen with Sign agreement /
+ *               (the lender's "respond" screen with Propose agreement /
  *               Send address still available)
  * plus one unpaid member (the /join membership page before paying) and a
  * returning-member sign-in email in Mailpit (passwordless sign-in).
@@ -157,7 +157,7 @@ async function main() {
 
     // Same people, same garden, same opening messages as journey 1, but no
     // agreement proposed yet: this is the lender's "respond" screen, with the
-    // Sign agreement / Send address actions still available. Separate accounts
+    // Propose agreement / Send address actions still available. Separate accounts
     // under the same names keep the video's story coherent.
     if (wanted(3)) {
       const j3 = await journey(

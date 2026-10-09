@@ -177,7 +177,7 @@ const API_BASE = process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2'
 
 /**
  * A new listing only becomes visible to OTHER members (map, and the chat's
- * "Sign agreement" lookup) once the batch job has added it to the spatial
+ * "Propose agreement" lookup) once the batch job has added it to the spatial
  * index (`messages:update-spatial-index`, every few minutes). Poll the public
  * query until the listing is there.
  */
@@ -215,9 +215,9 @@ async function lenderPropose(page, chatId, { lenderId, gardenId } = {}) {
   flushBatch()
   await page.goto(`/chats/${chatId}`)
   await expect(
-    page.getByRole('button', { name: 'Sign agreement' })
+    page.getByRole('button', { name: 'Propose agreement' })
   ).toBeVisible({ timeout: 30_000 })
-  await page.getByRole('button', { name: 'Sign agreement' }).click()
+  await page.getByRole('button', { name: 'Propose agreement' }).click()
   await expect(page).toHaveURL(/\/agreement\/\d+/, { timeout: 15_000 })
   await page
     .locator('#whatToGrow')

@@ -162,14 +162,14 @@
         >
           <button
             v-b-tooltip="
-              existingAgreement ? 'View agreement' : 'Sign an agreement'
+              existingAgreement ? 'View the agreement' : 'Propose an agreement'
             "
             class="action-chip"
             @click="goToAgreement"
           >
             <v-icon icon="handshake" class="action-icon" />
             <span>{{
-              existingAgreement ? 'Agreement' : 'Sign agreement'
+              existingAgreement ? 'View agreement' : 'Propose agreement'
             }}</span>
           </button>
           <button
@@ -219,7 +219,7 @@
             :class="{ shrink: shrink }"
           />
           <div class="mobtext text--smallest">
-            {{ existingAgreement ? 'Agreement' : 'Sign agreement' }}
+            {{ existingAgreement ? 'View agreement' : 'Propose agreement' }}
           </div>
         </button>
         <button
@@ -389,7 +389,7 @@ const existingAgreement = computed(() =>
   chatmessages.value.some((m) => m.type === 'Promised')
 )
 
-// Shown under the action bar when "Sign agreement" cannot find the garden this
+// Shown under the action bar when "Propose agreement" cannot find the garden this
 // chat is about (a newly posted garden is not in the public index for a few
 // minutes). Silently doing nothing here was a UAT trap.
 const agreementNotice = ref('')
