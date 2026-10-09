@@ -80,6 +80,7 @@ The "never add tables/columns without approval" rule still holds — keep it tha
 
 **LAT Nuxt dev server:** port 4002. API at `IZNIK_API_V2` (default `http://localhost:4001/apiv2`).
 **LAT Playwright tests:** `LAT_BASE_URL=http://localhost:4002 npx playwright test tests/e2e/lat/` from `iznik-nuxt3/`.
+Prefer the isolated runner when other Docker projects are active on the host: `tests/e2e/lat/isolated/run.sh tests/e2e/lat/<spec>.spec.js` runs the same spec in a container on the L&T network (host-side Chromium aborts loads with ERR_NETWORK_CHANGED whenever another project's containers restart).
 
 ## Lend & Tend Deployment & Infrastructure
 
