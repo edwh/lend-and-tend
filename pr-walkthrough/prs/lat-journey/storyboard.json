@@ -6,7 +6,9 @@
     "brandSubtitle": "garden sharing",
     "width": 1920,
     "height": 1080,
-    "fps": 30
+    "fps": 30,
+    "brandLogo": "lat-journey/brand-logo.png",
+    "showUrl": false
   },
   "_note": "One video, two sides. Priya (lender) signs up and offers her garden with a real photo; Sam (tender) finds it and gets in touch; Priya responds; the two agree. Screenshot scenes position callouts by `ref` (labels measured live into <shot>.boxes.json) with focusAuto. Tall pages: pan or split into focused scenes so nothing crops.",
   "scenes": [
@@ -111,7 +113,7 @@
       "src": "lat-journey/profile.masked.png",
       "focusAuto": true,
       "focusMinW": 0.8,
-      "caption": "Her listing is live under My Gardens, photo and all.",
+      "caption": "Her listing is live under My Gardens, photo and all, waiting for a tender.",
       "callouts": [
         {
           "at": 1.5,

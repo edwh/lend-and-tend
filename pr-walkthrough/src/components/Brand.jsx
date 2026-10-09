@@ -1,10 +1,13 @@
 import React from 'react';
+import { staticFile } from 'remotion';
 import { COLORS } from '../theme.js';
 import { SANS } from '../fonts.js';
 
 // A small, honest brand lockup (not the official logo asset): a green leaf mark plus
 // the wordmark, with a subtitle. Sits persistently in the top-left of every frame.
-export function Brand({ name = 'freegle', subtitle = 'PR walkthrough' }) {
+// `logo` (optional): a staged asset path (e.g. 'lat-journey/brand-logo.png') rendered
+// in place of the drawn leaf mark, so a sister site can show its real logo.
+export function Brand({ name = 'freegle', subtitle = 'PR walkthrough', logo = null }) {
   return (
     <div
       style={{
@@ -17,6 +20,13 @@ export function Brand({ name = 'freegle', subtitle = 'PR walkthrough' }) {
         fontFamily: SANS,
       }}
     >
+      {logo ? (
+        <img
+          src={staticFile(logo)}
+          alt=""
+          style={{ width: 56, height: 56, objectFit: 'contain', borderRadius: 12, background: '#fff', boxShadow: '0 6px 18px rgba(60,111,31,0.25)' }}
+        />
+      ) : (
       <div
         style={{
           width: 48,
@@ -40,6 +50,7 @@ export function Brand({ name = 'freegle', subtitle = 'PR walkthrough' }) {
           />
         </svg>
       </div>
+      )}
       <div style={{ lineHeight: 1.05 }}>
         <div style={{ fontSize: 30, fontWeight: 800, color: COLORS.greenDeep, letterSpacing: -0.5 }}>
           {name}

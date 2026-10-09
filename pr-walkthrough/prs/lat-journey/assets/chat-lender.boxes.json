@@ -15,7 +15,7 @@
     "box": {
       "x": 0.2562,
       "y": 0.9505,
-      "w": 0.1279,
+      "w": 0.1475,
       "h": 0.0372
     }
   },
@@ -23,7 +23,7 @@
     "label": "Share your address privately, only when you choose",
     "arrow": "up",
     "box": {
-      "x": 0.3904,
+      "x": 0.41,
       "y": 0.9505,
       "w": 0.1115,
       "h": 0.0372

@@ -44,13 +44,13 @@ The seeded data is test data on the local stack (fictional members), so
 
 ## What the seeding taught us (and fixed)
 
-- A new garden is only visible to other members (map, and the chat's "Sign
+- A new garden is only visible to other members (map, and the chat's "Propose
   agreement" lookup) once `messages:update-spatial-index` has run. The L&T
   worker now schedules it every minute; the seeder also runs it directly.
 - The cookie banner is fixed to the bottom of the viewport and used to cover
   the agreement form's "Send to tender" button. The app now reserves space for
   the banner; the seeder dismisses it after sign-up anyway.
-- The chat's "Sign agreement" used to do nothing when the listing was not yet
+- The chat's "Propose agreement" (then labelled "Sign agreement") used to do nothing when the listing was not yet
   indexed. It now explains itself (see `lat/composables/latAgreementListing.js`).
 
 The flows are pinned as regression tests in

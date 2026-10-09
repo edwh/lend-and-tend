@@ -72,6 +72,18 @@ function main() {
     if (!existsSync(from)) throw new Error(`Referenced asset missing (did masking run?): ${from}`);
     copyFileSync(from, join(publicDir, file));
   }
+  // A brand logo (meta.brandLogo = '<tag>/<file>') is staged from assets/ too.
+  if (sb.meta?.brandLogo) {
+    const file = basename(sb.meta.brandLogo);
+    const from = join(assetsDir, file);
+    if (!existsSync(from)) throw new Error(`Brand logo missing: ${from}`);
+    copyFileSync(from, join(publicDir, file));
+  }
+  // meta.showUrl: false hides the browser address bar on every screenshot scene
+  // (a product walkthrough need not show where it was filmed).
+  if (sb.meta?.showUrl === false) {
+    for (const scene of sb.scenes) if (scene.type === 'screenshot') scene.showUrl = false;
+  }
 
   // 3. Auto-fill natW/natH, and set the browser-chrome URL to the ACTUAL captured (test)
   // address from <shot>.meta.json — overriding any hardcoded value, so the video can never

@@ -25,11 +25,15 @@ export function TitleScene({ scene, meta }) {
       <AbsoluteFill style={{ background: 'radial-gradient(60% 60% at 80% 10%, rgba(255,255,255,0.12), transparent)' }} />
 
       <Rise delay={0}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, background: 'rgba(255,255,255,0.16)', padding: '10px 22px', borderRadius: 999, fontSize: 26, fontWeight: 700, marginBottom: 34 }}>
-          <span style={{ opacity: 0.85 }}>{meta.repo}</span>
-          <span style={{ opacity: 0.5 }}>·</span>
-          <span>PR #{meta.pr}</span>
-        </div>
+        {/* The repo/PR chip only makes sense for a PR walkthrough; a product
+            journey (no PR) shows none. */}
+        {meta.pr ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, background: 'rgba(255,255,255,0.16)', padding: '10px 22px', borderRadius: 999, fontSize: 26, fontWeight: 700, marginBottom: 34 }}>
+            <span style={{ opacity: 0.85 }}>{meta.repo}</span>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span>PR #{meta.pr}</span>
+          </div>
+        ) : null}
       </Rise>
 
       <Rise delay={8}>
@@ -56,7 +60,9 @@ export function TitleScene({ scene, meta }) {
               <Stat value={meta.files} label="files changed" tone="#ffffff" />
             </>
           )}
-          <div style={{ fontSize: 28, fontWeight: 600, opacity: 0.9 }}>by {meta.author}</div>
+          {meta.author ? (
+            <div style={{ fontSize: 28, fontWeight: 600, opacity: 0.9 }}>by {meta.author}</div>
+          ) : null}
         </div>
       </Rise>
     </AbsoluteFill>

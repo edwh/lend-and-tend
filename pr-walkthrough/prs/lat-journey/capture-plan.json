@@ -214,7 +214,7 @@
     {
       "name": "profile.png",
       "route": "/profile",
-      "auth": ".auth-lender1.json",
+      "auth": ".auth-lender3.json",
       "fullPage": true,
       "steps": [
         {
@@ -329,7 +329,7 @@
           "arrow": "up"
         },
         {
-          "selector": "button:has-text(\"Sign agreement\"):visible",
+          "selector": "button:has-text(\"Propose agreement\"):visible",
           "label": "When you're both ready, propose an agreement",
           "arrow": "up"
         },
