@@ -92,6 +92,15 @@ body {
 /* Remove Freegle SVG background pattern from L&T chat page.
    The pattern was part of the Freegle brand and bleeds through modal backdrops
    on the chat page. L&T uses a clean green brand instead. */
+/* Chat message timestamps and read receipts (upstream ChatMessageDateRead
+   renders them as Bootstrap .text-muted, which is below 4.5:1 on the beige
+   chat background). Deeper grey-green keeps them quiet but legible. */
+.chatContent .text-muted.fontsize,
+.chatContent .text-muted.fontsize .chat__dateread--theirs,
+.chatContent .text-muted.fontsize .chat__dateread--mine {
+  color: #55654b !important;
+}
+
 .chatContent {
   background-image: none !important;
 }
@@ -162,12 +171,25 @@ body {
 
   /* Chat pane: subtract bottom nav height so the footer/input stays visible */
   .chatHolder {
-    height: calc(100vh - 60px - 67px) !important;
+    height: calc(100vh - var(--lat-cookie-bar-height, 0px) - 60px - 67px) !important;
   }
 
   @supports (height: 100dvh) {
     .chatHolder {
-      height: calc(100dvh - 60px - 67px) !important;
+      height: calc(100dvh - var(--lat-cookie-bar-height, 0px) - 60px - 67px) !important;
     }
+  }
+}
+
+/* WCAG 2.3.3: members who ask for reduced motion get none (fades, slides,
+   smooth scrolling). Bootstrap and upstream set these unconditionally. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

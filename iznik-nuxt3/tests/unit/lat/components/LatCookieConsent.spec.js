@@ -76,6 +76,9 @@ describe('LatCookieConsent', () => {
     expect(document.documentElement.style.scrollPaddingBottom).toBe(
       `${BANNER_HEIGHT}px`
     )
+    expect(
+      document.documentElement.style.getPropertyValue('--lat-cookie-bar-height')
+    ).toBe(`${BANNER_HEIGHT}px`)
     w.unmount()
   })
 
@@ -89,6 +92,9 @@ describe('LatCookieConsent', () => {
     expect(w.find('.lat-cookie-consent').exists()).toBe(false)
     expect(barHeight.value).toBe(0)
     expect(document.documentElement.style.scrollPaddingBottom).toBe('')
+    expect(
+      document.documentElement.style.getPropertyValue('--lat-cookie-bar-height')
+    ).toBe('0px')
     w.unmount()
   })
 

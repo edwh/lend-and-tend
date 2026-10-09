@@ -828,65 +828,78 @@ async function searchMore() {
   // On mobile we substitute a different height navbar on this page.
   // The layout provides ~60px padding-top but the navbar is 66px; add 6px to clear the overlap.
   padding-top: 6px;
-  height: calc(100vh - $navbar-mobile-chat-height);
+  height: calc(
+    100vh - var(--lat-cookie-bar-height, 0px) - $navbar-mobile-chat-height
+  );
 
   @include media-breakpoint-up(md) {
-    height: calc(100vh - var(--header-navbar-height));
+    height: calc(
+      100vh - var(--lat-cookie-bar-height, 0px) - var(--header-navbar-height)
+    );
   }
 
   &.stickyAdRendered {
     height: calc(
-      100vh - $navbar-mobile-chat-height - $sticky-banner-height-mobile
+      100vh - var(--lat-cookie-bar-height, 0px) - $navbar-mobile-chat-height -
+        $sticky-banner-height-mobile
     );
 
     @media (min-height: $mobile-tall) {
       height: calc(
-        100vh - $navbar-mobile-chat-height - $sticky-banner-height-mobile-tall
+        100vh - var(--lat-cookie-bar-height, 0px) - $navbar-mobile-chat-height -
+          $sticky-banner-height-mobile-tall
       );
     }
 
     @include media-breakpoint-up(md) {
       height: calc(
-        100vh - var(--header-navbar-height) - $sticky-banner-height-desktop
+        100vh - var(--lat-cookie-bar-height, 0px) - var(--header-navbar-height) -
+          $sticky-banner-height-desktop
       );
 
       @media (min-height: $desktop-tall) {
         height: calc(
-          100vh - var(--header-navbar-height) -
-            $sticky-banner-height-desktop-tall
+          100vh - var(--lat-cookie-bar-height, 0px) -
+            var(--header-navbar-height) - $sticky-banner-height-desktop-tall
         );
       }
     }
   }
 
   @supports (height: 100dvh) {
-    height: calc(100dvh - $navbar-mobile-chat-height);
+    height: calc(
+      100dvh - var(--lat-cookie-bar-height, 0px) - $navbar-mobile-chat-height
+    );
 
     @include media-breakpoint-up(md) {
-      height: calc(100dvh - var(--header-navbar-height));
+      height: calc(
+        100dvh - var(--lat-cookie-bar-height, 0px) - var(--header-navbar-height)
+      );
     }
 
     &.stickyAdRendered {
       height: calc(
-        100dvh - $navbar-mobile-chat-height - $sticky-banner-height-mobile
+        100dvh - var(--lat-cookie-bar-height, 0px) - $navbar-mobile-chat-height -
+          $sticky-banner-height-mobile
       );
 
       @media (min-height: $mobile-tall) {
         height: calc(
-          100dvh - $navbar-mobile-chat-height -
-            $sticky-banner-height-mobile-tall
+          100dvh - var(--lat-cookie-bar-height, 0px) -
+            $navbar-mobile-chat-height - $sticky-banner-height-mobile-tall
         );
       }
 
       @include media-breakpoint-up(md) {
         height: calc(
-          100dvh - var(--header-navbar-height) - $sticky-banner-height-desktop
+          100dvh - var(--lat-cookie-bar-height, 0px) -
+            var(--header-navbar-height) - $sticky-banner-height-desktop
         );
 
         @media (min-height: $desktop-tall) {
           height: calc(
-            100dvh - var(--header-navbar-height) -
-              $sticky-banner-height-desktop-tall
+            100dvh - var(--lat-cookie-bar-height, 0px) -
+              var(--header-navbar-height) - $sticky-banner-height-desktop-tall
           );
         }
       }

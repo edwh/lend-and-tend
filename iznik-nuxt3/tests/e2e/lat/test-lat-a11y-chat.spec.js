@@ -41,6 +41,38 @@ const seeded = {
   tenderState: null,
 }
 
+// The upstream pre-hydration navbar skeleton (a <ul> that directly holds
+// <a>) is in the DOM until the app mounts, so wait for the mount before
+// auditing.
+async function hydrated(page) {
+  // Vue marks the app root once mounted, at any viewport width...
+  await page.waitForFunction(
+    () => !!document.querySelector('#__nuxt')?.__vue_app__,
+    null,
+    { timeout: 30_000 }
+  )
+  // ...but the <ClientOnly> fallback navbar is replaced a little later. Its
+  // <ul> holds <a> elements directly; nothing in the product does, so "no
+  // malformed list" means the real navbar is in.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            [...document.querySelectorAll('ul, ol')].filter((u) =>
+              [...u.children].some(
+                (c) => !['LI', 'SCRIPT', 'TEMPLATE'].includes(c.tagName)
+              )
+            ).length
+        ),
+      {
+        timeout: 30_000,
+        message: 'pre-hydration navbar skeleton still present',
+      }
+    )
+    .toBe(0)
+}
+
 async function audit(page, include) {
   let builder = new AxeBuilder({ page }).withTags([
     'wcag2a',
@@ -158,11 +190,18 @@ test.describe('Conversation-side accessibility', () => {
       await expect(
         page.getByText('Is the garden still free').first()
       ).toBeVisible({ timeout: 20_000 })
+      await hydrated(page)
       await audit(page)
       await page.goto(`/chats/${seeded.chatId}`)
       await expect(page.locator('#chatmessage')).toBeVisible({
         timeout: 20_000,
       })
+      // The conversation area renders at opacity 0 until its first paint and
+      // fades in; auditing mid-fade reads every message as low contrast.
+      await expect(page.locator('.chatContent')).toHaveCSS('opacity', '1', {
+        timeout: 20_000,
+      })
+      await hydrated(page)
       await audit(page)
       await ctx.close()
     })
@@ -175,11 +214,13 @@ test.describe('Conversation-side accessibility', () => {
       await expect(page.locator('.status-banner')).toBeVisible({
         timeout: 20_000,
       })
+      await hydrated(page)
       await audit(page)
       await page.goto(`/checkin/${seeded.gardenId}`)
       await expect(
         page.locator('.status-options').or(page.getByText(/sign in/i).first())
       ).toBeVisible({ timeout: 20_000 })
+      await hydrated(page)
       await audit(page)
       await ctx.close()
     })

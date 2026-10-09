@@ -430,86 +430,133 @@ function typing() {
   flex-direction: column;
   justify-content: space-between;
 
-  height: calc(100vh - 60px);
+  height: calc(100vh - var(--lat-cookie-bar-height, 0px) - 60px);
 
   @include media-breakpoint-up(md) {
-    height: calc(100vh - 78px);
+    height: calc(100vh - var(--lat-cookie-bar-height, 0px) - 78px);
   }
 
   &.navBarHidden {
-    height: 100vh;
+    height: calc(100vh - var(--lat-cookie-bar-height, 0px));
   }
 
   &.allowAd {
-    height: calc(100vh - 60px - $sticky-banner-height-mobile);
+    height: calc(
+      100vh - var(--lat-cookie-bar-height, 0px) - 60px -
+        $sticky-banner-height-mobile
+    );
 
     @media (min-height: $mobile-tall) {
-      height: calc(100vh - 60px - $sticky-banner-height-mobile-tall);
+      height: calc(
+        100vh - var(--lat-cookie-bar-height, 0px) - 60px -
+          $sticky-banner-height-mobile-tall
+      );
     }
 
     @include media-breakpoint-up(md) {
-      height: calc(100vh - 78px - $sticky-banner-height-desktop);
+      height: calc(
+        100vh - var(--lat-cookie-bar-height, 0px) - 78px -
+          $sticky-banner-height-desktop
+      );
 
       @media (min-height: $desktop-tall) {
-        height: calc(100vh - 78px - $sticky-banner-height-desktop-tall);
+        height: calc(
+          100vh - var(--lat-cookie-bar-height, 0px) - 78px -
+            $sticky-banner-height-desktop-tall
+        );
       }
     }
 
     &.navBarHidden {
-      height: calc(100vh - $sticky-banner-height-mobile);
+      height: calc(
+        100vh - var(--lat-cookie-bar-height, 0px) - $sticky-banner-height-mobile
+      );
 
       @media (min-height: $mobile-tall) {
-        height: calc(100vh - $sticky-banner-height-mobile-tall);
+        height: calc(
+          100vh - var(--lat-cookie-bar-height, 0px) -
+            $sticky-banner-height-mobile-tall
+        );
       }
 
       @include media-breakpoint-up(md) {
-        height: calc(100vh - $sticky-banner-height-desktop);
+        height: calc(
+          100vh - var(--lat-cookie-bar-height, 0px) -
+            $sticky-banner-height-desktop
+        );
 
         @media (min-height: $desktop-tall) {
-          height: calc(100vh - $sticky-banner-height-desktop-tall);
+          height: calc(
+            100vh - var(--lat-cookie-bar-height, 0px) -
+              $sticky-banner-height-desktop-tall
+          );
         }
       }
     }
   }
 
   @supports (height: 100dvh) {
-    height: calc(100dvh - 60px);
+    height: calc(100dvh - var(--lat-cookie-bar-height, 0px) - 60px);
 
     @include media-breakpoint-up(md) {
-      height: calc(100dvh - 78px);
+      height: calc(100dvh - var(--lat-cookie-bar-height, 0px) - 78px);
     }
 
     &.navBarHidden {
-      height: 100dvh;
+      height: calc(100dvh - var(--lat-cookie-bar-height, 0px));
     }
 
     &.allowAd {
-      height: calc(100dvh - 60px - $sticky-banner-height-mobile);
+      height: calc(
+        100dvh - var(--lat-cookie-bar-height, 0px) - 60px -
+          $sticky-banner-height-mobile
+      );
 
       @media (min-height: $mobile-tall) {
-        height: calc(100dvh - 60px - $sticky-banner-height-mobile-tall);
+        height: calc(
+          100dvh - var(--lat-cookie-bar-height, 0px) - 60px -
+            $sticky-banner-height-mobile-tall
+        );
       }
 
       @include media-breakpoint-up(md) {
-        height: calc(100dvh - 78px - $sticky-banner-height-desktop);
+        height: calc(
+          100dvh - var(--lat-cookie-bar-height, 0px) - 78px -
+            $sticky-banner-height-desktop
+        );
 
         @media (min-height: $desktop-tall) {
-          height: calc(100dvh - 78px - $sticky-banner-height-desktop-tall);
+          height: calc(
+            100dvh - var(--lat-cookie-bar-height, 0px) - 78px -
+              $sticky-banner-height-desktop-tall
+          );
         }
       }
 
       &.navBarHidden {
-        height: calc(100dvh - $sticky-banner-height-mobile);
+        height: calc(
+          100dvh - var(--lat-cookie-bar-height, 0px) -
+            $sticky-banner-height-mobile
+        );
 
         @media (min-height: $mobile-tall) {
-          height: calc(100dvh - $sticky-banner-height-mobile-tall);
+          height: calc(
+            100dvh - var(--lat-cookie-bar-height, 0px) -
+              $sticky-banner-height-mobile-tall
+          );
         }
 
         @include media-breakpoint-up(md) {
-          height: calc(100dvh - $sticky-banner-height-desktop);
+          height: calc(
+            100dvh - var(--lat-cookie-bar-height, 0px) -
+              $sticky-banner-height-desktop
+          );
 
           @media (min-height: $desktop-tall) {
-            height: calc(100dvh - $sticky-banner-height-desktop-tall);
+            height: calc(
+              100dvh - var(--lat-cookie-bar-height, 0px) -
+                $sticky-banner-height-desktop-tall
+            );
           }
         }
       }

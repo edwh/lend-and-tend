@@ -51,6 +51,13 @@ function reserveSpace() {
   if (typeof document === 'undefined') return
   const h = bar.value ? bar.value.offsetHeight : 0
   barHeight.value = h
+  // Pages that size themselves to the viewport (the chat column is
+  // height: calc(100vh - navbar)) subtract this so their bottom controls sit
+  // above the bar rather than under it.
+  document.documentElement.style.setProperty(
+    '--lat-cookie-bar-height',
+    h ? `${h}px` : '0px'
+  )
   // scrollIntoView / focus scrolling (keyboard users, Playwright, "jump to
   // field" links) must land ABOVE the bar, not underneath it.
   document.documentElement.style.scrollPaddingBottom = h ? `${h}px` : ''
@@ -81,6 +88,7 @@ onBeforeUnmount(() => {
   if (typeof document !== 'undefined') {
     barHeight.value = 0
     document.documentElement.style.scrollPaddingBottom = ''
+    document.documentElement.style.removeProperty('--lat-cookie-bar-height')
   }
 })
 </script>
