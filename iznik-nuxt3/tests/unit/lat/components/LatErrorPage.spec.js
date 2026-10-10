@@ -8,7 +8,14 @@ import ErrorPage from '~/lat/error.vue'
 // fundraiser link.
 
 const errorRef = ref(null)
-vi.mock('#imports', () => ({ useError: () => errorRef }))
+const useHead = vi.fn()
+vi.mock('#imports', () => ({
+  useError: () => errorRef,
+  useHead: (...a) => useHead(...a),
+  useRuntimeConfig: () => ({
+    public: { USER_SITE: 'https://new.lendandtend.com/' },
+  }),
+}))
 vi.mock('~/branding.config', () => ({
   default: { email: 'hello@lendandtend.com' },
 }))
@@ -48,5 +55,18 @@ describe('Lend & Tend error page', () => {
     const w = mountPage()
     expect(w.text()).toContain('maintenance')
     expect(w.find('a[href="/"]').exists()).toBe(true)
+  })
+
+  it('sets our own title and social tags, so a shared bad link previews as Lend & Tend', () => {
+    errorRef.value = { statusCode: 404, message: 'Page not found' }
+    useHead.mockClear()
+    mountPage()
+    expect(useHead).toHaveBeenCalledTimes(1)
+    const head = useHead.mock.calls[0][0]
+    expect(head.title).toMatch(/Lend & Tend/)
+    const byKey = Object.fromEntries(head.meta.map((m) => [m.key, m.content]))
+    expect(byKey['og:site_name']).toBe('Lend and Tend')
+    expect(byKey['twitter:site']).toBe('@LendandTend')
+    expect(byKey['og:url']).toBe('https://new.lendandtend.com')
   })
 })

@@ -267,7 +267,10 @@ services:
       - ./iznik-nuxt3/lat/stores:/app/lat/stores:rw
       - ./iznik-nuxt3/lat/layouts:/app/lat/layouts:rw
       # error.vue is resolved at startup from the layer root; mount it so the
-      # dev server sees the L&T error page (restart after changing it).
+      # dev server sees the L&T error page. A single-file bind mount tracks the
+      # inode, so an editor or formatter that rewrites the file by rename
+      # leaves the container on the old copy: after editing, `docker cp` it in
+      # (or recreate the container), then restart.
       - ./iznik-nuxt3/lat/error.vue:/app/lat/error.vue
       - ./iznik-nuxt3/lat/plugins:/app/lat/plugins:rw
       - ./iznik-nuxt3/lat/assets:/app/lat/assets:rw

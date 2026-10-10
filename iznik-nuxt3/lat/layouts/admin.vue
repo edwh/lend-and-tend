@@ -85,9 +85,10 @@
 </template>
 
 <script setup>
-import { useRouter, useRoute, useHead } from '#imports'
+import { latSiteUrl, latSocialMeta } from '../composables/latSocialMeta'
+import { useRouter, useRoute, useHead, useRuntimeConfig } from '#imports'
 import { useAuthStore } from '~/stores/auth'
-import { ADMIN_MENU } from '~/composables/latAdminMenu'
+import { ADMIN_MENU } from '../composables/latAdminMenu'
 
 const router = useRouter()
 const route = useRoute()
@@ -99,7 +100,10 @@ const menu = ADMIN_MENU
 // The site's own navbars (top and the phone bottom bar) are hidden on admin
 // routes through this body class, server-rendered so there is no flash. The
 // admin area is its own tool, like ModTools, with a "View site" link back.
-useHead({ bodyAttrs: { class: 'lat-admin-mode' } })
+useHead({
+  bodyAttrs: { class: 'lat-admin-mode' },
+  meta: latSocialMeta(latSiteUrl(useRuntimeConfig().public)),
+})
 
 const loggedIn = computed(() => !!authStore.user)
 const isAdmin = computed(() => {

@@ -1,5 +1,13 @@
 import { fileURLToPath } from 'node:url'
+// From @nuxt/kit (the copy nuxt itself depends on), not the 'nuxt/kit'
+// re-export: eslint's import plugin cannot see the names behind that wrapper.
+import { defineNuxtModule } from '@nuxt/kit'
 import { fakePaymentAllowed } from './server/utils/devGate'
+import {
+  latSiteUrl,
+  latSocialMeta,
+  overrideHeadMeta,
+} from './composables/latSocialMeta'
 
 const latColorVarsPath = fileURLToPath(
   new URL('./assets/css/_color-vars.scss', import.meta.url)
@@ -26,22 +34,54 @@ process.env.IMAGE_DELIVERY =
 const latUserSite =
   process.env.LAT_USER_SITE || process.env.USER_SITE || 'http://localhost:4002'
 
+// The head meta every page carries. Social tags come from one shared list
+// (see composables/latSocialMeta.js); the module below makes these win over
+// upstream Freegle's after the layers are merged.
+const latHeadMeta = [
+  { charset: 'utf-8' },
+  { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+  { name: 'color-scheme', content: 'light' },
+  {
+    key: 'description',
+    name: 'description',
+    content:
+      'Lend & Tend connects garden owners who need help with gardeners who need space.',
+  },
+  { key: 'og:type', property: 'og:type', content: 'website' },
+  ...latSocialMeta(latSiteUrl({ USER_SITE: latUserSite })),
+]
+
 export default defineNuxtConfig({
   extends: ['../'],
 
+  // Inline modules are written with defineNuxtModule so their parameters are
+  // typed by inference: the repo's eslint parser is espree, which cannot read
+  // TypeScript annotations, so an annotated function here fails lint.
   modules: [
     // Remove Freegle's global.scss from the merged CSS array — it imports
     // Freegle-specific files (sticky-banner etc.) that don't exist in lat/.
     // Add lat's own global.scss (Bootstrap-only) in its place.
-    function (
-      _options: Record<string, never>,
-      nuxt: { options: { css: string[] } }
-    ) {
-      nuxt.options.css = [
-        ...nuxt.options.css.filter((c) => !String(c).includes('global.scss')),
-        latGlobalCssPath,
-      ]
-    },
+    defineNuxtModule({
+      setup(_options, nuxt) {
+        nuxt.options.css = [
+          ...nuxt.options.css.filter((c) => !String(c).includes('global.scss')),
+          latGlobalCssPath,
+        ]
+      },
+    }),
+    // Make the lat head meta win over upstream Freegle's. Nuxt concatenates
+    // the layers' meta arrays with this layer FIRST and unhead keeps the LAST
+    // entry per tag, so Freegle's og:/twitter:/author tags used to win on
+    // every client-rendered route (/chats, /admin, /map, /garden), whose HTML
+    // carries only this config-level head.
+    defineNuxtModule({
+      setup(_options, nuxt) {
+        nuxt.options.app.head.meta = overrideHeadMeta(
+          nuxt.options.app.head.meta,
+          latHeadMeta
+        )
+      },
+    }),
     // Strip Freegle's Prebid/GoogleTag/Playwire ad-init script from the
     // shared head. Upstream injects a ~5KB inline <script> that registers
     // dozens of Freegle ad-slot codes (/22794232631/freegle_sticky etc.)
@@ -50,14 +90,16 @@ export default defineNuxtConfig({
     // leak in view-source. Keep the other two upstream script entries
     // (__initSearch capture, globalThis polyfill) — they're tiny and
     // load-bearing for Nuxt hydration / Safari 12 polyfill.
-    function (_options: Record<string, never>, nuxt: any) {
-      const scripts = nuxt.options?.app?.head?.script
-      if (!Array.isArray(scripts)) return
-      nuxt.options.app.head.script = scripts.filter((s: any) => {
-        const body = String(s?.innerHTML ?? '')
-        return !(body.includes('pbjs') || body.includes('googletag'))
-      })
-    },
+    defineNuxtModule({
+      setup(_options, nuxt) {
+        const scripts = nuxt.options.app.head.script
+        if (!Array.isArray(scripts)) return
+        nuxt.options.app.head.script = scripts.filter((s) => {
+          const body = String(s?.innerHTML ?? '')
+          return !(body.includes('pbjs') || body.includes('googletag'))
+        })
+      },
+    }),
   ],
 
   ssr: true,
@@ -205,51 +247,7 @@ export default defineNuxtConfig({
           crossorigin: '',
         },
       ],
-      meta: [
-        { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'color-scheme', content: 'light' },
-        // Use `hid` (not `key`) for dedupe — the upstream Freegle nuxt
-        // config uses `hid` for its og:/twitter:/description meta tags.
-        // Mismatched dedupe keys mean both Freegle's tags AND ours end
-        // up in the final HTML, and Freegle's (registered later in the
-        // layer chain) wins. With hid alignment our values replace
-        // theirs and L&T branding is what social/SEO crawlers see.
-        {
-          hid: 'description',
-          name: 'description',
-          content:
-            'Lend & Tend connects garden owners who need help with gardeners who need space.',
-        },
-        { hid: 'og:type', property: 'og:type', content: 'website' },
-        {
-          hid: 'og:title',
-          property: 'og:title',
-          content: 'Lend & Tend — Share a garden, grow good things',
-        },
-        {
-          hid: 'og:site_name',
-          property: 'og:site_name',
-          content: 'Lend & Tend',
-        },
-        {
-          hid: 'og:description',
-          property: 'og:description',
-          content:
-            'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.',
-        },
-        {
-          hid: 'twitter:title',
-          name: 'twitter:title',
-          content: 'Lend & Tend — Share a garden, grow good things',
-        },
-        {
-          hid: 'twitter:description',
-          name: 'twitter:description',
-          content:
-            'Lend & Tend connects garden owners who need help with gardeners who need space. Find your perfect patch-match in your community.',
-        },
-      ],
+      meta: latHeadMeta,
       style: [
         /* Inline critical L&T CSS variables and Bootstrap reset to prevent FOUC */
         {

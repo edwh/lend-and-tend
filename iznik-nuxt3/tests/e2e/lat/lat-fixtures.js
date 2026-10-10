@@ -1,6 +1,7 @@
 // @ts-check
 const crypto = require('crypto')
 const { test: base, expect } = require('@playwright/test')
+const { timeouts } = require('../config')
 
 const LAT_BASE_URL = process.env.LAT_BASE_URL || 'http://localhost:4002'
 
@@ -101,8 +102,12 @@ async function signUpViaModal(page, opts = {}) {
     await page.goto('/map')
   }
   await expect(page).toHaveURL(/\/map/, { timeout: 10_000 })
-  // Wait for nav to confirm auth is persisted before returning
-  await expect(logoutLink(page)).toBeVisible({ timeout: 10_000 })
+  // Wait for nav to confirm auth is persisted before returning. /map is
+  // client-rendered, and the first signed-in render after a dev-server
+  // restart compiles its chunks, so allow a full navigation rather than 10 s.
+  await expect(logoutLink(page)).toBeVisible({
+    timeout: timeouts.navigation.default,
+  })
 
   return { email, password, fullname }
 }
@@ -152,7 +157,9 @@ async function loginViaModal(page, email, _password) {
   // has as its public site URL.
   const url = new URL(link)
   await page.goto(`${url.pathname}${url.search}`)
-  await expect(logoutLink(page)).toBeVisible({ timeout: 20_000 })
+  await expect(logoutLink(page)).toBeVisible({
+    timeout: timeouts.navigation.default,
+  })
 }
 
 /**
@@ -253,7 +260,9 @@ async function markUserAsPaid(page) {
 async function waitForChatEntry(page, textContent, maxAttempts = 10) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     await page.goto('/chats')
-    await expect(logoutLink(page)).toBeVisible({ timeout: 10_000 })
+    await expect(logoutLink(page)).toBeVisible({
+      timeout: timeouts.navigation.default,
+    })
     try {
       await expect(page.getByText(textContent).first()).toBeVisible({
         timeout: 10_000,

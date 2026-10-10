@@ -1,8 +1,4 @@
 <template>
-  <!-- Lend & Tend override of upstream error.vue: our wording (no "freegled",
-       no Freegle fundraiser), no raw error JSON shown to members, and no
-       unconditional Sentry import (L&T's Sentry is consent-gated in
-       lat/plugins/lat-sentry.client.ts). The dynamic-import reload is kept. -->
   <div class="lat-error">
     <div class="lat-error__card">
       <template v-if="maintenance">
@@ -39,11 +35,23 @@
 </template>
 
 <script setup>
+// Lend & Tend override of upstream error.vue: our wording (no "freegled",
+// no Freegle fundraiser), no raw error JSON shown to members, and no
+// unconditional Sentry import (L&T's Sentry is consent-gated in
+// lat/plugins/lat-sentry.client.ts). The dynamic-import reload is kept.
 import { computed } from 'vue'
-import { useError } from '#imports'
+import { latSiteUrl, latSocialMeta } from './composables/latSocialMeta'
+import { useError, useHead, useRuntimeConfig } from '#imports'
 import branding from '~/branding.config'
 
 const error = useError()
+
+// The error page renders without a layout, so it must register the title and
+// social tags itself or a shared bad link previews as Freegle.
+useHead({
+  title: 'Lend & Tend — Share a garden, grow good things',
+  meta: latSocialMeta(latSiteUrl(useRuntimeConfig().public)),
+})
 const contactEmail = branding.email
 const statusCode = computed(() => error?.value?.statusCode || null)
 const notFound = computed(() => statusCode.value === 404)

@@ -31,6 +31,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { latSiteUrl, latSocialMeta } from '../composables/latSocialMeta'
 import { useAuthStore } from '~/stores/auth'
 import LayoutCommon from '~/components/LayoutCommon'
 import { useMobileStore } from '~/stores/mobile'
@@ -56,6 +57,9 @@ useHead({
   bodyAttrs: {
     style: 'background-color: var(--color-gray-50)',
   },
+  // The chat pages use this layout; without these a shared /chats link
+  // previews as Freegle (see latSocialMeta.js).
+  meta: latSocialMeta(latSiteUrl(useRuntimeConfig().public)),
 })
 
 watch(

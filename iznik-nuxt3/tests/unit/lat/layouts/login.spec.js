@@ -52,9 +52,15 @@ async function mountLayout() {
   return w
 }
 
+const useHead = vi.fn()
+
 describe('lat login layout', () => {
   beforeEach(() => {
-    vi.stubGlobal('useHead', vi.fn())
+    useHead.mockClear()
+    vi.stubGlobal('useHead', useHead)
+    vi.stubGlobal('useRuntimeConfig', () => ({
+      public: { USER_SITE: 'https://new.lendandtend.com' },
+    }))
     authUser.value = null
     authStore.forceLogin = false
     bootSession.mockReset().mockResolvedValue(null)
@@ -83,5 +89,15 @@ describe('lat login layout', () => {
     authUser.value = { id: 1 }
     const w2 = await mountLayout()
     expect(w2.find('.login-modal-stub').exists()).toBe(false)
+  })
+
+  it("registers Lend & Tend's social tags, so /chats is not shared as Freegle", async () => {
+    await mountLayout()
+    expect(useHead).toHaveBeenCalledTimes(1)
+    const head = useHead.mock.calls[0][0]
+    expect(head.bodyAttrs.style).toContain('background-color')
+    const byKey = Object.fromEntries(head.meta.map((m) => [m.key, m.content]))
+    expect(byKey['og:site_name']).toBe('Lend and Tend')
+    expect(byKey['twitter:site']).toBe('@LendandTend')
   })
 })
