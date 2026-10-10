@@ -13,6 +13,7 @@
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
+const { timeouts } = require('../config')
 const {
   test,
   expect,
@@ -187,14 +188,16 @@ test.describe('Conversation-side accessibility', () => {
       const page = await ctx.newPage()
       await page.goto('/chats')
       // The list truncates names in the DOM, so wait for the message snippet.
+      // /chats is client-rendered; its first render after a dev-server restart
+      // compiles the chat chunks, so allow a full navigation.
       await expect(
         page.getByText('Is the garden still free').first()
-      ).toBeVisible({ timeout: 20_000 })
+      ).toBeVisible({ timeout: timeouts.navigation.default })
       await hydrated(page)
       await audit(page)
       await page.goto(`/chats/${seeded.chatId}`)
       await expect(page.locator('#chatmessage')).toBeVisible({
-        timeout: 20_000,
+        timeout: timeouts.navigation.default,
       })
       // The conversation area renders at opacity 0 until its first paint and
       // fades in; auditing mid-fade reads every message as low contrast.
