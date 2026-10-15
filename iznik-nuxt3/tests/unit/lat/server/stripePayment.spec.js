@@ -3,6 +3,7 @@ import {
   paidCheckoutFromSession,
   mergePaidSettings,
   markMemberPaid,
+  memberEmail,
 } from '~/lat/server/utils/stripePayment'
 
 // The Stripe webhook's two pure decisions: "did someone actually pay, and
@@ -213,5 +214,40 @@ describe('markMemberPaid', () => {
     ).rejects.toThrow('401 Unauthorized')
     // Nothing is written if the read fails.
     expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('memberEmail', () => {
+  const ask = (fetcher) =>
+    memberEmail({ apiBase: 'http://api/apiv2', token: 'tok', fetcher })
+
+  it("reads the member's own email as them, to prefill Stripe Checkout", async () => {
+    const fetcher = vi.fn(() =>
+      Promise.resolve({ me: { id: 42, email: 'member@example.com' } })
+    )
+    expect(await ask(fetcher)).toBe('member@example.com')
+    expect(fetcher).toHaveBeenCalledWith('http://api/apiv2/session', {
+      headers: { Authorization: 'tok' },
+    })
+  })
+
+  it('leaves the field blank for an internal placeholder address', async () => {
+    const fetcher = vi.fn(() =>
+      Promise.resolve({ me: { email: 'stripe-42@users.ilovefreegle.org' } })
+    )
+    expect(await ask(fetcher)).toBeUndefined()
+  })
+
+  it('leaves the field blank when there is no usable email', async () => {
+    expect(await ask(vi.fn(() => Promise.resolve({ me: {} })))).toBeUndefined()
+    expect(await ask(vi.fn(() => Promise.resolve(null)))).toBeUndefined()
+    expect(
+      await ask(vi.fn(() => Promise.resolve({ me: { email: 'nope' } })))
+    ).toBeUndefined()
+  })
+
+  it('never blocks checkout when the lookup fails', async () => {
+    const fetcher = vi.fn(() => Promise.reject(new Error('API down')))
+    expect(await ask(fetcher)).toBeUndefined()
   })
 })

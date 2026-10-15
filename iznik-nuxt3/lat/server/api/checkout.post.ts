@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { verifyLatJwt } from '../utils/latJwt'
+import { memberEmail } from '../utils/stripePayment'
 import {
   guardBrowserPost,
   createRateLimiter,
@@ -40,6 +41,14 @@ export default defineEventHandler(async (event) => {
 
   const stripe = new Stripe(secretKey)
 
+  // Prefill Checkout with the member's own address (read with their own
+  // token) so they needn't type it again. Never blocks payment if it fails.
+  const customerEmail = await memberEmail({
+    apiBase: process.env.IZNIK_API_V2 || 'http://localhost:4001/apiv2',
+    token: getHeader(event, 'authorization') || '',
+    fetcher: (url, opts) => $fetch(url, opts as never),
+  })
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: [
@@ -57,6 +66,7 @@ export default defineEventHandler(async (event) => {
       },
     ],
     client_reference_id: claims.id,
+    ...(customerEmail ? { customer_email: customerEmail } : {}),
     metadata: {
       userId: claims.id,
       sessionId: claims.sessionid,

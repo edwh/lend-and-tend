@@ -96,3 +96,30 @@ export async function markMemberPaid({ apiBase, token, payment, fetcher }: MarkM
   const settings = mergePaidSettings(current?.me?.settings, payment)
   await fetcher(`${apiBase}/session`, { method: 'PATCH', headers, body: { settings } })
 }
+
+export interface MemberEmailArgs {
+  apiBase: string
+  /** The member's own token: we only ever read their own address. */
+  token: string
+  fetcher: Fetcher
+}
+
+/**
+ * The member's email, to prefill Stripe Checkout so they needn't retype it.
+ * Best effort: any failure, or an internal placeholder address
+ * (…@users.<domain>), gives undefined and Checkout simply asks for it.
+ */
+export async function memberEmail({ apiBase, token, fetcher }: MemberEmailArgs): Promise<string | undefined> {
+  try {
+    const current = (await fetcher(`${apiBase}/session`, { headers: { Authorization: token } })) as {
+      me?: { email?: unknown }
+    } | null
+    const email = current?.me?.email
+    if (typeof email !== 'string' || !email.includes('@') || /@users\./i.test(email)) {
+      return undefined
+    }
+    return email
+  } catch {
+    return undefined
+  }
+}
