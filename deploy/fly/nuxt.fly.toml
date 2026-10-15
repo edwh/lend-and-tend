@@ -55,6 +55,10 @@ primary_region = "lhr"
   # STRIPE_WEBHOOK_SECRET stay in fly secrets.
   STRIPE_SUCCESS_URL = "https://new.lendandtend.com/join/success"
   STRIPE_CANCEL_URL = "https://new.lendandtend.com/join"
+  # Shows the "test card 4242 4242 4242 4242" banners. nuxt.config derives
+  # this from the key prefix, but the key is a runtime secret the image build
+  # never sees, so set it here. Remove when switching to an sk_live_ key.
+  NUXT_PUBLIC_LAT_STRIPE_TEST_MODE = "true"
 
 [[services]]
   protocol = "tcp"

@@ -22,6 +22,12 @@
 
       <div v-if="allowFakePayment" class="divider"><span>or pay for real</span></div>
 
+      <!-- Test-mode note — only when Stripe is running on a TEST key -->
+      <div v-if="stripeTestMode" class="test-mode-banner">
+        🧪 <strong>Test mode</strong> — no real payment will be taken. Use test
+        card <code>4242 4242 4242 4242</code>, any future expiry &amp; any CVC.
+      </div>
+
       <!-- Stripe button -->
       <button class="btn btn-primary btn-full" :disabled="busy" @click="startPayment">
         <VIcon :icon="['fas', 'lock']" class="btn-icon" />
@@ -74,6 +80,7 @@ const api = Api(config)
 
 const feeFormatted = computed(() => (branding.fee.amountPence / 100).toFixed(2))
 const allowFakePayment = computed(() => config.public.LAT_ALLOW_FAKE_PAYMENT)
+const stripeTestMode = computed(() => config.public.LAT_STRIPE_TEST_MODE)
 
 const busy = ref(false)
 const concessionView = ref(false)
@@ -246,6 +253,20 @@ async function submitConcession() {
 .btn-outline:hover { background: rgba(107, 158, 60, 0.07); }
 .btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.test-mode-banner {
+  background: #fff8e1;
+  border: 1px solid #f0c36d;
+  color: #7a5b00;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.45;
+}
+.test-mode-banner code {
+  white-space: nowrap;
+}
 .stripe-note {
   text-align: center;
   font-size: 0.74rem;
