@@ -1,6 +1,7 @@
 {
   "name": "freegle-query-sanitizer",
   "version": "1.0.0",
+  "license": "AGPL-3.0-or-later",
   "description": "Query sanitizer for extracting and pseudonymizing PII before sending to Claude",
   "main": "server.js",
   "scripts": {

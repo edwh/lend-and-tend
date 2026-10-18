@@ -27,6 +27,9 @@
           <NuxtLink to="/help">Help & FAQ</NuxtLink>
           <NuxtLink to="/terms">Terms</NuxtLink>
           <NuxtLink to="/privacy">Privacy</NuxtLink>
+          <a :href="branding.sourceUrl" target="_blank" rel="noopener"
+            >Source code</a
+          >
         </nav>
       </div>
 

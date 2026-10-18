@@ -1,6 +1,7 @@
 {
   "name": "freegle-pseudonymizer",
   "version": "1.0.0",
+  "license": "AGPL-3.0-or-later",
   "description": "Pseudonymizer service for privacy-preserving log analysis",
   "main": "server.js",
   "scripts": {

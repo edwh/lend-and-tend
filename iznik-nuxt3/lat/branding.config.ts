@@ -20,6 +20,8 @@ export const branding = {
     "No garden? No problem! Can't garden? Find out who can. Patch-Match to make friends or grow veg. Let's love unloved gardens and take care of our neighbours.",
   companyName: 'Lend and Tend Ltd',
   companyNumber: '15481570',
+  // The AGPL asks us to offer the source to everyone who uses the site.
+  sourceUrl: 'https://github.com/edwh/lend-and-tend',
   email: 'hello@lendandtend.com',
   social: {
     instagram: '@LendandTend',

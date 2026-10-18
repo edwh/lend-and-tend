@@ -194,9 +194,13 @@ See [plans/active/lat-adversarial-review.md](plans/active/lat-adversarial-review
 - **[Freegle](https://github.com/freegle/iznik)** — the entire underlying platform. L&T inherits Freegle's Nuxt 3 frontend, Go API, Laravel batch processor, database schema and operational tooling unchanged. Auth, chat, message moderation, the `messages_promises` table that powers Garden Sharing Agreements, the PAF address lookup endpoints — all Freegle. Lend & Tend is technically a small layer of UI overrides, a handful of L&T-specific Laravel commands, and one schema migration, sitting on top of a very substantial existing codebase. Sincere thanks to the Freegle community.
 - **Edward Hibbert ([@edwh](https://github.com/edwh))** — concept and author of the L&T layer.
 
-## License
+## Licence
 
-GNU General Public License v2 — inherited from Freegle. See `iznik-nuxt3/LICENSE` for full terms.
+Lend & Tend is free software, under the GNU Affero General Public License, version 3 or any later version — the same licence as Freegle, on which it is built. See [LICENSE](./LICENSE) for the licence and [NOTICE](./NOTICE) for the copyright notice.
+
+The AGPL means that anyone who runs a changed copy of this code as a service must offer its users the source of their changes.
+
+The licence includes one additional permission under its section 7. It lets the code be combined with `add-to-calendar-button`, which is under the Elastic License 2.0 and is not free software. It comes from Freegle; the Lend & Tend layer does not use it.
 
 ## Further Reading
 

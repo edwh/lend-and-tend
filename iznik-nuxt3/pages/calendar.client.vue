@@ -48,6 +48,8 @@ const runtimeConfig = useRuntimeConfig()
 
 // Import the component only on client-side, before any rendering
 if (process.client) {
+  // add-to-calendar-button is under the Elastic License 2.0. NOTICE grants the
+  // AGPL section 7 permission to combine Freegle's code with it.
   await import('add-to-calendar-button')
 }
 
