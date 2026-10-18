@@ -82,20 +82,20 @@ describe('ModSupportListGroups', () => {
     ...overrides,
   })
 
+  const stubs = {
+    'b-table': BTableStub,
+    'b-pagination': {
+      template: '<div class="stub-pagination" />',
+      props: ['modelValue', 'totalRows', 'perPage'],
+    },
+  }
+
   async function mountLoaded(groups) {
     mockModGroupStore.allGroups = Object.fromEntries(
       groups.map((g) => [g.id, g])
     )
     const wrapper = mount(ModSupportListGroups, {
-      global: {
-        stubs: {
-          'b-table': BTableStub,
-          'b-pagination': {
-            template: '<div class="stub-pagination" />',
-            props: ['modelValue', 'totalRows', 'perPage'],
-          },
-        },
-      },
+      global: { stubs },
     })
     await wrapper.vm.fetchCommunities()
     await flushPromises()
@@ -114,11 +114,11 @@ describe('ModSupportListGroups', () => {
   })
 
   it('shows a loading message while fetching', async () => {
-    const wrapper = mount(ModSupportListGroups, {
-      global: { stubs: { 'b-table': BTableStub } },
-    })
+    const wrapper = mount(ModSupportListGroups, { global: { stubs } })
     let resolve
-    mockModGroupStore.listMT = vi.fn(() => new Promise((_resolve) => (resolve = _resolve)))
+    mockModGroupStore.listMT = vi.fn(
+      () => new Promise((_resolve) => (resolve = _resolve))
+    )
     const p = wrapper.vm.fetchCommunities()
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Loading communities...')
