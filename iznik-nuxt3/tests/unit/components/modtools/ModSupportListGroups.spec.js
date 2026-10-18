@@ -118,7 +118,7 @@ describe('ModSupportListGroups', () => {
       global: { stubs: { 'b-table': BTableStub } },
     })
     let resolve
-    mockModGroupStore.listMT = vi.fn(() => new Promise((r) => (resolve = r)))
+    mockModGroupStore.listMT = vi.fn(() => new Promise((_resolve) => (resolve = _resolve)))
     const p = wrapper.vm.fetchCommunities()
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Loading communities...')
