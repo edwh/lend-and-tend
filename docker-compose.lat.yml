@@ -427,6 +427,29 @@ services:
       LARAVEL_TEST_CONTAINER: "${COMPOSE_PROJECT_NAME:-lend-and-tend}-batch-worker"
       TEST_DB_HOST: lat-percona
       TEST_DB_PASSWORD: lat
+      # ...and for the Vitest runner, which otherwise looks for Freegle's
+      # modtools-dev-local:
+      #   curl -s -X POST http://localhost:${PORT_LAT_STATUS:-8082}/api/tests/vitest
+      # Optional POST body: {"filter":"ModSupportListGroups"}.
+      VITEST_TEST_CONTAINER: "${COMPOSE_PROJECT_NAME:-lat}-unit"
+    networks:
+      - lat-network
+
+  # Unit-test container for the Vitest suite (Freegle, ModTools and L&T specs
+  # alike). It bind-mounts the whole of iznik-nuxt3, so tests always run the
+  # code on disk with no rebuild. It uses the host's node_modules; it installs
+  # them first if they are missing. Idle otherwise — lat-status execs into it.
+  lat-unit:
+    container_name: ${COMPOSE_PROJECT_NAME:-lat}-unit
+    image: ghcr.io/freegle/freegle-base:latest
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./iznik-nuxt3:/app:rw
+    command:
+      - sh
+      - -c
+      - "[ -d node_modules/vitest ] || npm install --legacy-peer-deps --ignore-scripts; exec tail -f /dev/null"
     networks:
       - lat-network
 

@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const prefix = process.env.COMPOSE_PROJECT_NAME || 'freegle'
-  const container = `${prefix}-modtools-dev-local`
+  // L&T has no modtools-dev-local; it names its own unit-test container.
+  const container = process.env.VITEST_TEST_CONTAINER || `${prefix}-modtools-dev-local`
 
   // Count total tests upfront via `vitest list` so the progress bar is meaningful
   let totalTests = 0
