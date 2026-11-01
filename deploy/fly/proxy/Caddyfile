@@ -51,7 +51,16 @@
 	# Go API (Freegle apiv2) — /apiv2* and /api*
 	@api path /apiv2* /api*
 	handle @api {
-		reverse_proxy lat-api.flycast:8192
+		reverse_proxy lat-api.flycast:8192 {
+			# Hand the Go API just the real client IP. Fiber's c.IP() returns
+			# the raw X-Forwarded-For value, and the API stores it in
+			# varchar(40) columns (messages.fromip): a multi-hop chain such as
+			# "client, edge-v6, caddy-v6" overflows it, so every
+			# PUT /message failed with "Data too long for column 'fromip'".
+			# lat-api's service is raw TCP (api.fly.toml), so flycast doesn't
+			# append a hop of its own after this.
+			header_up X-Forwarded-For {http.request.header.Fly-Client-IP}
+		}
 	}
 
 	# NOTE: there is deliberately NO /admin* rule. The Lend & Tend admin area

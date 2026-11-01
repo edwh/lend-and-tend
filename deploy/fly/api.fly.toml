@@ -32,9 +32,12 @@ primary_region = "lhr"
   # fly-proxy bridges the flycast IPv6 address to the app's IPv4 (0.0.0.0)
   # listener. Without this, lat-api.flycast:8192 is unrouted ("connection
   # reset"); .internal can't be used because Fiber binds IPv4-only.
+  # Raw TCP (no "http" handler): with the http handler fly-proxy appended its
+  # own hop to X-Forwarded-For, and the Go API stores c.IP() (the raw header)
+  # in varchar(40) columns — "Data too long for column 'fromip'" broke every
+  # new listing. Caddy (proxy/Caddyfile) sets the header to the client IP.
   [[services.ports]]
     port = 8192
-    handlers = ["http"]
 
   [[services.http_checks]]
     method = "get"

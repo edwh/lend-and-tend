@@ -33,6 +33,8 @@ EXPOSE 8192 8194 8195
 
 # Same supervisor-style loop as upstream, but running the pre-built binary
 # instead of `go run main.go`. (Dropped upstream's CMD line that echoed the DB
-# password into the logs.)
+# password into the logs.) The API's output is tee'd to stdout as well as the
+# file: /tmp is wiped whenever the machine stops, so without this the
+# "SERVER ERROR ..." lines main.go prints for every 5xx never reach `fly logs`.
 CMD (while true; do knn-server >> /tmp/knn_server.out 2>&1; sleep 1; done &) \
-  && while true; do iznik-api >> /tmp/iznik_api.out 2>&1; sleep 1; done
+  && while true; do iznik-api 2>&1 | tee -a /tmp/iznik_api.out; sleep 1; done

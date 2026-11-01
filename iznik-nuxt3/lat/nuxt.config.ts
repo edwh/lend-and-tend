@@ -210,10 +210,17 @@ export default defineNuxtConfig({
   // the source bytes — the browser never resolves this hostname directly.
   // So we can safely point it at the docker-network alias, which Docker
   // DNS resolves cleanly and routes container-to-container.
+  //
+  // LAT_DELIVERY_ORIGIN_URL overrides it per deployment: on Fly there is no
+  // `lat-tusd` host and lat-delivery's resolver can't see *.flycast names, so
+  // deploy/fly/nuxt.fly.toml points it at the public tusd URL. Without that,
+  // every photo on the live site rendered as an empty box ("The hostname of
+  // the origin is unresolvable").
   image: {
     weserv: {
       provider: 'weserv',
-      baseURL: 'http://lat-tusd:8080/files/',
+      baseURL:
+        process.env.LAT_DELIVERY_ORIGIN_URL || 'http://lat-tusd:8080/files/',
       // weservURL stays as the public-hostname IMAGE_DELIVERY env from
       // the upstream config; the browser does need to reach this one.
     },
