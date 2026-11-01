@@ -69,6 +69,12 @@ const mockUppyInstance = vi.hoisted(() => ({
   close: vi.fn(),
   clear: vi.fn(),
   retryAll: vi.fn(),
+  addPreProcessor: vi.fn(),
+  getFile: vi.fn(),
+  getFiles: vi.fn(() => []),
+  removeFile: vi.fn(),
+  removeFiles: vi.fn(),
+  setFileState: vi.fn(),
 }))
 
 vi.mock('@uppy/core', () => ({
@@ -154,6 +160,7 @@ describe('PhotoUploader', () => {
     mockUppyInstance.close.mockClear()
     mockUppyInstance.clear.mockClear()
     mockUppyInstance.retryAll.mockClear()
+    mockUppyInstance.getFiles.mockReset().mockReturnValue([])
     mockMobileStore.isApp = false
     mockAnalyzePhotoQuality.mockResolvedValue({
       hasIssues: false,
@@ -223,8 +230,13 @@ describe('PhotoUploader', () => {
             template: '<div class="transition"><slot /></div>',
           },
           DashboardModal: {
-            template: '<div class="uppy-dashboard-modal" />',
+            template: '<div class="uppy-dashboard-modal" :data-open="open" />',
             props: ['uppy', 'open', 'props'],
+          },
+          'b-alert': {
+            template:
+              '<div class="b-alert" :data-variant="variant"><slot /></div>',
+            props: ['variant', 'modelValue'],
           },
         },
       },
@@ -1118,6 +1130,75 @@ describe('PhotoUploader', () => {
   describe('uppy integration (web mode)', () => {
     beforeEach(() => {
       mockMobileStore.isApp = false
+    })
+
+    // Upstream Freegle 423450fe8f / 62a0f761c7: HEIC is converted before
+    // Compressor runs, and each photo is read into memory after it.
+    it('converts HEIC before compressing and reads photos into memory after', async () => {
+      createWrapper()
+      await flushPromises()
+
+      expect(mockUppyInstance.addPreProcessor).toHaveBeenCalledTimes(2)
+      const heicOrder =
+        mockUppyInstance.addPreProcessor.mock.invocationCallOrder[0]
+      const inMemoryOrder =
+        mockUppyInstance.addPreProcessor.mock.invocationCallOrder[1]
+      // use() is called with Tus, then with the (HEIC-safe) Compressor.
+      expect(mockUppyInstance.use).toHaveBeenCalledTimes(2)
+      const compressorOrder = mockUppyInstance.use.mock.invocationCallOrder[1]
+      expect(heicOrder).toBeLessThan(compressorOrder)
+      expect(inMemoryOrder).toBeGreaterThan(compressorOrder)
+    })
+
+    // A photo that failed to upload must not vanish with nothing said: the
+    // batch's `complete` used to clear() everything and close the dialog,
+    // leaving the member back at "Add photos" (Joyce, 2026-11-01).
+    it('keeps the upload dialog open while a photo has not finished', async () => {
+      createWrapper()
+      await flushPromises()
+      wrapper.vm.openUppyModal()
+      await flushPromises()
+
+      const failed = { id: 'f1' }
+      mockUppyInstance.getFile.mockImplementation((id) =>
+        id === 'f1' ? failed : undefined
+      )
+      mockUppyInstance.getFiles.mockReturnValue([failed])
+      const complete = mockUppyInstance.on.mock.calls.find(
+        (c) => c[0] === 'complete'
+      )[1]
+
+      await complete({ successful: [], failed: [failed] })
+      await flushPromises()
+
+      expect(mockUppyInstance.clear).not.toHaveBeenCalled()
+      expect(
+        wrapper.find('.uppy-dashboard-modal').attributes('data-open')
+      ).toBe('true')
+    })
+
+    it('tells the member when a photo cannot be opened', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      createWrapper()
+      await flushPromises()
+
+      const unreadable = {
+        id: 'u1',
+        data: {
+          arrayBuffer: vi.fn().mockRejectedValue(new Error('NotReadable')),
+        },
+      }
+      mockUppyInstance.getFile.mockReturnValue(unreadable)
+      const inMemory = mockUppyInstance.addPreProcessor.mock.calls[1][0]
+
+      await inMemory(['u1'])
+      await flushPromises()
+
+      expect(mockUppyInstance.removeFile).toHaveBeenCalledWith('u1')
+      expect(wrapper.text()).toContain("Sorry, we couldn't open that photo")
+      consoleError.mockRestore()
     })
 
     it('initializes uppy on mount in web mode', async () => {

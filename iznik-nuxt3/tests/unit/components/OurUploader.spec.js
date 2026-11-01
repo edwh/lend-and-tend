@@ -53,6 +53,12 @@ const mockUppy = {
   getPlugin: vi.fn(),
   retryAll: vi.fn(),
   clear: vi.fn(),
+  addPreProcessor: vi.fn(),
+  getFile: vi.fn(),
+  getFiles: vi.fn(() => []),
+  removeFile: vi.fn(),
+  removeFiles: vi.fn(),
+  setFileState: vi.fn(),
 }
 
 vi.mock('@uppy/core', () => ({
@@ -142,6 +148,9 @@ describe('OurUploader', () => {
     mockUppy.getPlugin.mockReset()
     mockUppy.clear.mockClear()
     mockUppy.retryAll.mockClear()
+    mockUppy.addPreProcessor.mockClear()
+    mockUppy.removeFile.mockClear()
+    mockUppy.getFiles.mockReset().mockReturnValue([])
 
     // Reset window.ResizeObserver
     if (typeof window !== 'undefined') {
@@ -198,6 +207,10 @@ describe('OurUploader', () => {
           DashboardModal: {
             template: '<div class="uppy-dashboard-modal" :data-open="open" />',
             props: ['uppy', 'open', 'props'],
+          },
+          'b-alert': {
+            template: '<div class="b-alert"><slot /></div>',
+            props: ['variant', 'modelValue'],
           },
         },
       },
@@ -452,6 +465,65 @@ describe('OurUploader', () => {
       expect(mockUppy.use).toHaveBeenCalled()
     })
 
+    // Upstream Freegle 423450fe8f / 62a0f761c7.
+    it('converts HEIC before compressing and reads photos into memory after', async () => {
+      mockIsApp.value = false
+      await createWrapper()
+
+      expect(mockUppy.addPreProcessor).toHaveBeenCalledTimes(2)
+      const [heicOrder, inMemoryOrder] =
+        mockUppy.addPreProcessor.mock.invocationCallOrder
+      // use() is called with Tus, then with the (HEIC-safe) Compressor.
+      const compressorOrder = mockUppy.use.mock.invocationCallOrder[1]
+      expect(heicOrder).toBeLessThan(compressorOrder)
+      expect(inMemoryOrder).toBeGreaterThan(compressorOrder)
+    })
+
+    it('keeps the upload dialog open while a photo has not finished', async () => {
+      mockIsApp.value = false
+      await createWrapper({ startOpen: true })
+
+      const failed = { id: 'f1' }
+      mockUppy.getFile.mockImplementation((id) =>
+        id === 'f1' ? failed : undefined
+      )
+      mockUppy.getFiles.mockReturnValue([failed])
+      const dashboardPlugin = { closeModal: vi.fn() }
+      mockUppy.getPlugin.mockReturnValue(dashboardPlugin)
+      const complete = mockUppy.on.mock.calls.find(
+        (c) => c[0] === 'complete'
+      )[1]
+
+      await complete({ successful: [], failed: [failed] })
+      await flushPromises()
+
+      expect(mockUppy.clear).not.toHaveBeenCalled()
+      expect(dashboardPlugin.closeModal).not.toHaveBeenCalled()
+    })
+
+    it('tells the member when a photo cannot be opened', async () => {
+      mockIsApp.value = false
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const wrapper = await createWrapper()
+
+      mockUppy.getFile.mockReturnValue({
+        id: 'u1',
+        data: {
+          arrayBuffer: vi.fn().mockRejectedValue(new Error('NotReadable')),
+        },
+      })
+      const inMemory = mockUppy.addPreProcessor.mock.calls[1][0]
+
+      await inMemory(['u1'])
+      await flushPromises()
+
+      expect(mockUppy.removeFile).toHaveBeenCalledWith('u1')
+      expect(wrapper.text()).toContain("Sorry, we couldn't open that photo")
+      consoleError.mockRestore()
+    })
+
     it('registers event listeners on Uppy', async () => {
       mockIsApp.value = false
       await createWrapper()
@@ -647,25 +719,32 @@ describe('OurUploader', () => {
       ])
     })
 
-    it('clears Uppy after successful upload', async () => {
+    // removeFinishedFiles replaces clear(): clear() pulled a still-retrying
+    // photo out from under its own upload (upstream 62a0f761c7).
+    it('removes the finished photos from Uppy and closes the dialog', async () => {
       mockIsApp.value = false
-      const wrapper = await createWrapper()
+      const wrapper = await createWrapper({ startOpen: true })
       const uploaderComp = wrapper.findComponent(OurUploader)
 
-      const result = {
-        successful: [
-          {
-            tus: {
-              uploadUrl: 'https://tus.example.com/files/abc123',
-            },
-          },
-        ],
+      const done = {
+        id: 'done1',
+        tus: {
+          uploadUrl: 'https://tus.example.com/files/abc123',
+        },
       }
+      mockUppy.getFile.mockImplementation((id) =>
+        id === 'done1' ? done : undefined
+      )
+      mockUppy.getFiles.mockReturnValue([])
+      const dashboardPlugin = { closeModal: vi.fn() }
+      mockUppy.getPlugin.mockReturnValue(dashboardPlugin)
 
-      await uploaderComp.vm.uploadSuccess(result)
+      await uploaderComp.vm.uploadSuccess({ successful: [done] })
       await flushPromises()
 
-      expect(mockUppy.clear).toHaveBeenCalled()
+      expect(mockUppy.removeFiles).toHaveBeenCalledWith(['done1'])
+      expect(mockUppy.clear).not.toHaveBeenCalled()
+      expect(dashboardPlugin.closeModal).toHaveBeenCalled()
     })
   })
 

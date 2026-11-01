@@ -1,5 +1,14 @@
 <template>
   <div class="app-photo-uploader" @dragenter="onDragEnter">
+    <b-alert
+      v-if="photoError"
+      variant="danger"
+      :model-value="true"
+      class="mt-2"
+    >
+      {{ photoError }}
+    </b-alert>
+
     <!-- Featured photo - always shows first photo (the primary one for post) -->
     <!-- Drop target: dragging a thumbnail here makes it the primary photo -->
     <Transition name="fade">
@@ -181,7 +190,18 @@ import Tus from '@uppy/tus'
 import Compressor from '@uppy/compressor'
 import PhotoCard from './PhotoCard.vue'
 import OurUploadedImage from '~/components/OurUploadedImage.vue'
-import { createRetryCoalescer } from '~/composables/useUppyRetryCoalesce'
+import {
+  createRetryCoalescer,
+  removeFinishedFiles,
+} from '~/composables/useUppyRetryCoalesce'
+import {
+  createHeicPreProcessor,
+  createHeicSafeCompressor,
+} from '~/composables/useUppyHeic'
+import {
+  createInMemoryPreProcessor,
+  UNREADABLE_PHOTO_MESSAGE,
+} from '~/composables/useUppyInMemory'
 import { useRuntimeConfig } from '#app'
 import { useImageStore } from '~/stores/image'
 import { useMobileStore } from '~/stores/mobile'
@@ -238,6 +258,8 @@ const isApp = computed(() => mobileStore.isApp)
 // Uppy instance for web browsers - use shallowRef so template reactivity works
 const uppy = shallowRef(null)
 const uppyModalOpen = ref(false)
+// A plain message for the member when a picked photo cannot be used.
+const photoError = ref(null)
 
 // Local state
 const photos = ref([...props.modelValue])
@@ -679,8 +701,11 @@ async function handleUppySuccess(result) {
     }
   }
 
-  closeUppyModal()
-  uppy.value.clear()
+  // Only the finished photos: one that failed, or is still being retried,
+  // stays - and so does the dialog, with Uppy's own error and retry button -
+  // instead of vanishing and leaving the member back at "Add photos" with
+  // nothing said. See removeFinishedFiles.
+  if (removeFinishedFiles(uppy.value, result)) closeUppyModal()
 }
 
 // Initialize Uppy for web browsers
@@ -702,14 +727,36 @@ onMounted(() => {
       allowedFileTypes: ['image/*', '.jpg', '.jpeg', '.png', '.gif', '.heic'],
       maxNumberOfFiles: props.maxPhotos,
     },
+  }).use(Tus, {
+    endpoint: runtimeConfig.public.TUS_UPLOADER,
+    uploadDataDuringCreation: true,
   })
-    .use(Tus, {
-      endpoint: runtimeConfig.public.TUS_UPLOADER,
-      uploadDataDuringCreation: true,
+  // Must be registered before Compressor - pre-processors run in the order
+  // they're added. Converts HEIC to JPEG so Compressor's canvas re-encode has
+  // something the browser can draw; the wrapped Compressor then skips anything
+  // still HEIC. See useUppyHeic.
+  uppy.value.addPreProcessor(
+    createHeicPreProcessor({ getUppy: () => uppy.value, uploader: 'photo' })
+  )
+  uppy.value.use(createHeicSafeCompressor(Compressor))
+  // After Compressor, so it copies what we will actually upload. See
+  // useUppyInMemory.
+  uppy.value.addPreProcessor(
+    createInMemoryPreProcessor({
+      getUppy: () => uppy.value,
+      uploader: 'photo',
+      onUnreadable: () => {
+        photoError.value = UNREADABLE_PHOTO_MESSAGE
+      },
     })
-    .use(Compressor)
+  )
 
   uppy.value.on('complete', handleUppySuccess)
+  uppy.value.on('file-added', () => {
+    // A new photo starts afresh; an earlier one that could not be opened
+    // should not leave its message showing.
+    photoError.value = null
+  })
   const scheduleRetry = createRetryCoalescer(() => uppy.value)
   uppy.value.on('error', (error) => {
     console.error('Upload error, retry', error)

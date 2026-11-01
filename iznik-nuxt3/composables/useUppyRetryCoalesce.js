@@ -18,10 +18,46 @@ export function createRetryCoalescer(getUppy) {
     queueMicrotask(() => {
       scheduled = false
       try {
-        getUppy()?.retryAll()
+        // retryAll() returns a promise in Uppy 4. Uppy's own tus retry can throw
+        // "Cannot use 'in' operator to search for 'error' in undefined" from an
+        // undefined file in its internal list - and because that surfaces from
+        // an async continuation it REJECTS the promise rather than throwing
+        // synchronously, so the try/catch alone misses it and it reaches Sentry
+        // uncaught. Handle the rejection too.
+        const result = getUppy()?.retryAll()
+        if (result && typeof result.then === 'function') {
+          result.catch((retryError) => {
+            console.error(
+              'retryAll() rejected (Uppy state corruption)',
+              retryError
+            )
+          })
+        }
       } catch (retryError) {
         console.error('retryAll() failed (Uppy state corruption)', retryError)
       }
     })
   }
+}
+
+// Takes the photos that have finished out of Uppy once a batch completes, and
+// says whether anything is left. Use this instead of uppy.clear().
+//
+// clear() empties Uppy's file list without stopping uploads that are still
+// running. When one photo in a batch fails, `complete` fires and the retry
+// above has already restarted it, so clear() pulled the file out from under
+// its own upload: @uppy/tus then crashed reading `progress` of the missing
+// file ("Cannot read properties of undefined (reading 'progress')"), and the
+// photo was lost. Leaving unfinished files where they are lets the retry finish
+// and report back through the next `complete`.
+export function removeFinishedFiles(uppy, result) {
+  if (!uppy) return true
+
+  const finished = (result?.successful || [])
+    .map((file) => file?.id)
+    .filter((id) => id && uppy.getFile(id))
+
+  if (finished.length) uppy.removeFiles(finished)
+
+  return uppy.getFiles().length === 0
 }

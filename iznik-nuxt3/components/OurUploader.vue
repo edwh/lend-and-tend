@@ -28,6 +28,14 @@
           <p v-if="isApp">{{ loading }}</p>
         </div>
       </div>
+      <b-alert
+        v-if="photoError"
+        variant="danger"
+        :model-value="true"
+        class="mt-2"
+      >
+        {{ photoError }}
+      </b-alert>
       <DashboardModal
         v-if="!isApp"
         ref="dashboard"
@@ -60,7 +68,18 @@ import ResizeObserver from 'resize-observer-polyfill'
 import hasOwn from 'object.hasown'
 import * as Sentry from '@sentry/browser'
 import { uid } from '~/composables/useId'
-import { createRetryCoalescer } from '~/composables/useUppyRetryCoalesce'
+import {
+  createRetryCoalescer,
+  removeFinishedFiles,
+} from '~/composables/useUppyRetryCoalesce'
+import {
+  createHeicPreProcessor,
+  createHeicSafeCompressor,
+} from '~/composables/useUppyHeic'
+import {
+  createInMemoryPreProcessor,
+  UNREADABLE_PHOTO_MESSAGE,
+} from '~/composables/useUppyInMemory'
 import { useMobileStore } from '@/stores/mobile' // APP...
 import { useRuntimeConfig } from '#app'
 import { useImageStore } from '~/stores/image'
@@ -222,6 +241,8 @@ const loading = ref('')
 const emit = defineEmits(['update:modelValue', 'closed', 'photoProcessed'])
 const uploadedPhotos = ref([])
 const busy = ref(false)
+// A plain message for the member when a picked photo cannot be used.
+const photoError = ref(null)
 
 const label = computed(() => {
   if (props.label) {
@@ -401,15 +422,35 @@ onMounted(() => {
       allowedFileTypes: ['image/*', '.jpg', '.jpeg', '.png', '.gif', '.heic'],
       maxNumberOfFiles: props.multiple ? 10 : 1,
     },
+  }).use(Tus, {
+    endpoint: runtimeConfig.public.TUS_UPLOADER,
+    uploadDataDuringCreation: true,
+    retryDelays: [0, 3000, 5000, 10000, 20000],
   })
-    .use(Tus, {
-      endpoint: runtimeConfig.public.TUS_UPLOADER,
-      uploadDataDuringCreation: true,
-      retryDelays: [0, 3000, 5000, 10000, 20000],
+  // Must be registered before Compressor - pre-processors run in the order
+  // they're added. Converts HEIC to JPEG so Compressor's canvas re-encode has
+  // something the browser can draw; the wrapped Compressor then skips anything
+  // still HEIC. See useUppyHeic.
+  uppy.addPreProcessor(
+    createHeicPreProcessor({ getUppy: () => uppy, uploader: 'our' })
+  )
+  uppy.use(createHeicSafeCompressor(Compressor))
+  // After Compressor, so it copies what we will actually upload. See
+  // useUppyInMemory.
+  uppy.addPreProcessor(
+    createInMemoryPreProcessor({
+      getUppy: () => uppy,
+      uploader: 'our',
+      onUnreadable: () => {
+        photoError.value = UNREADABLE_PHOTO_MESSAGE
+      },
     })
-    .use(Compressor)
+  )
   uppy.on('file-added', (file) => {
     console.log('Added file', file)
+    // A new photo starts afresh; an earlier one that could not be opened
+    // should not leave its message showing.
+    photoError.value = null
   })
   uppy.on('files-added', (files) => {
     console.log('Added files', files)
@@ -572,9 +613,11 @@ async function uploadSuccess(result) {
 
     // Reset the uploader so that if we go back in we won't see photos which have already been uploaded.  This is
     // because control of the photos is handed over to our code, rather than the uploader.
+    // Only the finished photos: one that failed, or is still being retried,
+    // stays - and so does the dialog, with Uppy's own error and retry button -
+    // instead of vanishing with nothing said. See removeFinishedFiles.
     console.log('Reset uploader')
-    closeModal()
-    uppy.clear()
+    if (removeFinishedFiles(uppy, result)) closeModal()
     busy.value = false
   }
 }
