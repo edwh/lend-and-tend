@@ -36,5 +36,15 @@ EXPOSE 8192 8194 8195
 # password into the logs.) The API's output is tee'd to stdout as well as the
 # file: /tmp is wiped whenever the machine stops, so without this the
 # "SERVER ERROR ..." lines main.go prints for every 5xx never reach `fly logs`.
+#
+# Client logs (POST /apiv2/clientlog: upload telemetry, client errors) are
+# written by the API's Loki writer to /tmp/loki/go-api-<UTC date>.log (see
+# LOKI_* in api.fly.toml); there is no Loki on Fly, so a follower prints the
+# client actions, warnings and errors to stdout as CLIENTLOG lines. The tail
+# restarts hourly so it moves on to the next day's file.
 CMD (while true; do knn-server >> /tmp/knn_server.out 2>&1; sleep 1; done &) \
+  && (while true; do f=/tmp/loki/go-api-$(date -u +%F).log; mkdir -p /tmp/loki; touch "$f"; \
+       timeout 3600 tail -n0 -F "$f" | grep --line-buffered '"source":"client"' \
+       | grep --line-buffered -E '"event_type":"action"|"level":"(error|warn)"' \
+       | sed -u 's/^/CLIENTLOG /'; done &) \
   && while true; do iznik-api 2>&1 | tee -a /tmp/iznik_api.out; sleep 1; done

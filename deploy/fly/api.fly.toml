@@ -21,6 +21,10 @@ primary_region = "lhr"
   # checkout-confirm (server-minted tokens) and admins may. Needs a Go API
   # build that includes the PROTECTED_SETTINGS_KEYS switch (upstream PR #1490).
   PROTECTED_SETTINGS_KEYS = "lat_payment"
+  # Client logs are written as JSON lines here and echoed to stdout as
+  # CLIENTLOG lines by the start command (api/Dockerfile). No Loki on Fly.
+  LOKI_ENABLED = "true"
+  LOKI_JSON_PATH = "/tmp/loki"
 
 [[services]]
   protocol = "tcp"
