@@ -343,6 +343,8 @@ services:
     command:
       - -base-path=/files/
       - -cors-allow-headers=baggage,sentry-trace,authorization,x-token
+      # Uploads are public by id; no one may delete another member's photo.
+      - -disable-termination
     ports:
       - "${PORT_LAT_TUSD:-4080}:8080"
     volumes:
